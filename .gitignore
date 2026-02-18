@@ -33,3 +33,4 @@ dist-ssr
 
 # Legacy directories
 cms-manage/
+crs/
