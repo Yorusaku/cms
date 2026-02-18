@@ -1,0 +1,19 @@
+{
+  "name": "@cms/types",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts --fix"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "eslint": "^8.49.0",
+    "@typescript-eslint/eslint-plugin": "^6.7.0",
+    "@typescript-eslint/parser": "^6.7.0"
+  }
+}

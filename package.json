@@ -1,0 +1,30 @@
+{
+  "name": "cms-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CMS 移动端配置项目 Monorepo",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:cms": "pnpm --filter @cms/cms dev",
+    "dev:crs": "pnpm --filter @cms/crs dev",
+    "build": "turbo run build",
+    "build:cms": "pnpm --filter @cms/cms build",
+    "build:crs": "pnpm --filter @cms/crs build",
+    "lint": "turbo run lint",
+    "lint:fix": "turbo run lint -- --fix",
+    "clean": "turbo run clean",
+    "format": "prettier --write \"**/*.{js,ts,vue,json}\"",
+    "typecheck": "turbo run typecheck"
+  },
+  "devDependencies": {
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.0.0",
+    "turbo": "^1.10.0",
+    "typescript": "^5.0.0"
+  },
+  "packageManager": "pnpm@8.7.0",
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  }
+}
