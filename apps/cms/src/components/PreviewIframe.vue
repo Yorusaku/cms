@@ -10,9 +10,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onBeforeUnmount } from 'vue'
+import { ref, watch } from 'vue'
+import { useEventListener, useDebounceFn } from '@vueuse/core'
 import { usePageStore } from '../store/usePageStore'
-import { useDebounceFn } from '@vueuse/core'
 import { MESSAGE_TYPE } from '@cms/types'
 import type { IMessagePayload, IPageSchema } from '@cms/types'
 
@@ -54,27 +54,20 @@ const handleIframeLoad = () => {
   sendSchemaToIframe(pageStore.pageSchema)
 }
 
-const handleMessage = (event: MessageEvent) => {
+useEventListener(window, 'message', (event: MessageEvent) => {
   const { type, data } = event.data as IMessagePayload
   if (type === MESSAGE_TYPE.ON_SELECT_BLOCK && data && typeof data === 'object' && 'id' in data) {
     pageStore.setActiveId(data.id as string)
   }
-}
+})
 
-window.addEventListener('message', handleMessage)
-
-const stopWatchPageSchema = watch(
+watch(
   () => pageStore.pageSchema,
   schema => {
     debouncedSendSchema(schema)
   },
   { deep: true }
 )
-
-onBeforeUnmount(() => {
-  stopWatchPageSchema()
-  window.removeEventListener('message', handleMessage)
-})
 </script>
 
 <style scoped>
