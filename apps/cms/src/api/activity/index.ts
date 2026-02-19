@@ -1,10 +1,21 @@
 import http from '@/utils/http'
 
 export interface PageListParams {
-  page?: number
+  pageNum?: number
   pageSize?: number
   name?: string
   isAbled?: number
+}
+
+export interface PageListResponse {
+  code: number
+  message: string
+  data: {
+    list: PageItem[]
+    total: number
+    pageNum: number
+    pageSize: number
+  }
 }
 
 export interface PageItem {
@@ -30,7 +41,7 @@ export function getCmsPageList(data: PageListParams) {
       params.append(key, String(value))
     }
   })
-  return http.get<PageItem[]>(`/atlas-cms/getPageList?${params.toString()}`)
+  return http.get<PageListResponse>(`/atlas-cms/getPageList?${params.toString()}`)
 }
 
 export function saveCmsPage(data: SavePageParams) {

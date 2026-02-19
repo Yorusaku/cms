@@ -35,7 +35,7 @@ export default defineConfig({
     proxy: {
       '/api/atlas-cms': {
         target: 'http://127.0.0.1:3300',
-        rewrite: (path) => path.replace(/^\/api\/atlas-cms/, '/atlas-cms')
+        rewrite: path => path.replace(/^\/api\/atlas-cms/, '/atlas-cms')
       }
     }
   }

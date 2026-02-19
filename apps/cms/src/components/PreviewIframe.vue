@@ -16,7 +16,7 @@ import { usePageStore } from '../store/usePageStore'
 import { MESSAGE_TYPE } from '@cms/types'
 import type { IMessagePayload, IPageSchema } from '@cms/types'
 
-const props = defineProps<{
+defineProps<{
   previewUrl: string
 }>()
 

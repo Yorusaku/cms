@@ -1,4 +1,4 @@
-import router from './router'
+import router from '@/router'
 
 const whiteList = ['/login', '/404', '/401']
 

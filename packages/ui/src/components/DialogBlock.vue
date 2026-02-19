@@ -65,7 +65,7 @@ export interface IDialogProps {
   confirmColor?: string
 }
 
-const props = withDefaults(defineProps<IDialogProps>(), {
+withDefaults(defineProps<IDialogProps>(), {
   visible: false,
   title: '',
   content: '',

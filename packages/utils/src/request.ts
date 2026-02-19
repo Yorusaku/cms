@@ -78,7 +78,7 @@ class Request {
         // 添加 Token
         const token = this.getToken()
         if (token && !requestConfig.skipAuth) {
-          config.headers.Authorization = token
+          config.headers['X-token'] = token
         }
         return config
       },
@@ -118,11 +118,9 @@ class Request {
         if (data.code === 10000) {
           // 请求成功
           return response
-        } else if (data.code === 10017) {
+        } else if (data.code === -2) {
           // 登录失效
-          const { body, params } = response.request
-          const noJump = (body && body.noJumpToLogin) || (params && params.noJumpToLogin)
-          if (!noJump && this.getCanToLoginStatus()) {
+          if (this.getCanToLoginStatus()) {
             this.toLogin()
           }
           const error: CustomRequestError = {
@@ -197,7 +195,7 @@ class Request {
    */
   private toLogin(): void {
     localStorage.removeItem('token')
-    window.location.href = window.location.origin + '/login'
+    window.location.href = window.location.origin + '/cms-manage/#/login'
   }
 
   /**

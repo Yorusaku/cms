@@ -33,9 +33,21 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
 
+defineOptions({
+  name: 'CrsHomeView'
+})
+
 const router = useRouter()
 
-const activityList = ref<any[]>([])
+interface ActivityItem {
+  id: number
+  name: string
+  isAbled: number
+  create_time: string
+  [key: string]: unknown
+}
+
+const activityList = ref<ActivityItem[]>([])
 const loading = ref(false)
 const finished = ref(false)
 const refreshing = ref(false)

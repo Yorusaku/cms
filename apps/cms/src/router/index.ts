@@ -8,32 +8,32 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/home',
     name: 'Home',
-    component: () => import('../views/Home.vue')
+    component: () => import('@/views/Home.vue')
   },
   {
     path: '/login',
     name: 'Login',
-    component: () => import('../views/Login.vue')
+    component: () => import('@/views/Login.vue')
   },
   {
     path: '/decorate',
     name: 'Decorate',
-    component: () => import('../views/Decorate.vue')
+    component: () => import('@/views/Decorate/index.vue')
   },
   {
     path: '/preview',
     name: 'Preview',
-    component: () => import('../views/Preview.vue')
+    component: () => import('@/views/Preview.vue')
   },
   {
     path: '/activity',
     name: 'Activity',
-    component: () => import('../views/Activity.vue')
+    component: () => import('@/views/Activity.vue')
   },
   {
     path: '/404',
     name: '404',
-    component: () => import('../views/404.vue')
+    component: () => import('@/views/404.vue')
   }
 ]
 
