@@ -97,7 +97,10 @@ export default defineComponent({
   },
   setup(props) {
     const scrollDuration = computed(() => {
-      const totalWidth = props.noticeList.reduce((sum, item) => sum + item.text.length * 14 + 128, 0)
+      const totalWidth = props.noticeList.reduce(
+        (sum, item) => sum + item.text.length * 14 + 128,
+        0
+      )
       return `${totalWidth / props.speed}s`
     })
     return { scrollDuration }

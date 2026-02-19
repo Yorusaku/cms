@@ -1,9 +1,9 @@
 <template>
   <div class="schema-renderer">
-    <div v-if="!pageSchema || !pageSchema.components" class="empty-state">暂无组件数据</div>
+    <div v-if="!props.pageSchema || !props.pageSchema.components" class="empty-state">暂无组件数据</div>
     <div v-else class="components-list">
       <div
-        v-for="component in pageSchema.components"
+        v-for="component in props.pageSchema.components"
         :key="component.id"
         class="component-wrapper"
         @click.stop="handleComponentClick(component.id)"

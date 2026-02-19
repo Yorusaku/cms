@@ -1,5 +1,10 @@
 export { default as CmsButton } from './CmsButton.vue'
-export { default as NoticeBlock, NoticeDefaultConfig, type INoticeProps, type INoticeItem } from './NoticeBlock.vue'
+export {
+  default as NoticeBlock,
+  NoticeDefaultConfig,
+  type INoticeProps,
+  type INoticeItem
+} from './NoticeBlock.vue'
 export { default as DialogBlock } from './DialogBlock.vue'
 export { default as CubeSelectionBlock } from './CubeSelectionBlock.vue'
 export { default as ProductBlock } from './ProductBlock.vue'

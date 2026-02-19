@@ -33,12 +33,12 @@ const sendSchemaToIframe = (schema: IPageSchema) => {
     return
   }
 
-  const payload: IMessagePayload<IPageSchema> = {
-    type: MESSAGE_TYPE.SYNC_SCHEMA,
-    data: schema
-  }
-
   try {
+    const clonedSchema = JSON.parse(JSON.stringify(schema))
+    const payload: IMessagePayload<IPageSchema> = {
+      type: MESSAGE_TYPE.SYNC_SCHEMA,
+      data: clonedSchema
+    }
     iframeRef.value.contentWindow.postMessage(payload, getTargetOrigin())
   } catch (error) {
     console.warn('发送 Schema 到 iframe 失败:', error)

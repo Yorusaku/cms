@@ -6,6 +6,7 @@ import Components from 'unplugin-vue-components/vite'
 import { VantResolver } from 'unplugin-vue-components/resolvers'
 
 export default defineConfig({
+  base: '/crs/',
   plugins: [
     vue(),
     AutoImport({
@@ -21,7 +22,8 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3001,
-    open: true
+    host: '127.0.0.1',
+    port: 3010,
+    open: false
   }
 })

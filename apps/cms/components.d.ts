@@ -11,7 +11,37 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    AssistLine: typeof import('./src/components/AssistLine.vue')['default']
+    Carousel: typeof import('./src/components/Carousel.vue')['default']
+    CubeSelection: typeof import('./src/components/CubeSelection.vue')['default']
+    Dialog: typeof import('./src/components/Dialog.vue')['default']
+    ElAvatar: typeof import('element-plus/es')['ElAvatar']
+    ElButton: typeof import('element-plus/es')['ElButton']
+    ElCard: typeof import('element-plus/es')['ElCard']
+    ElForm: typeof import('element-plus/es')['ElForm']
+    ElFormItem: typeof import('element-plus/es')['ElFormItem']
+    ElIcon: typeof import('element-plus/es')['ElIcon']
+    ElInput: typeof import('element-plus/es')['ElInput']
+    ElOption: typeof import('element-plus/es')['ElOption']
+    ElPagination: typeof import('element-plus/es')['ElPagination']
+    ElSelect: typeof import('element-plus/es')['ElSelect']
+    ElTable: typeof import('element-plus/es')['ElTable']
+    ElTableColumn: typeof import('element-plus/es')['ElTableColumn']
+    ElTag: typeof import('element-plus/es')['ElTag']
+    FallbackComponent: typeof import('./src/components/FallbackComponent.vue')['default']
+    FloatLayer: typeof import('./src/components/FloatLayer.vue')['default']
+    ImageNav: typeof import('./src/components/ImageNav.vue')['default']
+    Notice: typeof import('./src/components/Notice.vue')['default']
+    NoticeConfig: typeof import('./src/components/NoticeConfig.vue')['default']
+    OnlineService: typeof import('./src/components/OnlineService.vue')['default']
+    PreviewIframe: typeof import('./src/components/PreviewIframe.vue')['default']
+    Product: typeof import('./src/components/Product.vue')['default']
+    RichText: typeof import('./src/components/RichText.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    Slider: typeof import('./src/components/Slider.vue')['default']
+  }
+  export interface GlobalDirectives {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
   }
 }

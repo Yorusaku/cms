@@ -53,13 +53,16 @@
       <div class="preview-area">
         <h3>实时预览</h3>
         <div class="preview-container">
-          <PreviewIframe preview-url="http://localhost:5174/page-preview" />
+          <PreviewIframe :preview-url="crsPreviewUrl" />
         </div>
       </div>
 
       <div class="config-panel">
         <h3>组件配置</h3>
-        <div v-if="activeComponent && resolveConfigComponent(activeComponent.type)" class="config-content">
+        <div
+          v-if="activeComponent && resolveConfigComponent(activeComponent.type)"
+          class="config-content"
+        >
           <component
             :is="resolveConfigComponent(activeComponent.type)"
             :component-props="activeComponent.props"
@@ -83,6 +86,10 @@ import PreviewIframe from '../components/PreviewIframe.vue'
 import { NoticeDefaultConfig } from '@cms/ui'
 
 const pageStore = usePageStore()
+
+const crsPreviewUrl = computed(() => {
+  return import.meta.env.VITE_CRS_PREVIEW_URL || 'http://localhost:3003/page-preview'
+})
 
 const availableComponents = markRaw([
   { type: 'Carousel', label: '轮播图' },
@@ -312,7 +319,7 @@ const handleReset = () => {
   border-right: 1px solid #e4e7ed;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
 }
 
 .preview-area h3 {
