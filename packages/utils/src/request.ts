@@ -14,6 +14,7 @@ export interface RequestConfig extends AxiosRequestConfig {
   showLoading?: boolean
   showError?: boolean
   skipAuth?: boolean
+  onError?: (message: string) => void
 }
 
 /**
@@ -36,6 +37,11 @@ export interface CustomRequestError {
 }
 
 /**
+ * 错误显示函数类型
+ */
+export type ErrorDisplayFn = (message: string) => void
+
+/**
  * HTTP 请求封装类
  * 提供统一的请求拦截、响应拦截、错误处理等功能
  *
@@ -46,12 +52,14 @@ export interface CustomRequestError {
 class Request {
   private instance: AxiosInstance
   private loadingCount = 0
+  private errorDisplayFn: ErrorDisplayFn | null = null
 
   /**
    * 构造函数
    * @param baseURL - API 基础路径
+   * @param errorDisplayFn - 可选的错误显示函数，由调用方传入（如 ElMessage.error）
    */
-  constructor(baseURL: string) {
+  constructor(baseURL: string, errorDisplayFn?: ErrorDisplayFn) {
     this.instance = axios.create({
       baseURL,
       timeout: 15000,
@@ -60,7 +68,19 @@ class Request {
       }
     })
 
+    if (errorDisplayFn) {
+      this.errorDisplayFn = errorDisplayFn
+    }
+
     this.setupInterceptors()
+  }
+
+  /**
+   * 设置错误显示函数
+   * @param fn - 错误显示函数
+   */
+  public setErrorDisplay(fn: ErrorDisplayFn): void {
+    this.errorDisplayFn = fn
   }
 
   /**
@@ -203,30 +223,24 @@ class Request {
    * @param message - 错误消息
    */
   private showError(message: string): void {
-    if (typeof window !== 'undefined') {
-      // 优先使用 Element Plus
-      if (typeof (window as any).ElMessage !== 'undefined') {
-        ;(window as any).ElMessage.error(message)
-      } else if (typeof (window as any).Toast !== 'undefined') {
-        // 其次使用 Vant
-        ;(window as any).Toast(message)
-      } else {
-        // 最后使用 console
-        console.error(message)
-      }
+    if (this.errorDisplayFn) {
+      this.errorDisplayFn(message)
+    } else {
+      // 默认使用 console.error
+      console.error(message)
     }
   }
 
   /**
    * 获取错误消息
    * @param error - 错误对象
-   * @returns 错误消息字符串
+   * @returns 错误消息的字符串
    */
   private getErrorMessage(error: unknown): string {
     if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError
       if (axiosError.response) {
-        return `请求失败: ${axiosError.response.status}`
+        return `请求失败：${axiosError.response.status}`
       } else if (axiosError.request) {
         return '网络异常，请稍后重试'
       } else {

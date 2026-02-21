@@ -106,7 +106,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { debounce } from '@vueuse/core'
+import { debounce } from '@cms/utils'
 import ComGroup from '@/components/basic/ComGroup.vue'
 import ComDivider from '@/components/basic/ComDivider.vue'
 import PicList from '@/components/basic/PicList.vue'
@@ -126,13 +126,6 @@ interface ImageItem {
   imageUrl: string
   text?: string
   link?: LinkConfig | null
-}
-
-interface LayoutItem {
-  name: string
-  id: string
-  icon: any
-  limitSize: number
 }
 
 interface CarouselConfig {
@@ -163,7 +156,7 @@ const initBgColor = '#FFFFFF'
 
 const configData = ref<CarouselConfig>(JSON.parse(JSON.stringify(props.parmes)))
 
-const layoutList: LayoutItem[] = [
+const layoutList = [
   {
     name: '轮播广告',
     id: 'swiper',
@@ -189,7 +182,7 @@ const updateImageList = (list: ImageItem[]) => {
 
 watch(
   configData,
-  debounce((newVal: CarouselConfig) => {
+  debounce(newVal => {
     const { marginTopBottom, marginLeftRight } = newVal
     const marginSize = [marginTopBottom || 0, marginLeftRight || 0]
     const emitData = {
@@ -203,7 +196,7 @@ watch(
 
 watch(
   () => props.parmes,
-  (newVal: CarouselConfig) => {
+  newVal => {
     configData.value = JSON.parse(JSON.stringify(newVal))
     const { marginSize } = configData.value
     if (marginSize && marginSize.length >= 2) {

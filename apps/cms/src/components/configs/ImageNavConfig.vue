@@ -147,7 +147,7 @@
 import { ref, watch } from 'vue'
 import { Plus, Delete } from '@element-plus/icons-vue'
 import { deepClone, debounce, createRandomId } from '@cms/utils'
-import ImageUploader from '../../ImageUploader.vue'
+import ImageUploader from '../ImageUploader.vue'
 
 // 导航项类型定义
 interface NavItem {

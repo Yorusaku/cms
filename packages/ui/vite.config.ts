@@ -1,9 +1,17 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { resolve } from 'path'
+import dts from 'vite-plugin-dts'
 
 export default defineConfig({
-  plugins: [vue()],
+  plugins: [
+    vue(),
+    dts({
+      entryRoot: 'src',
+      outDir: 'dist',
+      include: ['src/**/*']
+    })
+  ],
   resolve: {
     alias: {
       '@': resolve(__dirname, 'src')
@@ -20,6 +28,12 @@ export default defineConfig({
       output: {
         globals: {
           vue: 'Vue'
+        },
+        assetFileNames: chunkInfo => {
+          if (chunkInfo.name === 'style.css') {
+            return 'style.css'
+          }
+          return chunkInfo.name
         }
       }
     }

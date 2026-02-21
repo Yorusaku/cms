@@ -9,14 +9,14 @@ import { useEventListener } from '@vueuse/core'
 import SchemaRenderer from '../components/SchemaRenderer.vue'
 import { usePageStore } from '../store/usePageStore'
 import { MESSAGE_TYPE } from '@cms/types'
-import type { IMessagePayload, IPageSchema } from '@cms/types'
+import type { IMessagePayload, IPageSchemaV2 } from '@cms/types'
 
 const pageStore = usePageStore()
 
 useEventListener(window, 'message', (event: MessageEvent) => {
-  const payload = event.data as IMessagePayload<IPageSchema>
+  const payload = event.data as IMessagePayload<IPageSchemaV2>
   if (payload.type === MESSAGE_TYPE.SYNC_SCHEMA) {
-    pageStore.updateSchema(payload.data)
+    pageStore.importPageSchema(payload.data)
   }
 })
 </script>

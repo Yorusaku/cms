@@ -2,13 +2,14 @@ import { defineStore } from 'pinia'
 import { ref, shallowRef } from 'vue'
 import { useRefHistory } from '@vueuse/core'
 import { deepClone } from '@cms/utils'
-import type { IPageSchema, IComponentSchema } from '@cms/types'
+import type { IPageSchemaV2, IComponentSchemaV2 } from '@cms/types'
 
 const generateId = (type: string): string => {
   return `${type}-${Math.random().toString(36).substr(2, 9)}`
 }
 
-const emptyPageSchema: IPageSchema = {
+const emptyPageSchema: IPageSchemaV2 = {
+  version: '2.0.0',
   pageConfig: {
     name: '页面标题',
     shareDesc: '',
@@ -18,17 +19,18 @@ const emptyPageSchema: IPageSchema = {
     backgroundPosition: 'top',
     cover: ''
   },
-  components: []
+  componentMap: {},
+  rootIds: []
 }
 
 export const usePageStore = defineStore('page', () => {
   const setType = ref(1)
   const dialogImageVisible = ref(false)
   const upLoadImgSuccess = shallowRef<((...args: unknown[]) => void) | null>(null)
-  const pageSchema = ref<IPageSchema>(deepClone(emptyPageSchema))
+  const pageSchema = ref<IPageSchemaV2>(deepClone(emptyPageSchema))
   const activeComponentId = ref<string | null>(null)
   const dragActive = ref(false)
-  const dragComponent = shallowRef<Partial<IComponentSchema>>({})
+  const dragComponent = shallowRef<Partial<IComponentSchemaV2>>({})
   const addComponentIndex = ref<number | null>(null)
   const previewHeight = ref('')
   const componentsTopList = ref<number[]>([])
@@ -67,7 +69,7 @@ export const usePageStore = defineStore('page', () => {
     dragActive.value = value
   }
 
-  const setDragComponent = (value: Partial<IComponentSchema>) => {
+  const setDragComponent = (value: Partial<IComponentSchemaV2>) => {
     dragComponent.value = value
   }
 
@@ -95,15 +97,25 @@ export const usePageStore = defineStore('page', () => {
       return
     }
 
-    const component: IComponentSchema = {
+    const component: IComponentSchemaV2 = {
       id: generateId(type),
       type,
       props: deepClone(props),
-      styles: deepClone(styles)
+      styles: deepClone(styles),
+      parentId: null,
+      children: []
     }
 
-    const insertIndex = Math.max(0, Math.min(index, pageSchema.value.components.length))
-    pageSchema.value.components.splice(insertIndex, 0, component)
+    // 将组件添加到 componentMap
+    pageSchema.value.componentMap[component.id] = component
+
+    // 如果是第一个组件，添加到 rootIds
+    if (pageSchema.value.rootIds.length === 0 || index >= pageSchema.value.rootIds.length) {
+      pageSchema.value.rootIds.push(component.id)
+    } else {
+      pageSchema.value.rootIds.splice(index, 0, component.id)
+    }
+
     activeComponentId.value = component.id
     setType.value = 2
     addComponentIndex.value = null
@@ -112,13 +124,12 @@ export const usePageStore = defineStore('page', () => {
 
   const deleteComponent = ({ index }: { index: number | 'all' }) => {
     if (index === 'all') {
-      pageSchema.value.components = []
-    } else if (
-      typeof index === 'number' &&
-      index >= 0 &&
-      index < pageSchema.value.components.length
-    ) {
-      pageSchema.value.components.splice(index, 1)
+      pageSchema.value.componentMap = {}
+      pageSchema.value.rootIds = []
+    } else if (typeof index === 'number' && index >= 0 && index < pageSchema.value.rootIds.length) {
+      const componentId = pageSchema.value.rootIds[index]
+      delete pageSchema.value.componentMap[componentId]
+      pageSchema.value.rootIds.splice(index, 1)
     }
     commit()
   }
@@ -132,7 +143,7 @@ export const usePageStore = defineStore('page', () => {
     props?: Record<string, unknown>
     styles?: Record<string, string>
   }) => {
-    const component = pageSchema.value.components.find(item => item.id === id)
+    const component = pageSchema.value.componentMap[id]
     if (component) {
       if (props) component.props = { ...component.props, ...props }
       if (styles) component.styles = { ...component.styles, ...styles }
@@ -140,7 +151,7 @@ export const usePageStore = defineStore('page', () => {
     }
   }
 
-  const updatePageSchema = ({ data }: { data?: Partial<IPageSchema> }) => {
+  const updatePageSchema = ({ data }: { data?: Partial<IPageSchemaV2> }) => {
     if (data) {
       pageSchema.value = { ...pageSchema.value, ...data }
       commit()
@@ -152,12 +163,12 @@ export const usePageStore = defineStore('page', () => {
     componentsTopList.value = list
   }
 
-  const exportPageSchema = (): IPageSchema => {
+  const exportPageSchema = (): IPageSchemaV2 => {
     return deepClone(pageSchema.value)
   }
 
-  const importPageSchema = (schema: IPageSchema) => {
-    if (!schema || !Array.isArray(schema.components)) {
+  const importPageSchema = (schema: IPageSchemaV2) => {
+    if (!schema || !schema.componentMap || !schema.rootIds) {
       console.warn('importPageSchema: 无效的页面 Schema')
       return
     }

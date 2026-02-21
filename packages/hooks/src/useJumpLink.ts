@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { dateFormat } from '@cms/utils'
+import { dateFormat } from '../../utils/src/index'
 
 /**
  * 链接数据接口

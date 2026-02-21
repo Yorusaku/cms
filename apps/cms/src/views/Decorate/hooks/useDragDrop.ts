@@ -25,7 +25,8 @@ export function useDragDrop(): UseDragDropReturn {
 
   // 获取当前已添加的组件数量
   const getComponentCount = (type: string): number => {
-    return pageStore.pageSchema.components.filter((c: any) => c.type === type).length
+    return Object.values(pageStore.pageSchema.componentMap)
+      .filter((c: any) => c.type === type).length
   }
 
   // 检查组件是否可以添加
@@ -80,7 +81,7 @@ export function useDragDrop(): UseDragDropReturn {
 
     const dragComponent = pageStore.dragComponent
     if (dragComponent && dragComponent.type) {
-      const index = pageStore.pageSchema.components.length
+      const index = pageStore.pageSchema.rootIds.length
       // 注意：这里需要从外部传入默认配置或使用全局配置
       const defaultProps = {} // 将在组件中处理
 

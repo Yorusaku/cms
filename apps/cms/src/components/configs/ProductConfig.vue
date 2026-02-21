@@ -203,7 +203,7 @@
 import { ref, watch } from 'vue'
 import { Plus, Delete, Rank } from '@element-plus/icons-vue'
 import { deepClone, debounce, createRandomId } from '@cms/utils'
-import ImageUploader from '../../ImageUploader.vue'
+import ImageUploader from '../ImageUploader.vue'
 import draggable from 'vuedraggable'
 
 // 商品项类型定义

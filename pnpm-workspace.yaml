@@ -1,3 +1,76 @@
 packages:
   - 'apps/*'
   - 'packages/*'
+
+catalog:
+  # Vue 生态
+  vue: ^3.3.4
+  vue-router: ^4.2.4
+  pinia: ^2.1.6
+  '@vueuse/core': ^14.2.1
+
+  # UI 组件库
+  element-plus: ^2.3.14
+  vant: ^4.7.3
+  '@element-plus/icons-vue': ^2.3.2
+
+  # 构建工具
+  vite: ^4.4.9
+  typescript: ^5.2.2
+  vue-tsc: ^2.0.0
+  '@vitejs/plugin-vue': ^4.3.4
+
+  # Tailwind CSS
+  tailwindcss: ^4.1.18
+  '@tailwindcss/postcss': ^4.1.18
+  postcss: ^8.5.6
+  autoprefixer: ^10.4.24
+
+  # ESLint
+  eslint: ^8.49.0
+  '@typescript-eslint/eslint-plugin': ^6.7.0
+  '@typescript-eslint/parser': ^6.7.0
+  eslint-plugin-vue: ^9.17.0
+  eslint-config-prettier: ^10.1.8
+
+  # Prettier
+  prettier: ^3.0.0
+
+  # 测试
+  vitest: ^0.34.0
+  '@vitest/ui': ^0.34.0
+  '@vue/test-utils': ^2.4.0
+  '@testing-library/vue': ^8.0.0
+  jsdom: ^22.0.0
+
+  # 其他工具
+  axios: ^1.6.0
+  nprogress: ^0.2.0
+  '@types/nprogress': ^0.2.3
+
+  # 富文本编辑器
+  '@tiptap/starter-kit': ^3.19.0
+  '@tiptap/vue-3': ^3.19.0
+
+  # 拖拽
+  vue-draggable-plus: ^0.6.1
+
+  # 二维码
+  qrcode.vue: ^3.8.0
+
+  # 自动导入
+  unplugin-auto-import: ^21.0.0
+  unplugin-vue-components: ^31.0.0
+
+  # Turbo
+  turbo: ^1.10.0
+
+  # Husky & lint-staged
+  husky: ^8.0.0
+  lint-staged: ^14.0.0
+
+  # 工具库
+  rimraf: ^5.0.0
+
+  # Vite 插件
+  vite-plugin-dts: ^3.6.0

@@ -3,25 +3,43 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "sideEffects": false,
   "scripts": {
     "build": "tsc",
+    "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts --fix"
+    "lint": "eslint src --ext .ts --fix",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rimraf dist"
   },
   "dependencies": {
-    "@cms/utils": "workspace:*",
-    "@cms/types": "workspace:*"
+    "@cms/types": "workspace:*",
+    "@cms/utils": "workspace:*"
+  },
+  "devDependencies": {
+    "@cms/eslint-config": "workspace:*",
+    "@cms/test-utils": "workspace:*",
+    "@testing-library/vue": "catalog:",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "@vue/test-utils": "catalog:",
+    "eslint": "catalog:",
+    "jsdom": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:",
+    "vue": "catalog:"
   },
   "peerDependencies": {
     "vue": "^3.3.4"
-  },
-  "devDependencies": {
-    "vue": "^3.3.4",
-    "typescript": "^5.2.2",
-    "eslint": "^8.49.0",
-    "@typescript-eslint/eslint-plugin": "^6.7.0",
-    "@typescript-eslint/parser": "^6.7.0"
   }
 }

@@ -1,50 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { IPageSchema } from '@cms/types'
-import { 
-  NoticeBlock,
-  CarouselBlock,
-  ImageNavBlock,
-  ProductBlock,
-  RichTextBlock,
-  SliderBlock,
-  DialogBlock,
-  AssistLineBlock,
-  FloatLayerBlock,
-  OnlineServiceBlock,
-  CubeSelectionBlock
-} from './index'
+import type { IPageSchemaV2 } from '@cms/types'
+import RenderNode from './RenderNode.vue'
 
 interface Props {
-  pageSchema: IPageSchema
+  pageSchema: IPageSchemaV2
 }
 
 const props = defineProps<Props>()
 
-// 解析组件类型到对应组件的映射
-const componentMap = {
-  Notice: NoticeBlock,
-  Carousel: CarouselBlock,
-  ImageNav: ImageNavBlock,
-  Product: ProductBlock,
-  RichText: RichTextBlock,
-  Slider: SliderBlock,
-  Dialog: DialogBlock,
-  AssistLine: AssistLineBlock,
-  FloatLayer: FloatLayerBlock,
-  OnlineService: OnlineServiceBlock,
-  CubeSelection: CubeSelectionBlock
-}
-
-// 根据组件类型解析对应的组件
-const resolveComponent = (type: string) => {
-  const Component = componentMap[type as keyof typeof componentMap]
-  if (!Component) {
-    console.warn(`未找到组件类型: ${type}`)
-    return null
-  }
-  return Component
-}
+// V2架构下不再需要组件映射，由RenderNode处理
 
 // 计算页面背景样式
 const pageBackgroundStyle = computed(() => {
@@ -81,18 +46,17 @@ const pageBackgroundStyle = computed(() => {
   >
     <!-- 渲染页面组件 -->
     <div class="page-components">
-      <template v-for="component in pageSchema.components" :key="component.id">
-        <component
-          :is="resolveComponent(component.type)"
-          v-bind="component.props"
-          :styles="component.styles"
+      <template v-for="nodeId in pageSchema.rootIds" :key="nodeId">
+        <RenderNode 
+          :node-id="nodeId" 
+          :component-map="pageSchema.componentMap" 
         />
       </template>
     </div>
     
     <!-- 空状态提示 -->
     <div 
-      v-if="pageSchema.components.length === 0" 
+      v-if="pageSchema.rootIds.length === 0" 
       class="empty-state flex items-center justify-center min-h-screen"
     >
       <div class="text-center text-gray-500">

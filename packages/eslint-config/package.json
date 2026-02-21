@@ -1,0 +1,22 @@
+{
+  "name": "@cms/eslint-config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./index.cjs",
+  "exports": {
+    ".": "./index.cjs",
+    "./vue": "./vue.cjs",
+    "./typescript": "./typescript.cjs"
+  },
+  "dependencies": {
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "eslint": "catalog:",
+    "eslint-config-prettier": "catalog:",
+    "eslint-plugin-vue": "catalog:"
+  },
+  "peerDependencies": {
+    "typescript": "catalog:"
+  }
+}

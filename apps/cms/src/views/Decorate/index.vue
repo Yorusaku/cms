@@ -17,7 +17,7 @@ import { ElMessage } from 'element-plus'
 import { usePageStore } from '@/store/usePageStore'
 import { MATERIAL_CONFIG } from './config/material.config'
 import { getCmsPageById } from '@/api/activity'
-import { adaptPageData } from '@/utils/data-adapter'
+import { migrateSchema } from '@cms/utils'
 import TopHeader from './components/TopHeader.vue'
 import LeftMaterial from './components/LeftMaterial.vue'
 import CenterCanvas from './components/CenterCanvas.vue'
@@ -53,11 +53,11 @@ const initData = async () => {
       const pageData = response.data
       console.log('📄 原始页面数据:', pageData)
 
-      const schema = adaptPageData(pageData)
+      const schema = migrateSchema(pageData)
       console.log('🔧 转换后的Schema:', schema)
 
       // 确保组件类型大小写正确
-      schema.components.forEach(comp => {
+      Object.values(schema.componentMap).forEach(comp => {
         console.log(`组件类型: ${comp.type} -> ${comp.type}`)
       })
 

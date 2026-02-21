@@ -14,18 +14,17 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "noFallthroughCasesInSwitch": true
   },
   "include": [],
   "references": [
     { "path": "./apps/cms" },
     { "path": "./apps/crs" },
+    { "path": "./packages/types" },
     { "path": "./packages/utils" },
     { "path": "./packages/hooks" },
     { "path": "./packages/ui" },
-    { "path": "./packages/types" }
+    { "path": "./packages/eslint-config" },
+    { "path": "./packages/prettier-config" }
   ]
 }

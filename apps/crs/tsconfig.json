@@ -17,15 +17,20 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@/*": ["./src/*"],
-      "@cms/*": ["../../packages/*/src"]
+      "@/*": ["./src/*"]
     }
   },
   "include": [
     "src/**/*.ts",
     "src/**/*.d.ts",
     "src/**/*.tsx",
-    "src/**/*.vue",
-    "../../packages/**/*.ts"
+    "src/**/*.vue"
+  ],
+  "references": [
+    { "path": "../../packages/types" },
+    { "path": "../../packages/utils" },
+    { "path": "../../packages/hooks" },
+    { "path": "../../packages/ui" },
+    { "path": "../../packages/test-utils" }
   ]
 }
