@@ -37,103 +37,100 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { ElMessage, ElUpload } from 'element-plus'
-import { Plus, Loading } from '@element-plus/icons-vue'
+import { ref, watch, computed } from "vue";
+import { ElMessage, ElUpload } from "element-plus";
+import { Plus, Loading } from "@element-plus/icons-vue";
 
-const props = withDefaults(
-  defineProps<{
-    imgUrl?: string
-    addPlaceHolder?: string
-    uploadFile?: boolean
-  }>(),
-  {
-    imgUrl: '',
-    addPlaceHolder: '添加图片',
-    uploadFile: true
-  }
-)
-
-const emit = defineEmits<{
-  (e: 'update:imgUrl', value: string): void
-  (e: 'editImg'): void
+const {
+  imgUrl: _imgUrl = "",
+  addPlaceHolder = "添加图片",
+  uploadFile: _uploadFile = true
+} = defineProps<{
+  imgUrl?: string;
+  addPlaceHolder?: string;
+  uploadFile?: boolean;
 }>()
 
-const url = ref(props.imgUrl)
-const uploading = ref(false)
-const uploadRef = ref<InstanceType<typeof ElUpload>>()
+const emit = defineEmits<{
+  (e: "update:imgUrl", value: string): void;
+  (e: "editImg"): void;
+}>();
+
+const url = ref(props.imgUrl);
+const uploading = ref(false);
+const uploadRef = ref<InstanceType<typeof ElUpload>>();
 
 const actionUrl = computed(() => {
-  return import.meta.env.VITE_API_BASE_URL + '/atlas-cms/upload'
-})
+  return import.meta.env.VITE_API_BASE_URL + "/atlas-cms/upload";
+});
 
 const headers = computed(() => {
   try {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem("token");
     return {
-      'X-token': token || ''
-    }
+      "X-token": token || "",
+    };
   } catch {
     return {
-      'X-token': ''
-    }
+      "X-token": "",
+    };
   }
-})
+});
 
 watch(
   () => props.imgUrl,
-  newVal => {
-    url.value = newVal
+  (newVal) => {
+    url.value = newVal;
   },
-  { immediate: true }
-)
+  { immediate: true },
+);
 
 const editImg = () => {
   if (props.uploadFile && uploadRef.value) {
-    const uploadEl = uploadRef.value.$el
+    const uploadEl = uploadRef.value.$el;
     if (uploadEl) {
-      const button = uploadEl.querySelector('button')
+      const button = uploadEl.querySelector("button");
       if (button) {
-        button.click()
-        return
+        button.click();
+        return;
       }
     }
   }
-  emit('editImg')
-}
+  emit("editImg");
+};
 
 const beforeAvatarUpload = (file: File) => {
-  const isJPG = file.type === 'image/jpeg' || file.type === 'image/png'
-  const isLt2M = file.size / 1024 / 1024 < 2
+  const isJPG = file.type === "image/jpeg" || file.type === "image/png";
+  const isLt2M = file.size / 1024 / 1024 < 2;
 
   if (!isJPG) {
-    ElMessage.error('上传图片只能是 JPG/PNG 格式!')
-    return false
+    ElMessage.error("上传图片只能是 JPG/PNG 格式!");
+    return false;
   }
   if (!isLt2M) {
-    ElMessage.error('上传图片大小不能超过 2MB!')
-    return false
+    ElMessage.error("上传图片大小不能超过 2MB!");
+    return false;
   }
 
-  uploading.value = true
-  return true
-}
+  uploading.value = true;
+  return true;
+};
 
 interface UploadResponse {
-  data?: string
+  data?: string;
 }
 
 const doSuccess = (response: UploadResponse) => {
-  uploading.value = false
+  uploading.value = false;
   if (response && response.data) {
-    emit('update:imgUrl', response.data)
+    emit("update:imgUrl", response.data);
   }
-}
+};
 
 const doError = () => {
-  ElMessage.error('上传失败，请稍后重试')
-  uploading.value = false
-}
+  ElMessage.error("上传失败，请稍后重试");
+  uploading.value = false;
+};
 </script>
 
 <style scoped>

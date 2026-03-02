@@ -8,7 +8,7 @@
       zIndex: zIndex,
       right: `${right}px`,
       minHeight: '56px',
-      cursor: 'pointer'
+      cursor: 'pointer',
     }"
   >
     <div>
@@ -20,7 +20,7 @@
           zIndex: zIndex,
           cursor: 'pointer',
           right: `${right}px`,
-          transition: 'right 0.5s'
+          transition: 'right 0.5s',
         }"
         :width="width"
         :src="imageUrl || defaultImage"
@@ -33,16 +33,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from "vue";
 
 export interface IFloatLayerProps {
-  width?: number
-  bottom?: number
-  zIndex?: number
-  right?: number
-  imageUrl?: string
-  defaultImage?: string
-  hideByPageScroll?: boolean
+  width?: number;
+  bottom?: number;
+  zIndex?: number;
+  right?: number;
+  imageUrl?: string;
+  defaultImage?: string;
+  hideByPageScroll?: boolean;
 }
 
 const {
@@ -50,35 +50,35 @@ const {
   bottom = 100,
   zIndex = 11,
   right = 24,
-  imageUrl = '',
-  defaultImage = 'https://via.placeholder.com/56',
-  hideByPageScroll = false
-} = defineProps<IFloatLayerProps>()
+  imageUrl = "",
+  defaultImage = "https://via.placeholder.com/56",
+  hideByPageScroll = false,
+} = defineProps<IFloatLayerProps>();
 
 const emit = defineEmits<{
-  click: []
-}>()
+  click: [];
+}>();
 
-const visible = ref(true)
+const visible = ref(true);
 
 const handleClick = () => {
-  emit('click')
-}
+  emit("click");
+};
 
 onMounted(() => {
-  if (hideByPageScroll && !document.querySelector('.draggable')) {
-    window.addEventListener('scroll', scrollHandler)
+  if (hideByPageScroll && !document.querySelector(".draggable")) {
+    window.addEventListener("scroll", scrollHandler);
   }
-})
+});
 
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', scrollHandler)
-})
+  window.removeEventListener("scroll", scrollHandler);
+});
 
 const scrollHandler = () => {
-  visible.value = false
+  visible.value = false;
   setTimeout(() => {
-    visible.value = true
-  }, 1000)
-}
+    visible.value = true;
+  }, 1000);
+};
 </script>

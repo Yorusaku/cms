@@ -1,11 +1,19 @@
 <template>
   <div class="change-set-type">
     <div class="set-type-tabs">
-      <div class="set-type-tab" :class="{ active: modelValue === 1 }" @click="handleClick(1)">
+      <div
+        class="set-type-tab"
+        :class="{ active: modelValue === 1 }"
+        @click="handleClick(1)"
+      >
         <img src="@/assets/img/layout/set-type-page.png" />
         <span>页面设置</span>
       </div>
-      <div class="set-type-tab" :class="{ active: modelValue === 2 }" @click="handleClick(2)">
+      <div
+        class="set-type-tab"
+        :class="{ active: modelValue === 2 }"
+        @click="handleClick(2)"
+      >
         <img src="@/assets/img/layout/set-type-component.png" />
         <span>组件管理</span>
       </div>
@@ -14,22 +22,17 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(
-  defineProps<{
-    modelValue?: number
-  }>(),
-  {
-    modelValue: 1
-  }
-)
+const { modelValue = 1 } = defineProps<{
+  modelValue?: number;
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: number): void
-}>()
+  (e: "update:modelValue", value: number): void;
+}>();
 
 const handleClick = (value: number) => {
-  emit('update:modelValue', value)
-}
+  emit("update:modelValue", value);
+};
 </script>
 
 <style scoped>

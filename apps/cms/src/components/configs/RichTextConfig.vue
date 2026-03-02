@@ -2,7 +2,9 @@
   <div class="richtext-config space-y-6 p-4">
     <!-- 内容配置 -->
     <div class="config-section">
-      <h3 class="text-base font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+      <h3
+        class="text-base font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200"
+      >
         内容配置
       </h3>
       <el-form label-position="top" size="small" class="space-y-4">
@@ -23,15 +25,20 @@
 
     <!-- 样式配置 -->
     <div class="config-section">
-      <h3 class="text-base font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+      <h3
+        class="text-base font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200"
+      >
         样式配置
       </h3>
       <el-form label-position="top" size="small" class="space-y-4">
         <el-form-item label="背景颜色" class="mb-0">
           <div class="flex items-center gap-3">
-            <el-color-picker v-model="draftProps.backgroundColor" @change="handleUpdate" />
+            <el-color-picker
+              v-model="draftProps.backgroundColor"
+              @change="handleUpdate"
+            />
             <span class="text-sm text-gray-500">
-              {{ draftProps.backgroundColor || '未设置' }}
+              {{ draftProps.backgroundColor || "未设置" }}
             </span>
           </div>
         </el-form-item>
@@ -75,14 +82,18 @@
               <template #append>左</template>
             </el-input-number>
           </div>
-          <div class="text-xs text-gray-500 mt-2">设置内容区域的内边距（像素）</div>
+          <div class="text-xs text-gray-500 mt-2">
+            设置内容区域的内边距（像素）
+          </div>
         </el-form-item>
       </el-form>
     </div>
 
     <!-- 预览区域 -->
     <div class="config-section">
-      <h3 class="text-base font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+      <h3
+        class="text-base font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200"
+      >
         内容预览
       </h3>
       <div
@@ -90,100 +101,113 @@
         :style="{
           backgroundColor: draftProps.backgroundColor,
           padding:
-            typeof draftProps.padding === 'number' ? `${draftProps.padding}px` : draftProps.padding
+            typeof draftProps.padding === 'number'
+              ? `${draftProps.padding}px`
+              : draftProps.padding,
         }"
       >
-        <div class="ql-editor" v-html="draftProps.content || defaultContent"></div>
+        <div
+          class="ql-editor"
+          v-html="draftProps.content || defaultContent"
+        ></div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
-import { deepClone, debounce } from '@cms/utils'
+import { ref, reactive, watch } from "vue";
+import { deepClone, debounce } from "@cms/utils";
 
 // Props定义
 interface Props {
-  componentProps: any
+  componentProps: any;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 const emit = defineEmits<{
-  (e: 'update', props: any): void
-}>()
+  (e: "update", props: any): void;
+}>();
 
 // 默认内容
 const defaultContent =
-  '<p>你可以对文字进行<strong>加粗</strong>、<em>斜体</em>、<span style="text-decoration: underline;">下划线</span>、<span style="text-decoration: line-through;">删除线</span>、文字<span style="color: rgb(0, 176, 240);">颜色</span>、<span style="background-color: rgb(255, 192, 0); color: rgb(255, 255, 255);">背景色</span>、以及字号<span style="font-size: 20px;">大</span><span style="font-size: 14px;">小</span>等简单排版操作。</p>'
+  '<p>你可以对文字进行<strong>加粗</strong>、<em>斜体</em>、<span style="text-decoration: underline;">下划线</span>、<span style="text-decoration: line-through;">删除线</span>、文字<span style="color: rgb(0, 176, 240);">颜色</span>、<span style="background-color: rgb(255, 192, 0); color: rgb(255, 255, 255);">背景色</span>、以及字号<span style="font-size: 20px;">大</span><span style="font-size: 14px;">小</span>等简单排版操作。</p>';
 
 // 草稿状态管理
-const draftProps = reactive<any>(deepClone(props.componentProps))
-const isSyncing = ref(false)
+const draftProps = reactive<any>(deepClone(props.componentProps));
+const isSyncing = ref(false);
 
 // 内边距计算属性
-const paddingTop = ref(10)
-const paddingRight = ref(10)
-const paddingBottom = ref(0)
-const paddingLeft = ref(10)
+const paddingTop = ref(10);
+const paddingRight = ref(10);
+const paddingBottom = ref(0);
+const paddingLeft = ref(10);
 
 // 解析padding值
 const parsePadding = () => {
-  const padding = draftProps.padding || '10px 10px 0'
-  if (typeof padding === 'number') {
-    paddingTop.value = paddingRight.value = paddingBottom.value = paddingLeft.value = padding
+  const padding = draftProps.padding || "10px 10px 0";
+  if (typeof padding === "number") {
+    paddingTop.value =
+      paddingRight.value =
+      paddingBottom.value =
+      paddingLeft.value =
+        padding;
   } else {
-    const values = padding.split(' ').map((v: string) => parseInt(v) || 0)
+    const values = padding.split(" ").map((v: string) => parseInt(v) || 0);
     if (values.length === 1) {
-      paddingTop.value = paddingRight.value = paddingBottom.value = paddingLeft.value = values[0]
+      paddingTop.value =
+        paddingRight.value =
+        paddingBottom.value =
+        paddingLeft.value =
+          values[0];
     } else if (values.length === 2) {
-      paddingTop.value = paddingBottom.value = values[0]
-      paddingRight.value = paddingLeft.value = values[1]
+      paddingTop.value = paddingBottom.value = values[0];
+      paddingRight.value = paddingLeft.value = values[1];
     } else if (values.length === 3) {
-      paddingTop.value = values[0]
-      paddingRight.value = paddingLeft.value = values[1]
-      paddingBottom.value = values[2]
+      paddingTop.value = values[0];
+      paddingRight.value = paddingLeft.value = values[1];
+      paddingBottom.value = values[2];
     } else if (values.length === 4) {
-      paddingTop.value = values[0]
-      paddingRight.value = values[1]
-      paddingBottom.value = values[2]
-      paddingLeft.value = values[3]
+      paddingTop.value = values[0];
+      paddingRight.value = values[1];
+      paddingBottom.value = values[2];
+      paddingLeft.value = values[3];
     }
   }
-}
+};
 
 // 防抖更新函数
 const debouncedUpdate = debounce(() => {
-  emit('update', deepClone(draftProps))
-}, 300)
+  emit("update", deepClone(draftProps));
+}, 300);
 
 // 监听外部props变化
 watch(
   () => props.componentProps,
-  newProps => {
+  (newProps) => {
     if (!isSyncing.value) {
-      isSyncing.value = true
+      isSyncing.value = true;
       try {
-        Object.assign(draftProps, deepClone(newProps))
-        parsePadding()
+        Object.assign(draftProps, deepClone(newProps));
+        parsePadding();
       } finally {
-        isSyncing.value = false
+        isSyncing.value = false;
       }
     }
   },
-  { deep: true, immediate: true }
-)
+  { deep: true, immediate: true },
+);
 
 // 更新触发器
 const handleUpdate = () => {
-  debouncedUpdate()
-}
+  debouncedUpdate();
+};
 
 // 内边距更新处理
 const handlePaddingUpdate = () => {
-  draftProps.padding = `${paddingTop.value}px ${paddingRight.value}px ${paddingBottom.value}px ${paddingLeft.value}px`
-  debouncedUpdate()
-}
+  draftProps.padding = `${paddingTop.value}px ${paddingRight.value}px ${paddingBottom.value}px ${paddingLeft.value}px`;
+  debouncedUpdate();
+};
 </script>
 
 <style scoped>

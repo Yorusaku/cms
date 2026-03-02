@@ -2,7 +2,9 @@
   <div class="slider-config space-y-6 p-4">
     <!-- 滑块图片列表 -->
     <div class="config-section">
-      <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-200">
+      <div
+        class="flex justify-between items-center mb-4 pb-2 border-b border-gray-200"
+      >
         <h3 class="text-base font-semibold text-gray-800">滑块图片</h3>
         <el-button type="primary" size="small" @click="addItem">
           <el-icon><Plus /></el-icon>
@@ -11,7 +13,10 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-if="draftItems.length === 0" class="text-center py-8 text-gray-500">
+      <div
+        v-if="draftItems.length === 0"
+        class="text-center py-8 text-gray-500"
+      >
         <div class="text-4xl mb-2">🖼️</div>
         <p class="mb-1">暂无滑块图片</p>
         <p class="text-sm">点击上方按钮添加第一张图片</p>
@@ -26,7 +31,12 @@
         >
           <div class="flex justify-between items-start mb-3">
             <h4 class="font-medium text-gray-700">图片 #{{ index + 1 }}</h4>
-            <el-button type="danger" size="small" circle @click="removeItem(index)">
+            <el-button
+              type="danger"
+              size="small"
+              circle
+              @click="removeItem(index)"
+            >
               <el-icon><Delete /></el-icon>
             </el-button>
           </div>
@@ -60,15 +70,20 @@
 
     <!-- 样式配置 -->
     <div class="config-section">
-      <h3 class="text-base font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+      <h3
+        class="text-base font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200"
+      >
         样式配置
       </h3>
       <el-form label-position="top" size="small" class="space-y-4">
         <el-form-item label="背景颜色" class="mb-0">
           <div class="flex items-center gap-3">
-            <el-color-picker v-model="localBackgroundColor" @change="handleStyleUpdate" />
+            <el-color-picker
+              v-model="localBackgroundColor"
+              @change="handleStyleUpdate"
+            />
             <span class="text-sm text-gray-500">
-              {{ localBackgroundColor || '未设置' }}
+              {{ localBackgroundColor || "未设置" }}
             </span>
           </div>
         </el-form-item>
@@ -182,7 +197,9 @@
             clearable
             @change="handleStyleUpdate"
           />
-          <div class="text-xs text-gray-500 mt-1">当滑块项未设置图片时显示的默认图片</div>
+          <div class="text-xs text-gray-500 mt-1">
+            当滑块项未设置图片时显示的默认图片
+          </div>
         </el-form-item>
       </el-form>
     </div>
@@ -190,74 +207,75 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { Plus, Delete } from '@element-plus/icons-vue'
-import { deepClone, debounce, createRandomId } from '@cms/utils'
+import { ref, watch } from "vue";
+import { Plus, Delete } from "@element-plus/icons-vue";
+import { deepClone, debounce, createRandomId } from "@cms/utils";
 
 // 滑块项类型定义
 interface SliderItem {
-  id: string
-  imageUrl?: string
-  link?: string
+  id: string;
+  imageUrl?: string;
+  link?: string;
 }
 
 // Props定义
 interface Props {
-  componentProps: any
+  componentProps: any;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 const emit = defineEmits<{
-  (e: 'update', props: any): void
-}>()
+  (e: "update", props: any): void;
+}>();
 
 // 草稿状态管理
-const draftItems = ref<SliderItem[]>([])
-const isSyncing = ref(false)
+const draftItems = ref<SliderItem[]>([]);
+const isSyncing = ref(false);
 
 // 样式配置的本地状态
-const localBackgroundColor = ref<string>('#ffffff')
-const localPaddingTop = ref<number>(15)
-const localPaddingRight = ref<number>(15)
-const localPaddingBottom = ref<number>(15)
-const localPaddingLeft = ref<number>(15)
-const localImageMargin = ref<number>(15)
-const localBorderRadius = ref<number>(0)
-const localImageWidth = ref<number>(100)
-const localImageHeight = ref<number>(80)
-const localDefaultImage = ref<string>('https://via.placeholder.com/100x80')
+const localBackgroundColor = ref<string>("#ffffff");
+const localPaddingTop = ref<number>(15);
+const localPaddingRight = ref<number>(15);
+const localPaddingBottom = ref<number>(15);
+const localPaddingLeft = ref<number>(15);
+const localImageMargin = ref<number>(15);
+const localBorderRadius = ref<number>(0);
+const localImageWidth = ref<number>(100);
+const localImageHeight = ref<number>(80);
+const localDefaultImage = ref<string>("https://via.placeholder.com/100x80");
 
 // 同步items数据从props
 const syncItemsFromProps = () => {
-  const list = props.componentProps.list || []
+  const list = props.componentProps.list || [];
   draftItems.value = list.map((item: any) => ({
     id: createRandomId(),
-    imageUrl: item.imageUrl || '',
-    link: item.link || ''
-  }))
+    imageUrl: item.imageUrl || "",
+    link: item.link || "",
+  }));
 
   // 同步样式配置
-  localBackgroundColor.value = props.componentProps.backgroundColor || '#ffffff'
-  const padding = props.componentProps.padding || [15, 15]
-  localPaddingTop.value = Array.isArray(padding) ? padding[0] : 15
-  localPaddingRight.value = Array.isArray(padding) ? padding[1] : 15
-  localPaddingBottom.value = Array.isArray(padding) ? padding[0] : 15
-  localPaddingLeft.value = Array.isArray(padding) ? padding[1] : 15
-  localImageMargin.value = props.componentProps.imageMargin ?? 15
-  localBorderRadius.value = props.componentProps.borderRadius ?? 0
-  localImageWidth.value = props.componentProps.imageWidth ?? 100
-  localImageHeight.value = props.componentProps.imageHeight ?? 80
+  localBackgroundColor.value =
+    props.componentProps.backgroundColor || "#ffffff";
+  const padding = props.componentProps.padding || [15, 15];
+  localPaddingTop.value = Array.isArray(padding) ? padding[0] : 15;
+  localPaddingRight.value = Array.isArray(padding) ? padding[1] : 15;
+  localPaddingBottom.value = Array.isArray(padding) ? padding[0] : 15;
+  localPaddingLeft.value = Array.isArray(padding) ? padding[1] : 15;
+  localImageMargin.value = props.componentProps.imageMargin ?? 15;
+  localBorderRadius.value = props.componentProps.borderRadius ?? 0;
+  localImageWidth.value = props.componentProps.imageWidth ?? 100;
+  localImageHeight.value = props.componentProps.imageHeight ?? 80;
   localDefaultImage.value =
-    props.componentProps.defaultImage || 'https://via.placeholder.com/100x80'
-}
+    props.componentProps.defaultImage || "https://via.placeholder.com/100x80";
+};
 
 // 防抖更新函数
 const triggerUpdate = debounce(() => {
   // 构造滑块数据
-  const list: any[] = draftItems.value.map(item => ({
+  const list: any[] = draftItems.value.map((item) => ({
     imageUrl: item.imageUrl,
-    link: item.link
-  }))
+    link: item.link,
+  }));
 
   const updatedProps: any = {
     ...deepClone(props.componentProps),
@@ -268,48 +286,48 @@ const triggerUpdate = debounce(() => {
     borderRadius: localBorderRadius.value,
     imageWidth: localImageWidth.value,
     imageHeight: localImageHeight.value,
-    defaultImage: localDefaultImage.value
-  }
+    defaultImage: localDefaultImage.value,
+  };
 
-  emit('update', updatedProps)
-}, 300)
+  emit("update", updatedProps);
+}, 300);
 
 // 数组操作方法
 const addItem = () => {
   const newItem: SliderItem = {
     id: createRandomId(),
-    imageUrl: '',
-    link: ''
-  }
-  draftItems.value.push(newItem)
-  triggerUpdate()
-}
+    imageUrl: "",
+    link: "",
+  };
+  draftItems.value.push(newItem);
+  triggerUpdate();
+};
 
 const removeItem = (index: number) => {
-  draftItems.value.splice(index, 1)
-  triggerUpdate()
-}
+  draftItems.value.splice(index, 1);
+  triggerUpdate();
+};
 
 // 样式更新处理
 const handleStyleUpdate = () => {
-  triggerUpdate()
-}
+  triggerUpdate();
+};
 
 // 监听外部props变化
 watch(
   () => props.componentProps,
-  _newProps => {
+  (_newProps) => {
     if (!isSyncing.value) {
-      isSyncing.value = true
+      isSyncing.value = true;
       try {
-        syncItemsFromProps()
+        syncItemsFromProps();
       } finally {
-        isSyncing.value = false
+        isSyncing.value = false;
       }
     }
   },
-  { deep: true, immediate: true }
-)
+  { deep: true, immediate: true },
+);
 </script>
 
 <style scoped>

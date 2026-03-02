@@ -25,52 +25,52 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed } from "vue";
 
 export interface ISliderItem {
-  imageUrl?: string
-  link?: string
+  imageUrl?: string;
+  link?: string;
 }
 
 export interface ISliderProps {
-  list?: ISliderItem[]
-  backgroundColor?: string
-  padding?: number[]
-  imageMargin?: number
-  imageWidth?: number
-  imageHeight?: number
-  borderRadius?: number
-  defaultImage?: string
+  list?: ISliderItem[];
+  backgroundColor?: string;
+  padding?: number[];
+  imageMargin?: number;
+  imageWidth?: number;
+  imageHeight?: number;
+  borderRadius?: number;
+  defaultImage?: string;
 }
 
 const {
   list = [],
-  backgroundColor = '#ffffff',
+  backgroundColor = "#ffffff",
   padding = [15, 15],
   imageMargin = 15,
   imageWidth = 100,
   imageHeight = 80,
   borderRadius = 0,
-  defaultImage = 'https://via.placeholder.com/100x80'
-} = defineProps<ISliderProps>()
+  defaultImage = "https://via.placeholder.com/100x80",
+} = defineProps<ISliderProps>();
 
 const emit = defineEmits<{
-  click: [item: ISliderItem, index: number]
-}>()
+  click: [item: ISliderItem, index: number];
+}>();
 
 const containerStyle = computed(() => ({
-  padding: `${padding[0]}px ${padding[1]}px`
-}))
+  padding: `${padding[0]}px ${padding[1]}px`,
+}));
 
 const imageStyle = computed(() => ({
   width: `${imageWidth}px`,
   height: `${imageHeight}px`,
-  marginLeft: imageMargin > 0 ? `${imageMargin}px` : '0'
-}))
+  marginLeft: imageMargin > 0 ? `${imageMargin}px` : "0",
+}));
 
 const handleClick = (item: ISliderItem, index: number) => {
-  emit('click', item, index)
-}
+  emit("click", item, index);
+};
 </script>
 
 <style>

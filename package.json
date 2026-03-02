@@ -2,6 +2,7 @@
   "name": "cms-monorepo",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "CMS 移动端配置项目 Monorepo",
   "scripts": {
     "dev": "turbo run dev",

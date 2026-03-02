@@ -20,7 +20,11 @@
     >
       <el-tabs v-model="activeName">
         <el-tab-pane label="外部链接" name="outer">
-          <el-input v-model="outerUrl" placeholder="请输入外部链接地址" clearable />
+          <el-input
+            v-model="outerUrl"
+            placeholder="请输入外部链接地址"
+            clearable
+          />
         </el-tab-pane>
         <el-tab-pane label="无链接" name="none">
           <p class="no-link-tip">不设置任何跳转</p>
@@ -37,91 +41,83 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { Close } from '@element-plus/icons-vue'
+import { ref, computed } from "vue";
+import { Close } from "@element-plus/icons-vue";
 
 interface LinkObj {
-  clickType: number
-  data: any
+  clickType: number;
+  data: any;
 }
 
-const props = withDefaults(
-  defineProps<{
-    linkObj?: LinkObj
-  }>(),
-  {
-    linkObj: () => ({
-      clickType: 0,
-      data: null
-    })
-  }
-)
-
-const emit = defineEmits<{
-  (e: 'update:linkObj', value: LinkObj): void
+const props = defineProps<{
+  linkObj?: LinkObj;
 }>()
 
-const dialogVisible = ref(false)
-const activeName = ref('none')
-const outerUrl = ref('')
+const emit = defineEmits<{
+  (e: "update:linkObj", value: LinkObj): void;
+}>();
+
+const dialogVisible = ref(false);
+const activeName = ref("none");
+const outerUrl = ref("");
 
 const linkText = computed(() => {
   if (!props.linkObj) {
-    return ''
+    return "";
   }
-  const { clickType, data } = props.linkObj
-  const notEmptyObj = data && Object.keys(data).length > 0
+  const { clickType, data } = props.linkObj;
+  const notEmptyObj = data && Object.keys(data).length > 0;
 
   if (clickType && notEmptyObj) {
     if (clickType === 1) {
-      return `外部链接 | ${data.url || ''}`
+      return `外部链接 | ${data.url || ""}`;
     }
-    return '无链接'
+    return "无链接";
   }
-  return ''
-})
+  return "";
+});
 
 const openDialog = () => {
-  dialogVisible.value = true
+  dialogVisible.value = true;
 
   if (props.linkObj?.clickType === 1) {
-    activeName.value = 'outer'
-    outerUrl.value = props.linkObj.data?.url || ''
+    activeName.value = "outer";
+    outerUrl.value = props.linkObj.data?.url || "";
   } else {
-    activeName.value = 'none'
-    outerUrl.value = ''
+    activeName.value = "none";
+    outerUrl.value = "";
   }
-}
+};
 
 const onclose = () => {
-  dialogVisible.value = false
-}
+  dialogVisible.value = false;
+};
 
 const onConfirm = () => {
-  let result: LinkObj
+  let result: LinkObj;
 
-  if (activeName.value === 'outer' && outerUrl.value) {
+  if (activeName.value === "outer" && outerUrl.value) {
     result = {
       clickType: 1,
-      data: { url: outerUrl.value }
-    }
+      data: { url: outerUrl.value },
+    };
   } else {
     result = {
       clickType: 0,
-      data: null
-    }
+      data: null,
+    };
   }
 
-  emit('update:linkObj', result)
-  dialogVisible.value = false
-}
+  emit("update:linkObj", result);
+  dialogVisible.value = false;
+};
 
 const onRemoveData = () => {
-  emit('update:linkObj', {
+  emit("update:linkObj", {
     clickType: 0,
-    data: null
-  })
-}
+    data: null,
+  });
+};
 </script>
 
 <style scoped>

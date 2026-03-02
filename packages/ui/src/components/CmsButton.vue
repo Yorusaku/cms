@@ -6,8 +6,8 @@
         {
           'bg-primary border-primary text-white': type === 'primary',
           'bg-red-500 border-red-500 text-white': type === 'danger',
-          'bg-white border-gray-300 text-gray-700': type === 'default'
-        }
+          'bg-white border-gray-300 text-gray-700': type === 'default',
+        },
       ]"
       @click="handleClick"
     >
@@ -18,20 +18,18 @@
 
 <script setup lang="ts">
 interface Props {
-  type?: 'primary' | 'default' | 'danger'
+  type?: "primary" | "default" | "danger";
 }
 
-withDefaults(defineProps<Props>(), {
-  type: 'default'
-})
+const { type = "default" } = defineProps<Props>();
 
 const emit = defineEmits<{
-  (e: 'click', event: MouseEvent): void
-}>()
+  (e: "click", event: MouseEvent): void;
+}>();
 
 const handleClick = (event: MouseEvent) => {
-  emit('click', event)
-}
+  emit("click", event);
+};
 </script>
 
 <style scoped>

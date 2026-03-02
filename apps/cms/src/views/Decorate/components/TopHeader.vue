@@ -5,116 +5,128 @@
       返回频道列表页面
     </a>
     <div class="page-operate">
-      <el-button type="primary" size="default" :loading="saveLoading" @click="saveAndContinue">
+      <el-button
+        type="primary"
+        size="default"
+        :loading="saveLoading"
+        @click="saveAndContinue"
+      >
         保存
       </el-button>
-      <el-button size="default" :loading="previewLoading" @click="saveAndView"> 预览 </el-button>
+      <el-button size="default" :loading="previewLoading" @click="saveAndView">
+        预览
+      </el-button>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { usePageStore } from '@/store/usePageStore'
-import { saveCmsPage, type SavePageParams } from '@/api/activity'
+import { ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { ElMessage } from "element-plus";
+import { usePageStore } from "@/store/usePageStore";
+import { saveCmsPage, type SavePageParams } from "@/api/activity";
 
-const route = useRoute()
-const router = useRouter()
-const pageStore = usePageStore()
+const route = useRoute();
+const router = useRouter();
+const pageStore = usePageStore();
 
-const saveLoading = ref(false)
-const previewLoading = ref(false)
+const saveLoading = ref(false);
+const previewLoading = ref(false);
 
 interface SavePageResponse {
   data?: {
-    id?: string | number
-  }
+    id?: string | number;
+  };
 }
 
 const saveAndView = async () => {
-  previewLoading.value = true
+  previewLoading.value = true;
   try {
-    const res = await savePage({ online: 1 })
-    ElMessage.success('上架成功')
-    let id = (res as SavePageResponse)?.data?.id || ''
+    const res = await savePage({ online: 1 });
+    ElMessage.success("上架成功");
+    let id = (res as SavePageResponse)?.data?.id || "";
     if (!id) {
-      id = route.query.id as string
+      id = route.query.id as string;
     }
-    goToView(id)
+    goToView(id);
   } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : String(err)
-    ElMessage.warning(`上架并预览失败: ${errorMessage}`)
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    ElMessage.warning(`上架并预览失败: ${errorMessage}`);
   } finally {
-    previewLoading.value = false
+    previewLoading.value = false;
   }
-}
+};
 
 const goToView = (id: string | number) => {
   const urlObj = router.resolve({
-    path: '/preview',
-    query: { id }
-  })
-  window.open(urlObj.href, '_blank')
-}
+    path: "/preview",
+    query: { id },
+  });
+  window.open(urlObj.href, "_blank");
+};
 
 const saveAndContinue = async () => {
-  saveLoading.value = true
+  saveLoading.value = true;
   try {
-    await savePage()
-    ElMessage.success('保存成功')
+    await savePage();
+    ElMessage.success("保存成功");
   } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : String(err)
-    ElMessage.warning(`保存失败: ${errorMessage}`)
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    ElMessage.warning(`保存失败: ${errorMessage}`);
   } finally {
-    saveLoading.value = false
+    saveLoading.value = false;
   }
-}
+};
 
 const backToList = () => {
   try {
-    const isParentActivityPage = window.opener && window.opener.location.hash === '#/activity'
+    const isParentActivityPage =
+      window.opener && window.opener.location.hash === "#/activity";
     if (isParentActivityPage) {
-      window.opener.close()
+      window.opener.close();
     }
-    router.push('/activity')
-  } catch (e) {
-    router.push('/activity')
+    router.push("/activity");
+  } catch {
+    router.push("/activity");
   }
-}
+};
 
 const savePage = async (params?: Record<string, unknown>) => {
-  const pageSchema = pageStore.exportPageSchema()
+  const pageSchema = pageStore.exportPageSchema();
   const pageData: SavePageParams = {
-    name: ((pageSchema.pageConfig as Record<string, unknown>)?.name as string) || '',
+    name:
+      ((pageSchema.pageConfig as Record<string, unknown>)?.name as string) ||
+      "",
     schema: pageSchema,
     ...(pageSchema.pageConfig as Record<string, unknown>),
     componentList: pageSchema.components,
-    ...params
-  }
+    ...params,
+  };
 
   if (route.query.id) {
-    pageData.id = Number(route.query.id)
+    pageData.id = Number(route.query.id);
   }
 
-  ;(pageData.componentList as Array<Record<string, unknown>>)?.forEach((item, index: number) => {
-    item.sort = index
-  })
+  (pageData.componentList as Array<Record<string, unknown>>)?.forEach(
+    (item, index: number) => {
+      item.sort = index;
+    },
+  );
 
-  const resp = await saveCmsPage(pageData)
+  const resp = await saveCmsPage(pageData);
 
   if ((resp as SavePageResponse)?.data?.id) {
-    setIdForAddSave((resp as SavePageResponse).data!.id!)
+    setIdForAddSave((resp as SavePageResponse).data!.id!);
   }
 
-  return resp
-}
+  return resp;
+};
 
 const setIdForAddSave = (id: string | number) => {
-  router.push(`/decorate?id=${id}`)
-  pageStore.setPageConfig({ id })
-}
+  router.push(`/decorate?id=${id}`);
+  pageStore.setPageConfig({ id });
+};
 </script>
 
 <style scoped>

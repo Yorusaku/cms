@@ -9,7 +9,10 @@
       ghost-class="sortable-ghost"
     >
       <template #item="{ element, index }">
-        <div class="pic-item" :class="{ 'can-drag': !unDraggable && picData.length > 1 }">
+        <div
+          class="pic-item"
+          :class="{ 'can-drag': !unDraggable && picData.length > 1 }"
+        >
           <div class="pic-item-wrapper">
             <UpLoadBox
               v-if="showPic"
@@ -58,96 +61,94 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import { Plus, Close } from '@element-plus/icons-vue'
-import { VueDraggable } from 'vue-draggable-plus'
-import UpLoadBox from './UpLoadBox.vue'
-import ConfigLink from './ConfigLink.vue'
+import { ref, watch } from "vue";
+import { ElMessage } from "element-plus";
+import { Plus, Close } from "@element-plus/icons-vue";
+import { VueDraggable } from "vue-draggable-plus";
+import UpLoadBox from "./UpLoadBox.vue";
+import ConfigLink from "./ConfigLink.vue";
 
 interface PicItem {
-  id?: string
-  imageUrl?: string
-  text?: string
-  link?: any
+  id?: string;
+  imageUrl?: string;
+  text?: string;
+  link?: any;
 }
 
-const props = withDefaults(
-  defineProps<{
-    imageList: PicItem[]
-    inputPlaceHolder?: string
-    addPlaceHolder?: string
-    showPic?: boolean
-    showName?: boolean
-    showAdd?: boolean
-    showDelete?: boolean
-    unDraggable?: boolean
-    limitSize?: number
-  }>(),
-  {
-    inputPlaceHolder: '',
-    addPlaceHolder: '添加广告图',
-    showPic: true,
-    showName: true,
-    showAdd: true,
-    showDelete: true,
-    unDraggable: false,
-    limitSize: 10
-  }
-)
-
-const emit = defineEmits<{
-  (e: 'update:imageList', value: PicItem[]): void
+const {
+  imageList: _imageList = [] as PicItem[],
+  inputPlaceHolder = "",
+  addPlaceHolder = "添加广告图",
+  showPic = true,
+  showName = true,
+  showAdd = true,
+  showDelete = true,
+  unDraggable = false,
+  limitSize: _limitSize = 10
+} = defineProps<{
+  imageList: PicItem[];
+  inputPlaceHolder?: string;
+  addPlaceHolder?: string;
+  showPic?: boolean;
+  showName?: boolean;
+  showAdd?: boolean;
+  showDelete?: boolean;
+  unDraggable?: boolean;
+  limitSize?: number;
 }>()
 
-const picData = ref<PicItem[]>(JSON.parse(JSON.stringify(props.imageList)))
+const emit = defineEmits<{
+  (e: "update:imageList", value: PicItem[]): void;
+}>();
+
+const picData = ref<PicItem[]>(JSON.parse(JSON.stringify(props.imageList)));
 
 watch(
   () => props.imageList,
-  newVal => {
-    picData.value = JSON.parse(JSON.stringify(newVal))
+  (newVal) => {
+    picData.value = JSON.parse(JSON.stringify(newVal));
   },
-  { deep: true }
-)
+  { deep: true },
+);
 
 watch(
   picData,
-  newVal => {
-    emit('update:imageList', newVal)
+  (newVal) => {
+    emit("update:imageList", newVal);
   },
-  { deep: true }
-)
+  { deep: true },
+);
 
 const addItem = () => {
   if (props.limitSize && picData.value.length >= props.limitSize) {
-    ElMessage.warning(`最多添加${props.limitSize}条数据`)
-    return
+    ElMessage.warning(`最多添加${props.limitSize}条数据`);
+    return;
   }
 
   const item: PicItem = {
     id: `item-${Date.now()}`,
     link: null,
-    imageUrl: '',
-    text: ''
-  }
-  picData.value.push(item)
-}
+    imageUrl: "",
+    text: "",
+  };
+  picData.value.push(item);
+};
 
 const updateItemImage = (index: number, url: string) => {
   if (picData.value[index]) {
-    picData.value[index].imageUrl = url
+    picData.value[index].imageUrl = url;
   }
-}
+};
 
 const updateItemLink = (index: number, link: any) => {
   if (picData.value[index]) {
-    picData.value[index].link = link
+    picData.value[index].link = link;
   }
-}
+};
 
 const deleteItem = (index: number) => {
-  picData.value.splice(index, 1)
-}
+  picData.value.splice(index, 1);
+};
 </script>
 
 <style scoped>

@@ -1,7 +1,12 @@
 <template>
-  <div class="com-group" :class="{ 'bg-gray': bgGray, 'content-block': contentBlock }">
+  <div
+    class="com-group"
+    :class="{ 'bg-gray': bgGray, 'content-block': contentBlock }"
+  >
     <div v-if="title" class="group-header">
-      <span class="title" :class="{ 'name-black': nameBlack }">{{ title }}</span>
+      <span class="title" :class="{ 'name-black': nameBlack }">{{
+        title
+      }}</span>
       <span v-if="tips" class="tips">{{ tips }}</span>
     </div>
     <div class="group-content">
@@ -11,22 +16,19 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(
-  defineProps<{
-    title?: string
-    tips?: string
-    nameBlack?: boolean
-    bgGray?: boolean
-    contentBlock?: boolean
-  }>(),
-  {
-    title: '',
-    tips: '',
-    nameBlack: false,
-    bgGray: false,
-    contentBlock: false
-  }
-)
+const {
+  title = "",
+  tips = "",
+  nameBlack = false,
+  bgGray = false,
+  contentBlock = false
+} = defineProps<{
+  title?: string;
+  tips?: string;
+  nameBlack?: boolean;
+  bgGray?: boolean;
+  contentBlock?: boolean;
+}>()
 </script>
 
 <style scoped>

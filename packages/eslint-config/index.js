@@ -1,15 +1,17 @@
+import js from '@eslint/js'
+import globals from 'globals'
+
 /** @type {import('eslint').Linter.Config} */
-module.exports = {
-  root: true,
-  env: {
-    browser: true,
-    es2021: true,
-    node: true
-  },
-  extends: ['eslint:recommended'],
-  parserOptions: {
+export default {
+  ...js.configs.recommended,
+  languageOptions: {
     ecmaVersion: 'latest',
-    sourceType: 'module'
+    sourceType: 'module',
+    globals: {
+      ...globals.browser,
+      ...globals.es2021,
+      ...globals.node
+    }
   },
   rules: {
     'no-console': ['warn', { allow: ['warn', 'error'] }],

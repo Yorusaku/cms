@@ -2,7 +2,9 @@
   <div class="imagenav-config space-y-6 p-4">
     <!-- 导航项列表 -->
     <div class="config-section">
-      <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-200">
+      <div
+        class="flex justify-between items-center mb-4 pb-2 border-b border-gray-200"
+      >
         <h3 class="text-base font-semibold text-gray-800">图片导航项</h3>
         <el-button type="primary" size="small" @click="addItem">
           <el-icon><Plus /></el-icon>
@@ -11,7 +13,10 @@
       </div>
 
       <!-- 空状态 -->
-      <div v-if="draftItems.length === 0" class="text-center py-8 text-gray-500">
+      <div
+        v-if="draftItems.length === 0"
+        class="text-center py-8 text-gray-500"
+      >
         <div class="text-4xl mb-2">🧭</div>
         <p class="mb-1">暂无导航项</p>
         <p class="text-sm">点击上方按钮添加第一个导航项</p>
@@ -26,7 +31,12 @@
         >
           <div class="flex justify-between items-start mb-3">
             <h4 class="font-medium text-gray-700">导航项 #{{ index + 1 }}</h4>
-            <el-button type="danger" size="small" circle @click="removeItem(index)">
+            <el-button
+              type="danger"
+              size="small"
+              circle
+              @click="removeItem(index)"
+            >
               <el-icon><Delete /></el-icon>
             </el-button>
           </div>
@@ -70,7 +80,9 @@
 
     <!-- 样式配置 -->
     <div class="config-section">
-      <h3 class="text-base font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+      <h3
+        class="text-base font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200"
+      >
         样式配置
       </h3>
       <el-form label-position="top" size="small" class="space-y-4">
@@ -102,18 +114,24 @@
 
         <el-form-item label="背景颜色" class="mb-0">
           <div class="flex items-center gap-3">
-            <el-color-picker v-model="localBackgroundColor" @change="handleStyleUpdate" />
+            <el-color-picker
+              v-model="localBackgroundColor"
+              @change="handleStyleUpdate"
+            />
             <span class="text-sm text-gray-500">
-              {{ localBackgroundColor || '未设置' }}
+              {{ localBackgroundColor || "未设置" }}
             </span>
           </div>
         </el-form-item>
 
         <el-form-item label="文字颜色" class="mb-0">
           <div class="flex items-center gap-3">
-            <el-color-picker v-model="localTextColor" @change="handleStyleUpdate" />
+            <el-color-picker
+              v-model="localTextColor"
+              @change="handleStyleUpdate"
+            />
             <span class="text-sm text-gray-500">
-              {{ localTextColor || '未设置' }}
+              {{ localTextColor || "未设置" }}
             </span>
           </div>
         </el-form-item>
@@ -136,7 +154,9 @@
             clearable
             @change="handleStyleUpdate"
           />
-          <div class="text-xs text-gray-500 mt-1">当导航项未设置图片时显示的默认图片</div>
+          <div class="text-xs text-gray-500 mt-1">
+            当导航项未设置图片时显示的默认图片
+          </div>
         </el-form-item>
       </el-form>
     </div>
@@ -144,68 +164,70 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { Plus, Delete } from '@element-plus/icons-vue'
-import { deepClone, debounce, createRandomId } from '@cms/utils'
-import ImageUploader from '../ImageUploader.vue'
+import { ref, watch } from "vue";
+import { Plus, Delete } from "@element-plus/icons-vue";
+import { deepClone, debounce, createRandomId } from "@cms/utils";
+import ImageUploader from "../ImageUploader.vue";
 
 // 导航项类型定义
 interface NavItem {
-  id: string
-  imageUrl?: string
-  text: string
-  link?: string
+  id: string;
+  imageUrl?: string;
+  text: string;
+  link?: string;
 }
 
 // Props定义
 interface Props {
-  componentProps: any
+  componentProps: any;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 const emit = defineEmits<{
-  (e: 'update', props: any): void
-}>()
+  (e: "update", props: any): void;
+}>();
 
 // 草稿状态管理
-const draftItems = ref<NavItem[]>([])
-const isSyncing = ref(false)
+const draftItems = ref<NavItem[]>([]);
+const isSyncing = ref(false);
 
 // 样式配置的本地状态
-const localColumnPadding = ref<number>(0)
-const localRowPadding = ref<number>(0)
-const localBackgroundColor = ref<string>('#ffffff')
-const localTextColor = ref<string>('#333333')
-const localBorderRadius = ref<number>(0)
-const localDefaultImage = ref<string>('https://via.placeholder.com/44')
+const localColumnPadding = ref<number>(0);
+const localRowPadding = ref<number>(0);
+const localBackgroundColor = ref<string>("#ffffff");
+const localTextColor = ref<string>("#333333");
+const localBorderRadius = ref<number>(0);
+const localDefaultImage = ref<string>("https://via.placeholder.com/44");
 
 // 同步items数据从props
 const syncItemsFromProps = () => {
-  const list = props.componentProps.list || []
+  const list = props.componentProps.list || [];
   draftItems.value = list.map((item: any) => ({
     id: createRandomId(),
-    imageUrl: item.imageUrl || '',
-    text: item.text || '',
-    link: item.link || ''
-  }))
+    imageUrl: item.imageUrl || "",
+    text: item.text || "",
+    link: item.link || "",
+  }));
 
   // 同步样式配置
-  localColumnPadding.value = props.componentProps.columnPadding ?? 0
-  localRowPadding.value = props.componentProps.rowPadding ?? 0
-  localBackgroundColor.value = props.componentProps.backgroundColor || '#ffffff'
-  localTextColor.value = props.componentProps.textColor || '#333333'
-  localBorderRadius.value = props.componentProps.borderRadius ?? 0
-  localDefaultImage.value = props.componentProps.defaultImage || 'https://via.placeholder.com/44'
-}
+  localColumnPadding.value = props.componentProps.columnPadding ?? 0;
+  localRowPadding.value = props.componentProps.rowPadding ?? 0;
+  localBackgroundColor.value =
+    props.componentProps.backgroundColor || "#ffffff";
+  localTextColor.value = props.componentProps.textColor || "#333333";
+  localBorderRadius.value = props.componentProps.borderRadius ?? 0;
+  localDefaultImage.value =
+    props.componentProps.defaultImage || "https://via.placeholder.com/44";
+};
 
 // 防抖更新函数
 const triggerUpdate = debounce(() => {
   // 构造导航项数据
-  const list: any[] = draftItems.value.map(item => ({
+  const list: any[] = draftItems.value.map((item) => ({
     imageUrl: item.imageUrl,
     text: item.text,
-    link: item.link
-  }))
+    link: item.link,
+  }));
 
   const updatedProps: any = {
     ...deepClone(props.componentProps),
@@ -215,49 +237,49 @@ const triggerUpdate = debounce(() => {
     backgroundColor: localBackgroundColor.value,
     textColor: localTextColor.value,
     borderRadius: localBorderRadius.value,
-    defaultImage: localDefaultImage.value
-  }
+    defaultImage: localDefaultImage.value,
+  };
 
-  emit('update', updatedProps)
-}, 300)
+  emit("update", updatedProps);
+}, 300);
 
 // 数组操作方法
 const addItem = () => {
   const newItem: NavItem = {
     id: createRandomId(),
-    imageUrl: '',
-    text: '',
-    link: ''
-  }
-  draftItems.value.push(newItem)
-  triggerUpdate()
-}
+    imageUrl: "",
+    text: "",
+    link: "",
+  };
+  draftItems.value.push(newItem);
+  triggerUpdate();
+};
 
 const removeItem = (index: number) => {
-  draftItems.value.splice(index, 1)
-  triggerUpdate()
-}
+  draftItems.value.splice(index, 1);
+  triggerUpdate();
+};
 
 // 样式更新处理
 const handleStyleUpdate = () => {
-  triggerUpdate()
-}
+  triggerUpdate();
+};
 
 // 监听外部props变化
 watch(
   () => props.componentProps,
-  _newProps => {
+  (_newProps) => {
     if (!isSyncing.value) {
-      isSyncing.value = true
+      isSyncing.value = true;
       try {
-        syncItemsFromProps()
+        syncItemsFromProps();
       } finally {
-        isSyncing.value = false
+        isSyncing.value = false;
       }
     }
   },
-  { deep: true, immediate: true }
-)
+  { deep: true, immediate: true },
+);
 </script>
 
 <style scoped>

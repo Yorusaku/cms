@@ -3,8 +3,8 @@ import type {
   IPageSchemaV2,
   IComponentSchemaV1,
   IComponentSchemaV2,
-  IActionSchema
-} from '@cms/types'
+  IActionSchema,
+} from "@cms/types";
 
 /**
  * 数据结构迁移适配器
@@ -18,10 +18,10 @@ import type {
 function isV1Schema(data: any): data is IPageSchemaV1 {
   return (
     data &&
-    typeof data === 'object' &&
+    typeof data === "object" &&
     !data.version && // V2 有 version 字段
     Array.isArray(data.components) // V1 使用 components 数组
-  )
+  );
 }
 
 /**
@@ -30,17 +30,19 @@ function isV1Schema(data: any): data is IPageSchemaV1 {
 function isV2Schema(data: any): data is IPageSchemaV2 {
   return (
     data &&
-    typeof data === 'object' &&
-    data.version === '2.0.0' &&
-    typeof data.componentMap === 'object' &&
+    typeof data === "object" &&
+    data.version === "2.0.0" &&
+    typeof data.componentMap === "object" &&
     Array.isArray(data.rootIds)
-  )
+  );
 }
 
 /**
  * 将 V1 组件转换为 V2 组件
  */
-function convertComponentV1ToV2(component: IComponentSchemaV1): IComponentSchemaV2 {
+function convertComponentV1ToV2(
+  component: IComponentSchemaV1,
+): IComponentSchemaV2 {
   return {
     // 基础字段直接继承
     id: component.id,
@@ -56,8 +58,8 @@ function convertComponentV1ToV2(component: IComponentSchemaV1): IComponentSchema
     events: undefined,
     condition: true, // 默认显示
     track: undefined,
-    state: undefined
-  }
+    state: undefined,
+  };
 }
 
 /**
@@ -65,10 +67,10 @@ function convertComponentV1ToV2(component: IComponentSchemaV1): IComponentSchema
  */
 function createDefaultPageConfig(): Record<string, unknown> {
   return {
-    name: '未命名页面',
-    backgroundColor: '#ffffff',
-    title: '新页面'
-  }
+    name: "未命名页面",
+    backgroundColor: "#ffffff",
+    title: "新页面",
+  };
 }
 
 /**
@@ -79,45 +81,45 @@ function createDefaultPageConfig(): Record<string, unknown> {
 export function migrateSchema(rawSchema: any): IPageSchemaV2 {
   // 如果已经是 V2 格式，直接返回
   if (isV2Schema(rawSchema)) {
-    return rawSchema
+    return rawSchema;
   }
 
   // 如果是 V1 格式，进行转换
   if (isV1Schema(rawSchema)) {
-    const v1Schema: IPageSchemaV1 = rawSchema
+    const v1Schema: IPageSchemaV1 = rawSchema;
 
     // 转换组件数组为 Map 结构
-    const componentMap: Record<string, IComponentSchemaV2> = {}
-    const rootIds: string[] = []
+    const componentMap: Record<string, IComponentSchemaV2> = {};
+    const rootIds: string[] = [];
 
     // 遍历并转换每个组件
     v1Schema.components.forEach((component: IComponentSchemaV1) => {
-      const v2Component = convertComponentV1ToV2(component)
-      componentMap[v2Component.id] = v2Component
-      rootIds.push(v2Component.id) // V1 所有组件都是根节点
-    })
+      const v2Component = convertComponentV1ToV2(component);
+      componentMap[v2Component.id] = v2Component;
+      rootIds.push(v2Component.id); // V1 所有组件都是根节点
+    });
 
     // 构造 V2 Schema
     const v2Schema: IPageSchemaV2 = {
-      version: '2.0.0',
+      version: "2.0.0",
       pageConfig: v1Schema.pageConfig || createDefaultPageConfig(),
       componentMap,
       rootIds,
-      state: undefined // V1 无页面状态概念
-    }
+      state: undefined, // V1 无页面状态概念
+    };
 
-    return v2Schema
+    return v2Schema;
   }
 
   // 如果是未知格式，创建空的 V2 结构
-  console.warn('未知的 Schema 格式，创建默认 V2 结构')
+  console.warn("未知的 Schema 格式，创建默认 V2 结构");
   return {
-    version: '2.0.0',
+    version: "2.0.0",
     pageConfig: createDefaultPageConfig(),
     componentMap: {},
     rootIds: [],
-    state: undefined
-  }
+    state: undefined,
+  };
 }
 
 /**
@@ -132,22 +134,22 @@ export function migrateSchemaToV1(v2Schema: IPageSchemaV2): IPageSchemaV1 {
       id: component.id,
       type: component.type,
       props: component.props,
-      styles: component.styles
-    }))
+      styles: component.styles,
+    }));
 
   return {
     pageConfig: v2Schema.pageConfig,
-    components
-  }
+    components,
+  };
 }
 
 /**
  * 工具函数：验证 Schema 版本
  */
-export function getSchemaVersion(schema: any): 'v1' | 'v2' | 'unknown' {
-  if (isV2Schema(schema)) return 'v2'
-  if (isV1Schema(schema)) return 'v1'
-  return 'unknown'
+export function getSchemaVersion(schema: any): "v1" | "v2" | "unknown" {
+  if (isV2Schema(schema)) return "v2";
+  if (isV1Schema(schema)) return "v1";
+  return "unknown";
 }
 
 /**
@@ -155,13 +157,19 @@ export function getSchemaVersion(schema: any): 'v1' | 'v2' | 'unknown' {
  */
 export function createEmptyV2Schema(): IPageSchemaV2 {
   return {
-    version: '2.0.0',
+    version: "2.0.0",
     pageConfig: createDefaultPageConfig(),
     componentMap: {},
     rootIds: [],
-    state: undefined
-  }
+    state: undefined,
+  };
 }
 
 // 导出类型供外部使用
-export type { IPageSchemaV1, IPageSchemaV2, IComponentSchemaV1, IComponentSchemaV2, IActionSchema }
+export type {
+  IPageSchemaV1,
+  IPageSchemaV2,
+  IComponentSchemaV1,
+  IComponentSchemaV2,
+  IActionSchema,
+};

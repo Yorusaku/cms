@@ -10,7 +10,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --ext .ts --fix"
+    "lint": "eslint src --fix"
   },
   "dependencies": {
     "@vue/test-utils": "catalog:",

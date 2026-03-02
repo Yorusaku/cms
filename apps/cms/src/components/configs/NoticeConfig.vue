@@ -17,80 +17,95 @@
     </ComGroup>
 
     <ComGroup title="配置图标">
-      <el-button type="primary" link @click="configData.imageUrl = ''">重置</el-button>
-      <UpLoadBox :img-url="configData.imageUrl" @update:img-url="updateImageUrl" />
+      <el-button type="primary" link @click="configData.imageUrl = ''"
+        >重置</el-button
+      >
+      <UpLoadBox
+        :img-url="configData.imageUrl"
+        @update:img-url="updateImageUrl"
+      />
     </ComGroup>
 
     <ComGroup title="背景颜色">
-      <el-button type="primary" link @click="configData.backgroundColor = initBgColor">
+      <el-button
+        type="primary"
+        link
+        @click="configData.backgroundColor = initBgColor"
+      >
         重置
       </el-button>
       <el-color-picker v-model="configData.backgroundColor" size="small" />
     </ComGroup>
 
     <ComGroup title="文字颜色">
-      <el-button type="primary" link @click="configData.textColor = initTxtColor"> 重置 </el-button>
+      <el-button
+        type="primary"
+        link
+        @click="configData.textColor = initTxtColor"
+      >
+        重置
+      </el-button>
       <el-color-picker v-model="configData.textColor" size="small" />
     </ComGroup>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import ComGroup from '@/components/basic/ComGroup.vue'
-import PicList from '@/components/basic/PicList.vue'
-import UpLoadBox from '@/components/basic/UpLoadBox.vue'
+import { ref, watch } from "vue";
+import ComGroup from "@/components/basic/ComGroup.vue";
+import PicList from "@/components/basic/PicList.vue";
+import UpLoadBox from "@/components/basic/UpLoadBox.vue";
 
 interface NoticeItem {
-  text: string
-  link?: any
+  text: string;
+  link?: any;
 }
 
 interface NoticeConfig {
-  component: string
-  validTime: any[]
-  imageUrl: string
-  noticelist: NoticeItem[]
-  backgroundColor: string
-  textColor: string
+  component: string;
+  validTime: any[];
+  imageUrl: string;
+  noticelist: NoticeItem[];
+  backgroundColor: string;
+  textColor: string;
 }
 
 const props = defineProps<{
-  parmes: NoticeConfig
-}>()
+  parmes: NoticeConfig;
+}>();
 
 const emit = defineEmits<{
-  (e: 'editComponent', data: NoticeConfig): void
-}>()
+  (e: "editComponent", data: NoticeConfig): void;
+}>();
 
-const initBgColor = '#FFF8E9'
-const initTxtColor = '#666666'
+const initBgColor = "#FFF8E9";
+const initTxtColor = "#666666";
 
-const configData = ref<NoticeConfig>(JSON.parse(JSON.stringify(props.parmes)))
+const configData = ref<NoticeConfig>(JSON.parse(JSON.stringify(props.parmes)));
 
 const updateNoticeList = (list: NoticeItem[]) => {
-  configData.value.noticelist = list
-}
+  configData.value.noticelist = list;
+};
 
 const updateImageUrl = (url: string) => {
-  configData.value.imageUrl = url
-}
+  configData.value.imageUrl = url;
+};
 
 watch(
   configData,
-  newVal => {
-    emit('editComponent', newVal)
+  (newVal) => {
+    emit("editComponent", newVal);
   },
-  { deep: true }
-)
+  { deep: true },
+);
 
 watch(
   () => props.parmes,
-  newVal => {
-    configData.value = JSON.parse(JSON.stringify(newVal))
+  (newVal) => {
+    configData.value = JSON.parse(JSON.stringify(newVal));
   },
-  { deep: true }
-)
+  { deep: true },
+);
 </script>
 
 <style scoped>

@@ -4,8 +4,8 @@
  * @returns 如果值为空字符串、undefined 或 null 则返回 true，否则返回 false
  */
 export const isEmpty = (val: unknown): boolean => {
-  return val === '' || val === undefined || val === null
-}
+  return val === "" || val === undefined || val === null;
+};
 
 /**
  * 深拷贝函数
@@ -13,24 +13,26 @@ export const isEmpty = (val: unknown): boolean => {
  * @returns 拷贝后的新对象
  */
 export const deepClone = <T>(obj: T): T => {
-  if (obj === null || typeof obj !== 'object') return obj
-  if (obj instanceof Date) return new Date(obj.getTime()) as T
-  if (obj instanceof Array) return obj.map(item => deepClone(item)) as T
-  const cloned = {} as T
+  if (obj === null || typeof obj !== "object") return obj;
+  if (obj instanceof Date) return new Date(obj.getTime()) as T;
+  if (obj instanceof Array) return obj.map((item) => deepClone(item)) as T;
+  const cloned = {} as T;
   for (const key in obj) {
     if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      cloned[key] = deepClone(obj[key])
+      cloned[key] = deepClone(obj[key]);
     }
   }
-  return cloned
-}
+  return cloned;
+};
 
 /**
  * 生成随机唯一 ID
  * @returns 随机生成的唯一标识符字符串
  */
 export function createRandomId(): string {
-  return Number(Math.random().toString().substr(3, 5) + Date.now()).toString(36)
+  return Number(Math.random().toString().substr(3, 5) + Date.now()).toString(
+    36,
+  );
 }
 
 /**
@@ -43,21 +45,21 @@ export function createRandomId(): string {
 export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait = 500,
-  immediate = false
+  immediate = false,
 ): (...args: Parameters<T>) => void {
-  let timer: ReturnType<typeof setTimeout> | null = null
+  let timer: ReturnType<typeof setTimeout> | null = null;
   return function (this: unknown, ...args: Parameters<T>) {
-    const context = this
+    const context = this;
     if (immediate) {
-      func.apply(context, args)
-      immediate = false
-      return
+      func.apply(context, args);
+      immediate = false;
+      return;
     }
-    if (timer) clearTimeout(timer)
+    if (timer) clearTimeout(timer);
     timer = setTimeout(() => {
-      func.apply(context, args)
-    }, wait)
-  }
+      func.apply(context, args);
+    }, wait);
+  };
 }
 
 /**
@@ -70,20 +72,20 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait = 500,
-  immediate = false
+  immediate = false,
 ): (...args: Parameters<T>) => void {
-  let timer: ReturnType<typeof setTimeout> | null = null
+  let timer: ReturnType<typeof setTimeout> | null = null;
   return function (this: unknown, ...args: Parameters<T>) {
-    const context = this
+    const context = this;
     if (immediate) {
-      func.apply(context, args)
-      immediate = false
-      return
+      func.apply(context, args);
+      immediate = false;
+      return;
     }
-    if (timer) return
+    if (timer) return;
     timer = setTimeout(() => {
-      func.apply(context, args)
-      timer = null
-    }, wait)
-  }
+      func.apply(context, args);
+      timer = null;
+    }, wait);
+  };
 }

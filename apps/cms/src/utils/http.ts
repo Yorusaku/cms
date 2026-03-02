@@ -1,7 +1,7 @@
-import { Request } from '@cms/utils'
+import { Request } from "@cms/utils";
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || '/api'
+const baseURL = import.meta.env.VITE_API_BASE_URL || "/api";
 
-const http = new Request(baseURL)
+const http = new Request(baseURL);
 
-export default http
+export default http;

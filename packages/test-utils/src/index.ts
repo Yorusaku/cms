@@ -1,6 +1,6 @@
-import { mount, shallowMount, RouterLinkStub } from '@vue/test-utils'
+import { mount, shallowMount, RouterLinkStub } from "@vue/test-utils";
 
-export { mount, shallowMount, RouterLinkStub }
+export { mount, shallowMount, RouterLinkStub };
 
 /**
  * 创建一个简单的 Vue 组件用于测试
@@ -11,11 +11,11 @@ export function createWrapper(component: any, options?: any) {
   return mount(component, {
     global: {
       stubs: {
-        RouterLink: RouterLinkStub
-      }
+        RouterLink: RouterLinkStub,
+      },
     },
-    ...options
-  })
+    ...options,
+  });
 }
 
 /**
@@ -24,5 +24,5 @@ export function createWrapper(component: any, options?: any) {
  * await flushPromises()
  */
 export function flushPromises(): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, 0))
+  return new Promise((resolve) => setTimeout(resolve, 0));
 }

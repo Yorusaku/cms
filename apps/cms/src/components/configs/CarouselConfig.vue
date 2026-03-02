@@ -96,7 +96,11 @@
     </ComGroup>
 
     <ComGroup title="背景颜色">
-      <el-button type="primary" link @click="configData.backgroundColor = initBgColor">
+      <el-button
+        type="primary"
+        link
+        @click="configData.backgroundColor = initBgColor"
+      >
         重置
       </el-button>
       <el-color-picker v-model="configData.backgroundColor" size="small" />
@@ -105,107 +109,109 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { debounce } from '@cms/utils'
-import ComGroup from '@/components/basic/ComGroup.vue'
-import ComDivider from '@/components/basic/ComDivider.vue'
-import PicList from '@/components/basic/PicList.vue'
-import { PictureFilled, Grid } from '@element-plus/icons-vue'
+import { ref, watch, computed } from "vue";
+import { debounce } from "@cms/utils";
+import ComGroup from "@/components/basic/ComGroup.vue";
+import ComDivider from "@/components/basic/ComDivider.vue";
+import PicList from "@/components/basic/PicList.vue";
+import { PictureFilled, Grid } from "@element-plus/icons-vue";
 
 interface ValidTimeItem {
-  startTime: string
-  endTime: string
+  startTime: string;
+  endTime: string;
 }
 
 interface LinkConfig {
-  type?: string
-  value?: string
+  type?: string;
+  value?: string;
 }
 
 interface ImageItem {
-  imageUrl: string
-  text?: string
-  link?: LinkConfig | null
+  imageUrl: string;
+  text?: string;
+  link?: LinkConfig | null;
 }
 
 interface CarouselConfig {
-  component: string
-  validTime: ValidTimeItem[]
-  layout: string
-  imageList: ImageItem[]
-  imageMargin: number
-  isDefaultMargin: number
-  marginSize: number[]
-  marginTopBottom: number
-  marginLeftRight: number
-  isBorderRadius: number
-  radius: number
-  backgroundColor: string
-  piclist: ImageItem[]
+  component: string;
+  validTime: ValidTimeItem[];
+  layout: string;
+  imageList: ImageItem[];
+  imageMargin: number;
+  isDefaultMargin: number;
+  marginSize: number[];
+  marginTopBottom: number;
+  marginLeftRight: number;
+  isBorderRadius: number;
+  radius: number;
+  backgroundColor: string;
+  piclist: ImageItem[];
 }
 
 const props = defineProps<{
-  parmes: CarouselConfig
-}>()
+  parmes: CarouselConfig;
+}>();
 
 const emit = defineEmits<{
-  (e: 'editComponent', data: CarouselConfig): void
-}>()
+  (e: "editComponent", data: CarouselConfig): void;
+}>();
 
-const initBgColor = '#FFFFFF'
+const initBgColor = "#FFFFFF";
 
-const configData = ref<CarouselConfig>(JSON.parse(JSON.stringify(props.parmes)))
+const configData = ref<CarouselConfig>(
+  JSON.parse(JSON.stringify(props.parmes)),
+);
 
 const layoutList = [
   {
-    name: '轮播广告',
-    id: 'swiper',
+    name: "轮播广告",
+    id: "swiper",
     icon: PictureFilled,
-    limitSize: 10
+    limitSize: 10,
   },
   {
-    name: '1行1个',
-    id: 'single',
+    name: "1行1个",
+    id: "single",
     icon: Grid,
-    limitSize: 10
-  }
-]
+    limitSize: 10,
+  },
+];
 
 const selectLimitSize = computed(() => {
-  const item = layoutList.find(item => item.id === configData.value.layout)
-  return item ? item.limitSize : 10
-})
+  const item = layoutList.find((item) => item.id === configData.value.layout);
+  return item ? item.limitSize : 10;
+});
 
 const updateImageList = (list: ImageItem[]) => {
-  configData.value.imageList = list
-}
+  configData.value.imageList = list;
+};
 
 watch(
   configData,
-  debounce(newVal => {
-    const { marginTopBottom, marginLeftRight } = newVal
-    const marginSize = [marginTopBottom || 0, marginLeftRight || 0]
+  debounce((newVal) => {
+    const { marginTopBottom, marginLeftRight } = newVal;
+    const marginSize = [marginTopBottom || 0, marginLeftRight || 0];
     const emitData = {
       ...newVal,
-      marginSize
-    }
-    emit('editComponent', emitData)
+      marginSize,
+    };
+    emit("editComponent", emitData);
   }, 300),
-  { deep: true }
-)
+  { deep: true },
+);
 
 watch(
   () => props.parmes,
-  newVal => {
-    configData.value = JSON.parse(JSON.stringify(newVal))
-    const { marginSize } = configData.value
+  (newVal) => {
+    configData.value = JSON.parse(JSON.stringify(newVal));
+    const { marginSize } = configData.value;
     if (marginSize && marginSize.length >= 2) {
-      configData.value.marginTopBottom = marginSize[0]
-      configData.value.marginLeftRight = marginSize[1]
+      configData.value.marginTopBottom = marginSize[0];
+      configData.value.marginLeftRight = marginSize[1];
     }
   },
-  { deep: true }
-)
+  { deep: true },
+);
 </script>
 
 <style scoped>

@@ -3,18 +3,21 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "main": "./index.cjs",
+  "main": "./index.js",
   "exports": {
-    ".": "./index.cjs",
-    "./vue": "./vue.cjs",
-    "./typescript": "./typescript.cjs"
+    ".": "./index.js",
+    "./vue": "./vue.js",
+    "./typescript": "./typescript.js",
+    "./vue-typescript": "./vue-typescript.js"
   },
   "dependencies": {
+    "@eslint/js": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
     "eslint": "catalog:",
     "eslint-config-prettier": "catalog:",
-    "eslint-plugin-vue": "catalog:"
+    "eslint-plugin-vue": "catalog:",
+    "globals": "catalog:"
   },
   "peerDependencies": {
     "typescript": "catalog:"

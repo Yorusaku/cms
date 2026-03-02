@@ -9,7 +9,7 @@
       width: `${width}px`,
       height: `${height}px`,
       cursor: 'pointer',
-      top: 'unset'
+      top: 'unset',
     }"
   >
     <div
@@ -28,7 +28,7 @@
         flexDirection: 'column',
         alignItems: 'center',
         zIndex: 2000,
-        transition: 'right 0.5s'
+        transition: 'right 0.5s',
       }"
       :class="{ 'opacity-100': visible, 'opacity-0': !visible }"
       @click="handleClick"
@@ -44,17 +44,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onBeforeUnmount } from 'vue'
+import { ref, onMounted, onBeforeUnmount } from "vue";
 
 export interface IOnlineServiceProps {
-  bottom?: number
-  right?: number
-  zIndex?: number
-  width?: number
-  height?: number
-  backgroundColor?: string
-  serviceImage?: string
-  text?: string
+  bottom?: number;
+  right?: number;
+  zIndex?: number;
+  width?: number;
+  height?: number;
+  backgroundColor?: string;
+  serviceImage?: string;
+  text?: string;
 }
 
 const {
@@ -63,35 +63,35 @@ const {
   zIndex = 11,
   width = 48,
   height = 48,
-  backgroundColor = '#ffffff',
-  serviceImage = 'https://image.fuchuang.com/prod/3d488567_icon_kf20201116164901.png',
-  text = '客服'
-} = defineProps<IOnlineServiceProps>()
+  backgroundColor = "#ffffff",
+  serviceImage = "https://image.fuchuang.com/prod/3d488567_icon_kf20201116164901.png",
+  text = "客服",
+} = defineProps<IOnlineServiceProps>();
 
 const emit = defineEmits<{
-  click: []
-}>()
+  click: [];
+}>();
 
-const visible = ref(true)
+const visible = ref(true);
 
 const handleClick = () => {
-  emit('click')
-}
+  emit("click");
+};
 
 onMounted(() => {
-  if (!document.querySelector('.draggable')) {
-    window.addEventListener('scroll', scrollHandler)
+  if (!document.querySelector(".draggable")) {
+    window.addEventListener("scroll", scrollHandler);
   }
-})
+});
 
 onBeforeUnmount(() => {
-  window.removeEventListener('scroll', scrollHandler)
-})
+  window.removeEventListener("scroll", scrollHandler);
+});
 
 const scrollHandler = () => {
-  visible.value = false
+  visible.value = false;
   setTimeout(() => {
-    visible.value = true
-  }, 1000)
-}
+    visible.value = true;
+  }, 1000);
+};
 </script>

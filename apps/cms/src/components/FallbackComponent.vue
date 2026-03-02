@@ -2,7 +2,7 @@
   <div class="fallback-component">
     <div class="fallback-content">
       <div class="fallback-icon">⚠️</div>
-      <div class="fallback-text">未知组件: {{ $attrs.type || 'Unknown' }}</div>
+      <div class="fallback-text">未知组件: {{ $attrs.type || "Unknown" }}</div>
     </div>
   </div>
 </template>

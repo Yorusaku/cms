@@ -1,11 +1,11 @@
-const BASE_SIZE = 32
+const BASE_SIZE = 32;
 
 /**
  * 设置根元素的字体大小为 32px
  * 用于实现 rem 响应式布局
  */
 function setRem(): void {
-  document.documentElement.style.fontSize = BASE_SIZE + 'px'
+  document.documentElement.style.fontSize = BASE_SIZE + "px";
 }
 
 /**
@@ -18,8 +18,8 @@ function setRem(): void {
  * initRem()
  */
 export function initRem(): void {
-  setRem()
-  window.addEventListener('resize', setRem)
+  setRem();
+  window.addEventListener("resize", setRem);
 }
 
 /**
@@ -34,5 +34,5 @@ export function initRem(): void {
  * })
  */
 export function destroyRem(): void {
-  window.removeEventListener('resize', setRem)
+  window.removeEventListener("resize", setRem);
 }

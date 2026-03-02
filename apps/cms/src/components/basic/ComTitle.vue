@@ -5,14 +5,9 @@
 </template>
 
 <script setup lang="ts">
-withDefaults(
-  defineProps<{
-    title?: string
-  }>(),
-  {
-    title: ''
-  }
-)
+const { title = "" } = defineProps<{
+  title?: string;
+}>();
 </script>
 
 <style scoped>

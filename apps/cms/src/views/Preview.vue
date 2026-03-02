@@ -32,19 +32,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { Picture } from '@element-plus/icons-vue'
+import { ref, onMounted } from "vue";
+import { useRoute } from "vue-router";
+import { Picture } from "@element-plus/icons-vue";
 
-const route = useRoute()
-const previewSrc = ref('')
-const shareSrc = ref('')
+const route = useRoute();
+const previewSrc = ref("");
+const shareSrc = ref("");
 
 onMounted(() => {
-  const id = route.query.id
-  shareSrc.value = `http://localhost:5174/page-preview?id=${id}`
-  previewSrc.value = shareSrc.value
-})
+  const id = route.query.id;
+  shareSrc.value = `http://localhost:5174/page-preview?id=${id}`;
+  previewSrc.value = shareSrc.value;
+});
 </script>
 
 <style scoped>
@@ -77,7 +77,7 @@ onMounted(() => {
 }
 
 .preview-header:before {
-  content: '';
+  content: "";
   position: absolute;
   left: 50%;
   top: 50%;
@@ -90,7 +90,7 @@ onMounted(() => {
 }
 
 .preview-header:after {
-  content: '';
+  content: "";
   position: absolute;
   left: 50%;
   top: 50%;
@@ -118,7 +118,7 @@ onMounted(() => {
 }
 
 .preview-bottom:after {
-  content: '';
+  content: "";
   position: absolute;
   left: 50%;
   top: 50%;

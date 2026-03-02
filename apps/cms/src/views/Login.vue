@@ -40,7 +40,10 @@
               @keyup.enter="handleLogin"
             >
               <template #suffix>
-                <el-icon class="cursor-pointer" @click="passwordVisible = !passwordVisible">
+                <el-icon
+                  class="cursor-pointer"
+                  @click="passwordVisible = !passwordVisible"
+                >
                   <View v-if="passwordVisible" />
                   <Hide v-else />
                 </el-icon>
@@ -55,7 +58,7 @@
             class="w-full"
             @click="handleLogin"
           >
-            {{ loading ? '登录中...' : '登录' }}
+            {{ loading ? "登录中..." : "登录" }}
           </el-button>
         </el-form>
       </div>
@@ -64,89 +67,94 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
-import { View, Hide } from '@element-plus/icons-vue'
-import { login } from '../api/activity'
+import { ref, reactive, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { ElMessage, type FormInstance, type FormRules } from "element-plus";
+import { View, Hide } from "@element-plus/icons-vue";
+import { login } from "../api/activity";
 
-const router = useRouter()
-const loginFormRef = ref<FormInstance>()
-const usernameRef = ref()
-const passwordRef = ref()
+const router = useRouter();
+const loginFormRef = ref<FormInstance>();
+const usernameRef = ref();
+const passwordRef = ref();
 
 const loginForm = reactive({
-  username: 'admin',
-  password: 'admin123456'
-})
+  username: "admin",
+  password: "admin123456",
+});
 
-const loading = ref(false)
-const passwordVisible = ref(false)
+const loading = ref(false);
+const passwordVisible = ref(false);
 
 // 表单验证规则
 const loginRules: FormRules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度应在3-20个字符之间', trigger: 'blur' }
+    { required: true, message: "请输入用户名", trigger: "blur" },
+    {
+      min: 3,
+      max: 20,
+      message: "用户名长度应在3-20个字符之间",
+      trigger: "blur",
+    },
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度至少6位', trigger: 'blur' }
-  ]
-}
+    { required: true, message: "请输入密码", trigger: "blur" },
+    { min: 6, message: "密码长度至少6位", trigger: "blur" },
+  ],
+};
 
 // 登录处理
 const handleLogin = async () => {
-  if (!loginFormRef.value) return
+  if (!loginFormRef.value) return;
 
-  await loginFormRef.value.validate(async valid => {
+  await loginFormRef.value.validate(async (valid) => {
     if (valid) {
-      loading.value = true
+      loading.value = true;
       try {
         const res: any = await login({
           username: loginForm.username,
-          password: loginForm.password
-        })
+          password: loginForm.password,
+        });
 
-        console.log('=== 登录接口调试信息 ===')
-        console.log('登录响应:', res)
-        console.log('响应结构:', Object.keys(res || {}))
+        console.log("=== 登录接口调试信息 ===");
+        console.log("登录响应:", res);
+        console.log("响应结构:", Object.keys(res || {}));
         if (res && res.data) {
-          console.log('data字段:', res.data)
-          console.log('token是否存在:', !!res.data.token)
+          console.log("data字段:", res.data);
+          console.log("token是否存在:", !!res.data.token);
         }
 
         // 存储token和用户信息
-        localStorage.setItem('token', res.data.token)
-        localStorage.setItem('username', loginForm.username)
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("username", loginForm.username);
 
-        ElMessage.success('登录成功')
-        router.push('/activity')
+        ElMessage.success("登录成功");
+        router.push("/activity");
       } catch (error: any) {
-        console.error('登录失败:', error)
-        ElMessage.error(error?.message || '登录失败，请检查用户名和密码')
+        console.error("登录失败:", error);
+        ElMessage.error(error?.message || "登录失败，请检查用户名和密码");
       } finally {
-        loading.value = false
+        loading.value = false;
       }
     }
-  })
-}
+  });
+};
 
 // 检查是否已登录
 const checkLoginStatus = () => {
-  const token = localStorage.getItem('token')
+  const token = localStorage.getItem("token");
   if (token) {
-    router.push('/activity')
+    router.push("/activity");
   }
-}
+};
 
 onMounted(() => {
-  checkLoginStatus()
+  checkLoginStatus();
   // 自动聚焦到用户名输入框
   setTimeout(() => {
-    usernameRef.value?.focus()
-  }, 100)
-})
+    usernameRef.value?.focus();
+  }, 100);
+});
 </script>
 
 <style scoped>

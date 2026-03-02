@@ -22,7 +22,7 @@
     "build": "vue-tsc --noEmit && vite build",
     "dev": "vite build --watch",
     "typecheck": "vue-tsc --noEmit",
-    "lint": "eslint src --ext .vue,.ts --fix",
+    "lint": "eslint src --fix",
     "clean": "rimraf dist"
   },
   "dependencies": {

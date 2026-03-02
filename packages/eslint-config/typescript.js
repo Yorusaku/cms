@@ -1,13 +1,23 @@
+import tsParser from '@typescript-eslint/parser'
+import tsPlugin from '@typescript-eslint/eslint-plugin'
+import prettier from 'eslint-config-prettier'
+import baseConfig from './index.js'
+
 /** @type {import('eslint').Linter.Config} */
-module.exports = {
-  extends: [
-    './index.cjs',
-    'plugin:@typescript-eslint/recommended',
-    'prettier'
-  ],
-  parser: '@typescript-eslint/parser',
-  plugins: ['@typescript-eslint'],
+export default {
+  ...baseConfig,
+  languageOptions: {
+    parser: tsParser,
+    parserOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module'
+    }
+  },
+  plugins: {
+    '@typescript-eslint': tsPlugin
+  },
   rules: {
+    ...baseConfig.rules,
     '@typescript-eslint/no-unused-vars': ['error', {
       argsIgnorePattern: '^_',
       varsIgnorePattern: '^_'

@@ -16,45 +16,45 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import ComGroup from './ComGroup.vue'
+import { computed } from "vue";
+import ComGroup from "./ComGroup.vue";
 
 interface ValidTimeItem {
-  startTime: string
-  endTime: string
+  startTime: string;
+  endTime: string;
 }
 
 const props = defineProps<{
-  modelValue: ValidTimeItem[]
-}>()
+  modelValue: ValidTimeItem[];
+}>();
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: ValidTimeItem[]): void
-}>()
+  (e: "update:modelValue", value: ValidTimeItem[]): void;
+}>();
 
 const validTimeRange = computed({
   get: () => {
     if (props.modelValue && props.modelValue.length > 0) {
-      const item = props.modelValue[0]
+      const item = props.modelValue[0];
       if (item.startTime && item.endTime) {
-        return [item.startTime, item.endTime]
+        return [item.startTime, item.endTime];
       }
     }
-    return null
+    return null;
   },
-  set: val => {
+  set: (val) => {
     if (val && Array.isArray(val)) {
-      emit('update:modelValue', [
+      emit("update:modelValue", [
         {
-          startTime: val[0] || '',
-          endTime: val[1] || ''
-        }
-      ])
+          startTime: val[0] || "",
+          endTime: val[1] || "",
+        },
+      ]);
     } else {
-      emit('update:modelValue', [])
+      emit("update:modelValue", []);
     }
-  }
-})
+  },
+});
 </script>
 
 <style scoped>

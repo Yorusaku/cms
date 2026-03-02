@@ -18,7 +18,10 @@
           @dragover="dragDrop.handleDragOver"
           @drop="dragDrop.handleDrop"
         >
-          <div v-if="pageStore.pageSchema.components.length === 0" class="empty-canvas">
+          <div
+            v-if="pageStore.pageSchema.components.length === 0"
+            class="empty-canvas"
+          >
             <div class="empty-icon">📁</div>
             <p>从左侧拖拽组件到此处</p>
             <p class="empty-tip">支持排序和配置</p>
@@ -39,7 +42,11 @@
               />
             </div>
             <div class="component-actions">
-              <el-button size="small" type="danger" @click.stop="handleDeleteComponent(index)">
+              <el-button
+                size="small"
+                type="danger"
+                @click.stop="handleDeleteComponent(index)"
+              >
                 删除
               </el-button>
             </div>
@@ -51,48 +58,48 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
-import { ElMessage } from 'element-plus'
-import { usePageStore } from '../../../store/usePageStore'
-import type { MaterialConfig } from '../types'
-import { useDragDrop } from '../hooks/useDragDrop'
+import { computed, defineAsyncComponent } from "vue";
+import { ElMessage } from "element-plus";
+import { usePageStore } from "../../../store/usePageStore";
+import type { MaterialConfig } from "../types";
+import { useDragDrop } from "../hooks/useDragDrop";
 
 interface Props {
-  pageStore: ReturnType<typeof usePageStore>
-  materialConfig: MaterialConfig
+  pageStore: ReturnType<typeof usePageStore>;
+  materialConfig: MaterialConfig;
 }
 
-const props = defineProps<Props>()
+const props = defineProps<Props>();
 
-const dragDrop = useDragDrop()
+const dragDrop = useDragDrop();
 
 const _activeComponent = computed(() => {
   return (
     props.pageStore.pageSchema.components.find(
-      (c: any) => c.id === props.pageStore.activeComponentId
+      (c: any) => c.id === props.pageStore.activeComponentId,
     ) || null
-  )
-})
+  );
+});
 
 const resolveComponent = (type: string) => {
-  return props.materialConfig.componentMap[type] || FallbackComponent
-}
+  return props.materialConfig.componentMap[type] || FallbackComponent;
+};
 
 const FallbackComponent = defineAsyncComponent(
-  () => import('../../../components/FallbackComponent.vue')
-)
+  () => import("../../../components/FallbackComponent.vue"),
+);
 
 const handleSelectComponent = (id: string) => {
-  props.pageStore.setActiveId(id)
-}
+  props.pageStore.setActiveId(id);
+};
 
 const handleDeleteComponent = (index: number) => {
-  props.pageStore.deleteComponent({ index })
-}
+  props.pageStore.deleteComponent({ index });
+};
 
 const handlePreview = () => {
-  ElMessage.success('预览功能待实现')
-}
+  ElMessage.success("预览功能待实现");
+};
 </script>
 
 <style scoped>

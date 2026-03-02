@@ -23,12 +23,20 @@
             <div class="text-red-500">
               <span v-if="item.discountType !== 2" class="text-xs">¥</span>
               <span class="text-3xl font-bold">
-                {{ item.discountType !== 2 ? item.discountAmount : item.couponDiscount }}
+                {{
+                  item.discountType !== 2
+                    ? item.discountAmount
+                    : item.couponDiscount
+                }}
               </span>
               <span v-if="item.discountType === 2" class="text-xs">折</span>
             </div>
             <div class="text-xs text-gray-500 mt-1">
-              {{ item.discountType !== 3 ? `满${item.fitAmount}元可用` : '无门槛代金券' }}
+              {{
+                item.discountType !== 3
+                  ? `满${item.fitAmount}元可用`
+                  : "无门槛代金券"
+              }}
             </div>
           </div>
 
@@ -36,8 +44,13 @@
             <div class="text-sm font-medium text-gray-800 line-clamp-1">
               {{ item.name }}
             </div>
-            <div class="text-xs text-gray-500 mt-1">有效时间: {{ formatTime(item) }}</div>
-            <div v-if="item.description" class="text-xs text-gray-400 mt-1 line-clamp-2">
+            <div class="text-xs text-gray-500 mt-1">
+              有效时间: {{ formatTime(item) }}
+            </div>
+            <div
+              v-if="item.description"
+              class="text-xs text-gray-400 mt-1 line-clamp-2"
+            >
               {{ item.description }}
             </div>
           </div>
@@ -49,39 +62,39 @@
 
 <script setup lang="ts">
 export interface ICouponItem {
-  id: string | number
-  name: string
-  discountType: 1 | 2 | 3
-  discountAmount?: number
-  couponDiscount?: number
-  maxDiscountAmount?: number
-  fitAmount?: number
-  effectiveType: 1 | 2
-  effectiveDay?: number
-  effectiveStartTime?: string
-  effectiveEndTime?: string
-  description?: string
-  couponRangeDesc?: string
+  id: string | number;
+  name: string;
+  discountType: 1 | 2 | 3;
+  discountAmount?: number;
+  couponDiscount?: number;
+  maxDiscountAmount?: number;
+  fitAmount?: number;
+  effectiveType: 1 | 2;
+  effectiveDay?: number;
+  effectiveStartTime?: string;
+  effectiveEndTime?: string;
+  description?: string;
+  couponRangeDesc?: string;
 }
 
 export interface ICouponProps {
-  list?: ICouponItem[]
+  list?: ICouponItem[];
 }
 
-const { list = [] } = defineProps<ICouponProps>()
+const { list = [] } = defineProps<ICouponProps>();
 
 const emit = defineEmits<{
-  click: [item: ICouponItem, index: number]
-}>()
+  click: [item: ICouponItem, index: number];
+}>();
 
 const formatTime = (item: ICouponItem) => {
   if (item.effectiveType === 1) {
-    return `领取后${item.effectiveDay}天内`
+    return `领取后${item.effectiveDay}天内`;
   }
-  return `${item.effectiveStartTime}-${item.effectiveEndTime}`
-}
+  return `${item.effectiveStartTime}-${item.effectiveEndTime}`;
+};
 
 const handleClick = (item: ICouponItem, index: number) => {
-  emit('click', item, index)
-}
+  emit("click", item, index);
+};
 </script>

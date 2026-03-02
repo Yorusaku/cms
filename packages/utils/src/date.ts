@@ -2,10 +2,10 @@
  * 日期格式化选项
  */
 export interface DateFormatOptions {
-  format?: string
+  format?: string;
 }
 
-const REGEX = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/
+const REGEX = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/;
 
 /**
  * 格式化日期
@@ -18,43 +18,46 @@ const REGEX = /(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})/
  * dateFormat('2024-01-15T10:30:00') // '2024.01.15'
  * dateFormat('2024-01-15T10:30:00', { format: 'yyyy-MM-dd hh:mm:ss' }) // '2024-01-15 10:30:00'
  */
-export function dateFormat(val: string | number | Date, options: DateFormatOptions = {}): string {
-  const { format = 'yyyy.MM.dd' } = options
+export function dateFormat(
+  val: string | number | Date,
+  options: DateFormatOptions = {},
+): string {
+  const { format = "yyyy.MM.dd" } = options;
 
   if (!val) {
-    return '--'
+    return "--";
   }
 
-  let dateValue = val
+  let dateValue = val;
 
   // 处理 Safari 浏览器的日期兼容性问题
-  if (typeof val === 'string' && val.indexOf('-') > 0) {
+  if (typeof val === "string" && val.indexOf("-") > 0) {
     dateValue = val
-      .replace(/T/g, ' ')
-      .replace(/\.[\d]{3}Z/, '')
-      .replace(/-/g, '/')
+      .replace(/T/g, " ")
+      .replace(/\.[\d]{3}Z/, "")
+      .replace(/-/g, "/");
 
-    if (val.indexOf('.') >= 0) {
-      dateValue = val.slice(0, val.indexOf('.'))
+    if (val.indexOf(".") >= 0) {
+      dateValue = val.slice(0, val.indexOf("."));
     }
   }
 
-  const date = new Date(dateValue)
-  date.setHours(date.getHours() + 8)
+  const date = new Date(dateValue);
+  date.setHours(date.getHours() + 8);
 
-  const match = date.toISOString().match(REGEX)
+  const match = date.toISOString().match(REGEX);
   if (!match) {
-    return '--'
+    return "--";
   }
 
-  const [, yy, MM, dd, hh, mm, ss] = match
+  const [, yy, MM, dd, hh, mm, ss] = match;
 
   return format
-    .replace('yyyy', yy)
-    .replace('yy', yy.slice(2))
-    .replace('MM', MM)
-    .replace('dd', dd)
-    .replace('hh', hh)
-    .replace('mm', mm)
-    .replace('ss', ss)
+    .replace("yyyy", yy)
+    .replace("yy", yy.slice(2))
+    .replace("MM", MM)
+    .replace("dd", dd)
+    .replace("hh", hh)
+    .replace("mm", mm)
+    .replace("ss", ss);
 }

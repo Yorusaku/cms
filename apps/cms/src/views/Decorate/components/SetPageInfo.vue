@@ -19,8 +19,17 @@
       />
     </ComGroup>
 
-    <ComGroup title="微信分享卡片" tips="图片建议长宽比为5:4" name-black content-block>
-      <el-button type="primary" link @click="pageStore.pageSchema.pageConfig.shareImage = ''">
+    <ComGroup
+      title="微信分享卡片"
+      tips="图片建议长宽比为5:4"
+      name-black
+      content-block
+    >
+      <el-button
+        type="primary"
+        link
+        @click="pageStore.pageSchema.pageConfig.shareImage = ''"
+      >
         重置
       </el-button>
       <UpLoadBox
@@ -32,14 +41,25 @@
     <ComDivider />
 
     <ComGroup title="背景颜色">
-      <el-button type="primary" link @click="pageStore.pageSchema.pageConfig.backgroundColor = ''">
+      <el-button
+        type="primary"
+        link
+        @click="pageStore.pageSchema.pageConfig.backgroundColor = ''"
+      >
         重置
       </el-button>
-      <el-color-picker v-model="pageStore.pageSchema.pageConfig.backgroundColor" size="small" />
+      <el-color-picker
+        v-model="pageStore.pageSchema.pageConfig.backgroundColor"
+        size="small"
+      />
     </ComGroup>
 
     <ComGroup title="背景图片">
-      <el-button type="primary" link @click="pageStore.pageSchema.pageConfig.backgroundImage = ''">
+      <el-button
+        type="primary"
+        link
+        @click="pageStore.pageSchema.pageConfig.backgroundImage = ''"
+      >
         重置
       </el-button>
       <UpLoadBox
@@ -48,8 +68,13 @@
       />
     </ComGroup>
 
-    <ComGroup v-if="pageStore.pageSchema.pageConfig.backgroundImage" title="背景图片位置">
-      <el-radio-group v-model="pageStore.pageSchema.pageConfig.backgroundPosition">
+    <ComGroup
+      v-if="pageStore.pageSchema.pageConfig.backgroundImage"
+      title="背景图片位置"
+    >
+      <el-radio-group
+        v-model="pageStore.pageSchema.pageConfig.backgroundPosition"
+      >
         <el-radio value="top">居上</el-radio>
         <el-radio value="bottom">居底</el-radio>
       </el-radio-group>
@@ -58,21 +83,21 @@
 </template>
 
 <script setup lang="ts">
-import { usePageStore } from '@/store/usePageStore'
-import ComTitle from '@/components/basic/ComTitle.vue'
-import ComGroup from '@/components/basic/ComGroup.vue'
-import ComDivider from '@/components/basic/ComDivider.vue'
-import UpLoadBox from '@/components/basic/UpLoadBox.vue'
+import { usePageStore } from "@/store/usePageStore";
+import ComTitle from "@/components/basic/ComTitle.vue";
+import ComGroup from "@/components/basic/ComGroup.vue";
+import ComDivider from "@/components/basic/ComDivider.vue";
+import UpLoadBox from "@/components/basic/UpLoadBox.vue";
 
-const pageStore = usePageStore()
+const pageStore = usePageStore();
 
 const updateShareImage = (url: string) => {
-  pageStore.setPageConfig({ shareImage: url })
-}
+  pageStore.setPageConfig({ shareImage: url });
+};
 
 const updateBackgroundImage = (url: string) => {
-  pageStore.setPageConfig({ backgroundImage: url })
-}
+  pageStore.setPageConfig({ backgroundImage: url });
+};
 </script>
 
 <style scoped>

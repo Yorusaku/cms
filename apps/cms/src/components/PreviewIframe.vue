@@ -10,64 +10,69 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
-import { useEventListener, useDebounceFn } from '@vueuse/core'
-import { usePageStore } from '../store/usePageStore'
-import { MESSAGE_TYPE } from '@cms/types'
-import type { IMessagePayload, IPageSchema } from '@cms/types'
+import { ref, watch } from "vue";
+import { useEventListener, useDebounceFn } from "@vueuse/core";
+import { usePageStore } from "../store/usePageStore";
+import { MESSAGE_TYPE } from "@cms/types";
+import type { IMessagePayload, IPageSchema } from "@cms/types";
 
 defineProps<{
-  previewUrl: string
-}>()
+  previewUrl: string;
+}>();
 
-const pageStore = usePageStore()
-const iframeRef = ref<HTMLIFrameElement | null>(null)
-const iframeLoaded = ref(false)
+const pageStore = usePageStore();
+const iframeRef = ref<HTMLIFrameElement | null>(null);
+const iframeLoaded = ref(false);
 
 const getTargetOrigin = (): string => {
-  return import.meta.env.DEV ? '*' : window.location.origin
-}
+  return import.meta.env.DEV ? "*" : window.location.origin;
+};
 
 const sendSchemaToIframe = (schema: IPageSchema) => {
   if (!iframeRef.value?.contentWindow || !iframeLoaded.value) {
-    return
+    return;
   }
 
   try {
-    const clonedSchema = JSON.parse(JSON.stringify(schema))
+    const clonedSchema = JSON.parse(JSON.stringify(schema));
     const payload: IMessagePayload<IPageSchema> = {
       type: MESSAGE_TYPE.SYNC_SCHEMA,
-      data: clonedSchema
-    }
-    iframeRef.value.contentWindow.postMessage(payload, getTargetOrigin())
+      data: clonedSchema,
+    };
+    iframeRef.value.contentWindow.postMessage(payload, getTargetOrigin());
   } catch (error) {
-    console.warn('发送 Schema 到 iframe 失败:', error)
+    console.warn("发送 Schema 到 iframe 失败:", error);
   }
-}
+};
 
 const debouncedSendSchema = useDebounceFn((schema: IPageSchema) => {
-  sendSchemaToIframe(schema)
-}, 100)
+  sendSchemaToIframe(schema);
+}, 100);
 
 const handleIframeLoad = () => {
-  iframeLoaded.value = true
-  sendSchemaToIframe(pageStore.pageSchema)
-}
+  iframeLoaded.value = true;
+  sendSchemaToIframe(pageStore.pageSchema);
+};
 
-useEventListener(window, 'message', (event: MessageEvent) => {
-  const { type, data } = event.data as IMessagePayload
-  if (type === MESSAGE_TYPE.ON_SELECT_BLOCK && data && typeof data === 'object' && 'id' in data) {
-    pageStore.setActiveId(data.id as string)
+useEventListener(window, "message", (event: MessageEvent) => {
+  const { type, data } = event.data as IMessagePayload;
+  if (
+    type === MESSAGE_TYPE.ON_SELECT_BLOCK &&
+    data &&
+    typeof data === "object" &&
+    "id" in data
+  ) {
+    pageStore.setActiveId(data.id as string);
   }
-})
+});
 
 watch(
   () => pageStore.pageSchema,
-  schema => {
-    debouncedSendSchema(schema)
+  (schema) => {
+    debouncedSendSchema(schema);
   },
-  { deep: true }
-)
+  { deep: true },
+);
 </script>
 
 <style scoped>

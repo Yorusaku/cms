@@ -17,7 +17,11 @@
             @dragstart="onDragstart(component, $event)"
             @dragend="onDragend($event)"
           >
-            <img :src="component.icon" :alt="component.label" class="component-icon" />
+            <img
+              :src="component.icon"
+              :alt="component.label"
+              class="component-icon"
+            />
             <p class="name">
               {{ component.label }}
             </p>
@@ -32,66 +36,70 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { MaterialConfig } from '../types'
-import type { ComponentItem } from '@/config/component-groups'
-import { usePageStore } from '@/store/usePageStore'
-import { getComponentDefault, getComponentMaxNum } from '@/config/component-defaults'
+import { ref } from "vue";
+import type { MaterialConfig } from "../types";
+import type { ComponentItem } from "@/config/component-groups";
+import { usePageStore } from "@/store/usePageStore";
+import {
+  getComponentDefault,
+  getComponentMaxNum,
+} from "@/config/component-defaults";
 
 interface Props {
-  materialConfig: MaterialConfig
+  materialConfig: MaterialConfig;
 }
 
-withDefaults(defineProps<Props>(), {})
+defineProps<Props>()
 
-const pageStore = usePageStore()
+const pageStore = usePageStore();
 
-const activeNames = ref([1, 2])
+const activeNames = ref([1, 2]);
 
 const getComponentCount = (type: string): number => {
-  const components = pageStore.pageSchema?.components || []
-  return components.filter(comp => comp.type === type).length
-}
+  const components = pageStore.pageSchema?.components || [];
+  return components.filter((comp) => comp.type === type).length;
+};
 
 const isDraggable = (component: ComponentItem): boolean => {
-  const currentCount = getComponentCount(component.type)
-  const maxCount = getComponentMaxNum(component.type)
-  return currentCount < maxCount
-}
+  const currentCount = getComponentCount(component.type);
+  const maxCount = getComponentMaxNum(component.type);
+  return currentCount < maxCount;
+};
 
 const onDragstart = (component: ComponentItem, _event: DragEvent) => {
-  pageStore.setDragActive(true)
+  pageStore.setDragActive(true);
 
-  const defaultProps = getComponentDefault(component.type)
+  const defaultProps = getComponentDefault(component.type);
 
   const dragComponent = {
     ...component,
-    props: defaultProps
-  }
+    props: defaultProps,
+  };
 
-  pageStore.setDragComponent(dragComponent)
-}
+  pageStore.setDragComponent(dragComponent);
+};
 
 const onDragend = (_event: DragEvent) => {
-  pageStore.setDragActive(false)
-  const addIndex = pageStore.addComponentIndex
+  pageStore.setDragActive(false);
+  const addIndex = pageStore.addComponentIndex;
 
   if (addIndex != null) {
-    const dragComponent = pageStore.dragComponent
+    const dragComponent = pageStore.dragComponent;
     if (dragComponent && (dragComponent as Record<string, unknown>).type) {
-      const componentType = (dragComponent as Record<string, unknown>).type as string
-      const defaultProps = getComponentDefault(componentType)
+      const componentType = (dragComponent as Record<string, unknown>)
+        .type as string;
+      const defaultProps = getComponentDefault(componentType);
 
       pageStore.addComponent({
         index: addIndex,
         type: componentType,
-        props: defaultProps
-      })
+        props: defaultProps,
+      });
 
-      pageStore.setDragIndex(null)
+      pageStore.setDragIndex(null);
     }
   }
-}
+};
 </script>
 
 <style scoped>

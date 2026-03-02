@@ -37,51 +37,57 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from 'vue'
-import { usePageStore } from '@/store/usePageStore'
+import { computed, defineAsyncComponent } from "vue";
+import { usePageStore } from "@/store/usePageStore";
 
-const pageStore = usePageStore()
+const pageStore = usePageStore();
 
 const activeComponent = computed(() => {
   return (
-    pageStore.pageSchema.components.find((c: any) => c.id === pageStore.activeComponentId) || null
-  )
-})
+    pageStore.pageSchema.components.find(
+      (c: any) => c.id === pageStore.activeComponentId,
+    ) || null
+  );
+});
 
 const configComponentMap: Record<string, any> = {
-  Carousel: defineAsyncComponent(() => import('@/components/configs/CarouselConfig.vue')),
-  Notice: defineAsyncComponent(() => import('@/components/configs/NoticeConfig.vue'))
-}
+  Carousel: defineAsyncComponent(
+    () => import("@/components/configs/CarouselConfig.vue"),
+  ),
+  Notice: defineAsyncComponent(
+    () => import("@/components/configs/NoticeConfig.vue"),
+  ),
+};
 
 const resolveConfigComponent = (type: string) => {
-  return configComponentMap[type] || null
-}
+  return configComponentMap[type] || null;
+};
 
 const handleConfigUpdate = (newProps: any) => {
   if (activeComponent.value) {
     pageStore.editComponent({
       id: activeComponent.value.id,
-      props: newProps
-    })
+      props: newProps,
+    });
   }
-}
+};
 
 const getComponentDisplayName = (type: string) => {
   const displayNameMap: Record<string, string> = {
-    Notice: '公告',
-    Carousel: '轮播图',
-    ImageNav: '图片导航',
-    Product: '商品',
-    RichText: '富文本',
-    Slider: '滑块',
-    Dialog: '弹窗',
-    AssistLine: '辅助线',
-    FloatLayer: '浮动层',
-    OnlineService: '在线客服',
-    CubeSelection: '魔方选择'
-  }
-  return displayNameMap[type] || type
-}
+    Notice: "公告",
+    Carousel: "轮播图",
+    ImageNav: "图片导航",
+    Product: "商品",
+    RichText: "富文本",
+    Slider: "滑块",
+    Dialog: "弹窗",
+    AssistLine: "辅助线",
+    FloatLayer: "浮动层",
+    OnlineService: "在线客服",
+    CubeSelection: "魔方选择",
+  };
+  return displayNameMap[type] || type;
+};
 </script>
 
 <style scoped>

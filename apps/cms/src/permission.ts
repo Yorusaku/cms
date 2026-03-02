@@ -1,17 +1,17 @@
-import router from '@/router'
+import router from "@/router";
 
-const whiteList = ['/login', '/404', '/401']
+const whiteList = ["/login", "/404", "/401"];
 
-router.beforeEach(to => {
-  const token = localStorage.getItem('token')
+router.beforeEach((to) => {
+  const token = localStorage.getItem("token");
 
   if (token) {
-    if (to.path === '/login') {
-      return { path: '/home' }
+    if (to.path === "/login") {
+      return { path: "/home" };
     }
   } else {
     if (whiteList.indexOf(to.path) === -1) {
-      return { path: '/login', query: { redirect: to.fullPath } }
+      return { path: "/login", query: { redirect: to.fullPath } };
     }
   }
-})
+});
