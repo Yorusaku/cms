@@ -1,6 +1,5 @@
 export * from "./utils";
 export * from "./date";
-export * from "./rem";
 export * from "./schema-adapter";
 export * from "./expression";
 export { default as Request } from "./request";
