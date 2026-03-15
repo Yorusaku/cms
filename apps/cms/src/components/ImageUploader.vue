@@ -3,8 +3,9 @@
   <div class="up-pic-box">
     <template v-if="uploading">
       <div
+        class="loading-box"
         v-loading="uploading"
-        element-loading-text="上传中"
+        element-loading-text="上传中..."
         element-loading-spinner="el-icon-loading"
         element-loading-background="rgba(0, 0, 0, 0.3)"
       />
@@ -43,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { toRefs, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 
 interface Props {
@@ -52,11 +53,13 @@ interface Props {
   uploadFile?: boolean;
 }
 
-const {
-  imgUrl: _imgUrl = "",
-  addPlaceHolder = "添加图片",
-  uploadFile: _uploadFile = true
-} = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  imgUrl: "",
+  addPlaceHolder: "添加图片",
+  uploadFile: true,
+});
+
+const { addPlaceHolder } = toRefs(props);
 
 const emit = defineEmits<{
   "update:imgUrl": [value: string];
@@ -96,10 +99,10 @@ const beforeAvatarUpload = (file: File) => {
   const isLt500 = file.size / 1024 / 1024 < 2;
 
   if (!isJPG) {
-    ElMessage.error("上传图片只能是 JPG/PNG 格式!");
+    ElMessage.error("上传图片只能是 JPG/PNG 格式");
   }
   if (!isLt500) {
-    ElMessage.error("上传图片大小不能超过 2MB!");
+    ElMessage.error("上传图片大小不能超过 2MB");
   }
   if (isJPG && isLt500) {
     uploading.value = true;
@@ -109,7 +112,7 @@ const beforeAvatarUpload = (file: File) => {
   }
 };
 
-// 上传图片成功的方法
+// 上传图片成功
 const doSuccess = (response: any) => {
   uploading.value = false;
   if (response.data) {
@@ -120,7 +123,7 @@ const doSuccess = (response: any) => {
   }
 };
 
-// 上传图片失败的方法
+// 上传图片失败
 const doError = () => {
   ElMessage.error("上传失败，请稍后重试");
   uploading.value = false;
@@ -179,13 +182,10 @@ const doError = () => {
   font-size: 12px;
 }
 
-.up-pic-box :deep(.el-loading-parent--relative) {
+.loading-box {
   width: 100%;
   height: 100%;
   display: inline-block;
 }
-
-.up-pic-box :deep(.el-loading-text) {
-  font-size: 12px !important;
-}
 </style>
+

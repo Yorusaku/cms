@@ -25,7 +25,12 @@
                 <dd class="form-container">
                   <el-input
                     v-model.lazy="element.text"
-                    class="input-name"
+                    :input-style="{
+                      height: '32px',
+                      lineHeight: '32px',
+                      padding: '0 10px',
+                      borderRadius: '2px',
+                    }"
                     :placeholder="inputPlaceHolder"
                   />
                 </dd>
@@ -61,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { toRefs, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import { Plus, Close } from "@element-plus/icons-vue";
 import { VueDraggable } from "vue-draggable-plus";
@@ -75,17 +80,8 @@ interface PicItem {
   link?: any;
 }
 
-const {
-  imageList: _imageList = [] as PicItem[],
-  inputPlaceHolder = "",
-  addPlaceHolder = "添加广告图",
-  showPic = true,
-  showName = true,
-  showAdd = true,
-  showDelete = true,
-  unDraggable = false,
-  limitSize: _limitSize = 10
-} = defineProps<{
+const props = withDefaults(
+  defineProps<{
   imageList: PicItem[];
   inputPlaceHolder?: string;
   addPlaceHolder?: string;
@@ -95,7 +91,28 @@ const {
   showDelete?: boolean;
   unDraggable?: boolean;
   limitSize?: number;
-}>()
+}>(),
+  {
+    inputPlaceHolder: "",
+    addPlaceHolder: "添加广告图",
+    showPic: true,
+    showName: true,
+    showAdd: true,
+    showDelete: true,
+    unDraggable: false,
+    limitSize: 10,
+  },
+);
+
+const {
+  inputPlaceHolder,
+  addPlaceHolder,
+  showPic,
+  showName,
+  showAdd,
+  showDelete,
+  unDraggable,
+} = toRefs(props);
 
 const emit = defineEmits<{
   (e: "update:imageList", value: PicItem[]): void;
@@ -203,13 +220,6 @@ const deleteItem = (index: number) => {
 
 .form-container {
   flex: 1;
-}
-
-.input-name :deep(.el-input__inner) {
-  height: 32px;
-  line-height: 32px;
-  padding: 0 10px;
-  border-radius: 2px;
 }
 
 .pic-item-delete {

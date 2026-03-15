@@ -1,12 +1,13 @@
 <template>
   <div class="component-sidebar">
     <h3>组件列表</h3>
-    <el-collapse v-model="activeNames">
+    <el-collapse v-model="activeNames" class="material-collapse">
       <el-collapse-item
         v-for="(group, index) in materialConfig.componentGroups"
         :key="index"
         :title="group.title"
         :name="index + 1"
+        class="material-collapse-item"
       >
         <ul class="component-list">
           <li
@@ -153,7 +154,7 @@ const onDragend = (_event: DragEvent) => {
 
 .component-list li.drag-enabled:hover .name,
 .component-list li.drag-enabled:hover .num {
-  color: #ffffff !important;
+  color: #ffffff;
 }
 
 .component-icon {
@@ -175,22 +176,27 @@ const onDragend = (_event: DragEvent) => {
   color: #999999;
 }
 
-:deep(.el-collapse) {
+</style>
+
+<style>
+.component-sidebar .material-collapse {
   border: none;
+  --el-collapse-border-color: transparent;
+  --el-collapse-header-height: 30px;
 }
 
-:deep(.el-collapse-item__header) {
+.component-sidebar .material-collapse-item [class*="__header"] {
   border: none;
   height: 30px;
   line-height: 30px;
   padding: 0 20px;
 }
 
-:deep(.el-collapse-item__wrap) {
+.component-sidebar .material-collapse-item [class*="__wrap"] {
   border: none;
 }
 
-:deep(.el-collapse-item__content) {
+.component-sidebar .material-collapse-item [class*="__content"] {
   padding-bottom: 0;
 }
 </style>

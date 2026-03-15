@@ -16,6 +16,7 @@
     "clean": "turbo run clean && rimraf node_modules",
     "format": "prettier --write \"**/*.{js,ts,vue,json}\"",
     "typecheck": "turbo run typecheck",
+    "check:ui-governance": "node scripts/check-ui-governance.mjs",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
     "prepare": "husky install"

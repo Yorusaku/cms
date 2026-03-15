@@ -32,5 +32,10 @@ dist-ssr
 .env.*.local
 
 # Legacy directories
-cms-manage/
-crs/
+/cms-manage/
+/crs/
+
+# Generated files
+**/auto-imports.d.ts
+**/components.d.ts
+**/*.tsbuildinfo

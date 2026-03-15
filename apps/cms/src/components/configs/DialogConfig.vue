@@ -202,6 +202,7 @@ const handleUpdate = () => {
 <style scoped>
 .dialog-config {
   min-height: 400px;
+  --el-text-color-regular: #374151;
 }
 
 .config-section {
@@ -216,13 +217,4 @@ const handleUpdate = () => {
   transition: box-shadow 0.2s ease;
 }
 
-:deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #374151;
-  line-height: 1.5;
-}
-
-:deep(.el-textarea__inner) {
-  font-family: inherit;
-}
 </style>

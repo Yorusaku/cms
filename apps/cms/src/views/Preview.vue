@@ -22,7 +22,7 @@
         <p class="desc">微信"扫一扫"分享到朋友圈</p>
         <div class="pic">
           <div class="qr-placeholder">
-            <el-icon><Picture /></el-icon>
+            <el-icon class="qr-placeholder-icon"><Picture /></el-icon>
             <p>二维码区域</p>
           </div>
         </div>
@@ -179,7 +179,7 @@ onMounted(() => {
   font-size: 12px;
 }
 
-.qr-placeholder .el-icon {
+.qr-placeholder-icon {
   font-size: 48px;
   margin-bottom: 8px;
 }

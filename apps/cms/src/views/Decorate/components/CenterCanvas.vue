@@ -176,8 +176,8 @@ const handlePreview = () => {
 }
 
 .empty-tip {
-  font-size: 12px !important;
-  color: #c0c4cc !important;
+  font-size: 12px;
+  color: #c0c4cc;
 }
 
 .canvas-component {

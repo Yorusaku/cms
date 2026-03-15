@@ -13,6 +13,7 @@
             v-model="draftProps.content"
             type="textarea"
             :rows="6"
+            :input-style="{ fontFamily: 'monospace', fontSize: '12px' }"
             placeholder="请输入HTML格式的富文本内容"
             @change="handleUpdate"
           />
@@ -213,6 +214,9 @@ const handlePaddingUpdate = () => {
 <style scoped>
 .richtext-config {
   min-height: 400px;
+  --el-text-color-regular: #374151;
+  --el-fill-color-light: #f9fafb;
+  --el-border-color: #d1d5db;
 }
 
 .config-section {
@@ -227,31 +231,23 @@ const handlePaddingUpdate = () => {
   transition: box-shadow 0.2s ease;
 }
 
-:deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #374151;
-  line-height: 1.5;
-}
+</style>
 
-:deep(.el-textarea__inner) {
-  font-family: monospace;
-  font-size: 12px;
-}
-
-.preview-container :deep(.ql-editor) {
+<style>
+.richtext-config .preview-container .ql-editor {
   min-height: 80px;
   outline: none;
 }
 
-.preview-container :deep(p) {
+.richtext-config .preview-container p {
   margin: 0 0 1em 0;
 }
 
-.preview-container :deep(strong) {
+.richtext-config .preview-container strong {
   font-weight: bold;
 }
 
-.preview-container :deep(em) {
+.richtext-config .preview-container em {
   font-style: italic;
 }
 </style>

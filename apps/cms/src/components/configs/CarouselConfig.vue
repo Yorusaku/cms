@@ -39,9 +39,9 @@
     </ComGroup>
 
     <ComGroup title="是否设置边距">
-      <el-radio-group v-model="configData.isDefaultMargin">
-        <el-radio :value="1">是</el-radio>
-        <el-radio :value="0">否</el-radio>
+      <el-radio-group v-model="configData.isDefaultMargin" class="flex flex-wrap">
+        <el-radio :value="1" style="line-height: 30px; color: #323233">是</el-radio>
+        <el-radio :value="0" style="line-height: 30px; color: #323233">否</el-radio>
       </el-radio-group>
     </ComGroup>
 
@@ -52,6 +52,8 @@
         show-input
         :show-input-controls="false"
         size="small"
+        class="w-full"
+        style="--el-slider-input-width: 60px"
       />
     </ComGroup>
 
@@ -62,6 +64,8 @@
         show-input
         :show-input-controls="false"
         size="small"
+        class="w-full"
+        style="--el-slider-input-width: 60px"
       />
     </ComGroup>
 
@@ -75,13 +79,15 @@
         show-input
         :show-input-controls="false"
         size="small"
+        class="w-full"
+        style="--el-slider-input-width: 60px"
       />
     </ComGroup>
 
     <ComGroup title="是否设置圆角">
-      <el-radio-group v-model="configData.isBorderRadius">
-        <el-radio :value="1">是</el-radio>
-        <el-radio :value="0">否</el-radio>
+      <el-radio-group v-model="configData.isBorderRadius" class="flex flex-wrap">
+        <el-radio :value="1" style="line-height: 30px; color: #323233">是</el-radio>
+        <el-radio :value="0" style="line-height: 30px; color: #323233">否</el-radio>
       </el-radio-group>
     </ComGroup>
 
@@ -92,6 +98,8 @@
         show-input
         :show-input-controls="false"
         size="small"
+        class="w-full"
+        style="--el-slider-input-width: 60px"
       />
     </ComGroup>
 
@@ -217,6 +225,9 @@ watch(
 <style scoped>
 .carousel-config {
   padding: 0 0 50px;
+  --el-text-color-regular: #374151;
+  --el-fill-color-light: #f9fafb;
+  --el-border-color: #d1d5db;
 }
 
 .layout-list {
@@ -253,15 +264,4 @@ watch(
   color: #323233;
 }
 
-:deep(.el-slider) {
-  width: 100%;
-}
-
-:deep(.el-slider__runway) {
-  margin-right: 80px;
-}
-
-:deep(.el-slider__input) {
-  width: 60px;
-}
 </style>

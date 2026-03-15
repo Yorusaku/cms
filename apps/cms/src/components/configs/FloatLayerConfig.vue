@@ -212,6 +212,9 @@ const handleImageError = (e: Event) => {
 <style scoped>
 .floatlayer-config {
   min-height: 400px;
+  --el-text-color-regular: #374151;
+  --el-fill-color-light: #f9fafb;
+  --el-border-color: #d1d5db;
 }
 
 .config-section {
@@ -224,17 +227,6 @@ const handleImageError = (e: Event) => {
 .config-section:hover {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.2s ease;
-}
-
-:deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #374151;
-  line-height: 1.5;
-}
-
-:deep(.el-input-group__append) {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
 }
 
 .preview-container {

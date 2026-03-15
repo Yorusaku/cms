@@ -1,4 +1,7 @@
 @import "tailwindcss";
-@theme {
-  --color-primary: #419bf9;
+@import "@cms/ui/styles/tokens.css";
+
+:root {
+  --el-color-primary: var(--color-primary);
+  --el-border-radius-base: var(--radius-md);
 }

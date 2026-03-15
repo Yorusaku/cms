@@ -76,17 +76,4 @@ const {
   justify-content: space-between;
 }
 
-.group-content :deep(.el-slider) {
-  width: 100%;
-}
-
-.group-content :deep(.el-radio-group) {
-  display: flex;
-  flex-wrap: wrap;
-}
-
-.group-content :deep(.el-radio) {
-  line-height: 30px;
-  color: #323233;
-}
 </style>

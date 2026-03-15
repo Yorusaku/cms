@@ -333,6 +333,9 @@ watch(
 <style scoped>
 .slider-config {
   min-height: 400px;
+  --el-text-color-regular: #374151;
+  --el-fill-color-light: #f9fafb;
+  --el-border-color: #d1d5db;
 }
 
 .config-section {
@@ -356,15 +359,4 @@ watch(
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-:deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #374151;
-  line-height: 1.5;
-}
-
-:deep(.el-input-group__append),
-:deep(.el-input-group__prepend) {
-  background-color: #f9fafb;
-  border-color: #d1d5db;
-}
 </style>

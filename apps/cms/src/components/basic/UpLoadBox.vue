@@ -2,7 +2,7 @@
   <div class="upload-box">
     <template v-if="uploading">
       <div class="upload-loading">
-        <el-icon class="is-loading"><Loading /></el-icon>
+        <el-icon class="upload-loading-icon is-loading"><Loading /></el-icon>
         <span>上传中</span>
       </div>
     </template>
@@ -13,7 +13,7 @@
       </template>
       <template v-else>
         <div class="not-pic" @click="editImg">
-          <el-icon><Plus /></el-icon>
+          <el-icon class="not-pic-icon"><Plus /></el-icon>
           <p v-if="addPlaceHolder">{{ addPlaceHolder }}</p>
         </div>
       </template>
@@ -37,19 +37,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, computed } from "vue";
+import { ref, watch, computed, toRefs } from "vue";
 import { ElMessage, ElUpload } from "element-plus";
 import { Plus, Loading } from "@element-plus/icons-vue";
 
-const {
-  imgUrl: _imgUrl = "",
-  addPlaceHolder = "添加图片",
-  uploadFile: _uploadFile = true
-} = defineProps<{
-  imgUrl?: string;
-  addPlaceHolder?: string;
-  uploadFile?: boolean;
-}>()
+const props = withDefaults(
+  defineProps<{
+    imgUrl?: string;
+    addPlaceHolder?: string;
+    uploadFile?: boolean;
+  }>(),
+  {
+    imgUrl: "",
+    addPlaceHolder: "添加图片",
+    uploadFile: true,
+  },
+);
+
+const { addPlaceHolder } = toRefs(props);
 
 const emit = defineEmits<{
   (e: "update:imgUrl", value: string): void;
@@ -175,7 +180,7 @@ const doError = () => {
   cursor: pointer;
 }
 
-.not-pic .el-icon {
+.not-pic-icon {
   font-size: 20px;
 }
 
@@ -196,7 +201,7 @@ const doError = () => {
   font-size: 12px;
 }
 
-.upload-loading .el-icon {
+.upload-loading-icon {
   font-size: 20px;
   margin-bottom: 4px;
 }

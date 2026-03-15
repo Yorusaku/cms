@@ -1,0 +1,9 @@
+:root {
+  --color-primary: #419bf9;
+  --radius-md: 8px;
+  --font-size-base: 14px;
+}
+
+@theme {
+  --color-primary: #419bf9;
+}

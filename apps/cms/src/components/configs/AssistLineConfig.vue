@@ -15,6 +15,7 @@
             :max="20"
             :step="1"
             show-input
+            style="--el-slider-input-width: 80px"
             @change="handleUpdate"
           />
           <div class="text-xs text-gray-500 mt-1">线条的垂直高度（像素）</div>
@@ -189,6 +190,9 @@ const handleUpdate = () => {
 <style scoped>
 .assistline-config {
   min-height: 400px;
+  --el-text-color-regular: #374151;
+  --el-fill-color-light: #f9fafb;
+  --el-border-color: #d1d5db;
 }
 
 .config-section {
@@ -201,16 +205,6 @@ const handleUpdate = () => {
 .config-section:hover {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.2s ease;
-}
-
-:deep(.el-form-item__label) {
-  font-weight: 500;
-  color: #374151;
-  line-height: 1.5;
-}
-
-:deep(.el-slider__input) {
-  width: 80px;
 }
 
 .preview-container {

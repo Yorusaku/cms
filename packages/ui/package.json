@@ -12,7 +12,8 @@
       "import": "./dist/cms-ui.es.js",
       "require": "./dist/cms-ui.umd.js"
     },
-    "./dist/style.css": "./dist/style.css"
+    "./dist/style.css": "./dist/style.css",
+    "./styles/tokens.css": "./src/styles/tokens.css"
   },
   "sideEffects": [
     "**/*.css",

@@ -1,326 +1,187 @@
-# CMS 移动端配置项目
+# CMS 可视化搭建平台
 
-一个基于 Vue3 + TypeScript + Monorepo 架构的内容管理系统，专为移动端页面搭建而设计。
+基于 Vue 3、TypeScript、Vite 与 Turborepo 的 Monorepo 项目，面向营销活动页搭建场景，提供可视化编辑、组件物料复用、页面配置管理、预览联调与运行时渲染能力。
 
-## 🚀 项目特色
+当前仓库包含两个应用：
 
-- **现代化架构**：采用 pnpm workspace + Turbo 构建的 Monorepo 结构
-- **组件化设计**：丰富的可视化组件库，支持拖拽搭建
-- **实时预览**：所见即所得的页面编辑体验
-- **类型安全**：完整的 TypeScript 类型支持
-- **工程化完善**：ESLint + Prettier + Git Hooks 保障代码质量
-- **撤销重做**：基于 VueUse 的完整撤销/重做功能
-- **移动端适配**：VW 视口单位方案，告别 REM 运行时计算
+- `apps/cms`：编辑端，负责搭建、配置、预览和页面管理
+- `apps/crs`：渲染端，负责页面运行时渲染与预览态消费
 
-## 📁 项目结构
+共享能力沉淀在 `packages/*` 中。
 
-```
+## 项目特点
+
+- 可视化搭建：包含物料面板、画布编辑区、右侧配置区和预览能力
+- 双端分层：编辑端与渲染端拆分，便于隔离编辑态和运行态
+- Schema 驱动：围绕页面 Schema、组件配置和适配逻辑组织能力
+- Monorepo 架构：应用、组件库、类型、工具函数、Hooks 与测试能力统一管理
+- 工程化完善：集成 Turbo、ESLint、Prettier、TypeScript、Vitest
+- 共享组件：`packages/ui` 提供编辑端与渲染端可复用组件
+
+## 技术栈
+
+- 前端框架：Vue 3、Vue Router、Pinia
+- 开发语言：TypeScript
+- 构建工具：Vite、Turborepo、pnpm workspace
+- UI 能力：Element Plus、Vant、Tailwind CSS、TipTap、Vue Draggable Plus
+- 工程质量：ESLint、Prettier、Husky、lint-staged
+- 测试方案：Vitest、@vue/test-utils、@testing-library/vue
+
+## 目录结构
+
+```text
 cms-vue3/
-├── apps/                    # 应用层
-│   ├── cms/                # CMS管理后台（Vue 3 + Element Plus）
-│   └── crs/                # 客户端渲染服务（Vue 3 + Vant）
-├── packages/               # 共享包
-│   ├── types/             # TypeScript 类型定义与DSL schema
-│   ├── ui/                # UI组件库（跨端复用）
-│   ├── utils/             # 工具函数与Schema适配器
-│   ├── hooks/             # Vue组合式API
-│   ├── test-utils/        # 测试工具库
-│   ├── eslint-config/     # ESLint共享配置
-│   └── prettier-config/   # Prettier共享配置
-└── docs/                  # 项目文档
+├─ apps/
+│  ├─ cms/                    # CMS 编辑端应用
+│  └─ crs/                    # CRS 渲染端应用
+├─ packages/
+│  ├─ eslint-config/          # 共享 ESLint 配置
+│  ├─ hooks/                  # 通用组合式 Hooks
+│  ├─ prettier-config/        # 共享 Prettier 配置
+│  ├─ test-utils/             # 测试工具
+│  ├─ types/                  # Schema 与类型定义
+│  ├─ ui/                     # 共享 UI 与页面物料组件
+│  └─ utils/                  # 工具函数、请求封装、Schema 适配
+├─ docs/                      # 项目文档与阶段性记录
+├─ scripts/                   # 辅助脚本
+├─ turbo.json                 # Turbo 任务编排
+├─ pnpm-workspace.yaml        # Workspace 配置
+└─ package.json               # 根目录脚本
 ```
 
-## 🛠️ 技术栈
+## 环境要求
 
-### 核心框架
+- Node.js `>= 18`
+- pnpm `>= 9`
 
-- **Vue 3** - 渐进式JavaScript框架
-- **TypeScript** - JavaScript超集，提供类型安全
-- **Vite** - 下一代前端构建工具
-- **Pinia** - Vue状态管理
+推荐在中国大陆网络环境下配置稳定的 npm 镜像后再安装依赖。
 
-### UI组件
-
-- **Element Plus** - Vue 3桌面端组件库
-- **Tailwind CSS** - 实用优先的CSS框架
-
-### 开发工具
-
-- **pnpm** - 快速、节省磁盘空间的包管理器
-- **Turbo** - 高性能构建系统
-- **ESLint** - 代码质量检查
-- **Prettier** - 代码格式化
-
-### 特色功能
-
-- **同构渲染内核**：双端复用 `packages/ui`，利用 JSON Schema 实现 100% “所见即所得”。
-- **透明玻璃板拖拽代理**：完美解决跨 Iframe 的 DOM 事件丢失与边界穿透 Bug。
-- **极致的依赖管控**：依托 Workspace，双端按需引入依赖，C 端渲染器实现零冗余打包。
-- **TDD (测试驱动开发)**：关键链路（如 utils 解析、schema-adapter）基于 Vitest 编写单元测试，保障系统重构与发版安全
-
-## 🚀 快速开始
-
-### 环境要求
-
-- Node.js >= 18.0.0
-- pnpm >= 8.0.0
-
-### 安装依赖
+## 快速开始
 
 ```bash
-# 安装pnpm（如果尚未安装）
-npm install -g pnpm
-
-# 安装项目依赖
 pnpm install
-```
-
-### 开发环境
-
-```bash
-# 启动所有应用（推荐）
 pnpm dev
-
-# 单独启动CMS管理后台
-pnpm dev:cms
-
-# 单独启动客户端渲染服务
-pnpm dev:crs
 ```
 
-### 生产构建
+默认会通过 Turbo 启动工作区内可运行的 `dev` 任务。
+
+## 常用命令
+
+### 根目录
 
 ```bash
-# 构建所有应用
+pnpm dev
 pnpm build
+pnpm lint
+pnpm lint:fix
+pnpm format
+pnpm typecheck
+pnpm test
+pnpm test:coverage
+```
 
-# 单独构建CMS管理后台
+### 单独启动应用
+
+```bash
+pnpm dev:cms
 pnpm build:cms
 
-# 单独构建客户端渲染服务
+pnpm dev:crs
 pnpm build:crs
 ```
 
-### 代码质量
+### 按包执行
 
 ```bash
-# 代码检查
-pnpm lint
-
-# 自动修复代码问题
-pnpm lint:fix
-
-# 代码格式化
-pnpm format
-
-# 类型检查
-pnpm typecheck
-```
-
-### 测试
-
-```bash
-# 运行所有测试
-pnpm test
-
-# 运行指定包测试
+pnpm --filter @cms/cms test
 pnpm --filter @cms/utils test
-
-# 运行测试并生成覆盖率报告
-pnpm test:coverage
+pnpm --filter @cms/ui build
 ```
 
-## 🎨 功能特性
+## 主要应用说明
 
-### CMS管理后台 (@cms/cms)
+### `apps/cms`
 
-- **可视化搭建**：拖拽式页面编辑器
-- **组件丰富**：轮播图、图文导航、公告、商品等20+组件
-- **实时预览**：编辑即时预览效果
-- **配置灵活**：支持组件属性自定义配置
-- **撤销重做**：完整的撤销/重做功能（Ctrl+Z / Ctrl+Y）
-- **历史记录**：最多保存 50 条操作记录
+CMS 编辑端，包含以下核心页面与能力：
 
-### 客户端渲染服务 (@cms/crs)
+- `/decorate`：页面搭建主界面
+- `/preview`：页面预览
+- `/activity`：活动相关页面
+- `/home`、`/login`：基础业务入口
 
-- **移动端适配**：VW 视口单位方案，性能更优
-- **高性能渲染**：基于Vue 3的高效渲染
-- **组件复用**：与CMS共享UI组件
-- **响应式设计**：适配不同屏幕尺寸
+搭建主界面主要由以下部分组成：
 
-## 🔄 撤销重做功能
+- `TopHeader`：顶部操作区
+- `LeftMaterial`：物料面板
+- `CenterCanvas`：中间画布
+- `RightConfig`：右侧配置面板
 
-基于 VueUse 的 `useRefHistory` 实现，支持：
+### `apps/crs`
 
-| 操作 | 快捷键                   | 按钮           |
-| ---- | ------------------------ | -------------- |
-| 撤销 | `Ctrl+Z` / `Cmd+Z`       | 工具栏撤销按钮 |
-| 重做 | `Ctrl+Y` / `Cmd+Shift+Z` | 工具栏重做按钮 |
+CRS 渲染端，包含以下核心能力：
 
-**特性：**
+- `PagePreview`：接收编辑端通过 `postMessage` 同步的 Schema 做预览渲染
+- `Page`：根据页面 ID 拉取页面数据并做运行时渲染
+- `SchemaRenderer`：按 `rootIds` 驱动页面节点渲染
+- `RenderNode`：递归解析节点并按组件类型异步加载
 
-- ✅ 最多保存 50 条历史记录
-- ✅ 智能防抖（300ms），避免频繁操作
-- ✅ 差异化检测，只记录真实变化
-- ✅ 按钮状态实时更新
+## 共享包说明
 
-## 📱 移动端适配方案
+### `@cms/types`
 
-采用 VW（Viewport Width）构建时转换方案：
+维护页面 Schema、组件类型、消息协议与通用类型定义。
 
-- **基准视口**：375px（iPhone 标准宽度）
-- **转换工具**：`postcss-px-to-viewport-8-plugin`
-- **优势**：
-  - 无运行时性能损耗
-  - 精度更高
-  - 开发体验更好
+### `@cms/ui`
 
-## 📦 包管理
+维护共享组件与页面物料组件，例如轮播、公告、商品、图片导航、辅助线等。
 
-### 共享包说明
+### `@cms/utils`
 
-#### @cms/types
+维护通用工具、请求封装、表达式能力与 Schema 迁移适配逻辑。
 
-核心类型定义，包括：
+### `@cms/hooks`
 
-- 页面Schema定义（V2版本）
-- 组件配置接口
-- 消息通信协议
+维护通用 Hooks，例如尺寸监听、跳转处理等。
 
-#### @cms/ui
+### `@cms/test-utils`
 
-可复用UI组件库：
+维护测试辅助能力，服务于工具包与应用测试。
 
-- 基础组件（按钮、输入框等）
-- 业务组件（公告、商品展示等）
-- 布局组件（容器、栅格等）
+## 开发说明
 
-#### @cms/utils
+### 新增物料组件
 
-通用工具函数：
-
-- 数据处理工具
-- 请求封装
-- Schema 适配器（V1↔V2版本迁移）
-- 表达式引擎
-
-#### @cms/test-utils
-
-测试工具库：
-
-- 测试辅助函数
-- Mock数据生成
-- 断言工具封装
-
-#### @cms/hooks
-
-Vue组合式API：
-
-- 路由相关Hook
-- 状态管理Hook
-- 设备适配Hook
-
-## 🔧 开发指南
-
-### 新增组件
-
-1. 在 `packages/ui/src/components/` 创建组件文件
+1. 在 `packages/ui/src/components/` 新增组件
 2. 在 `packages/ui/src/components/index.ts` 导出组件
-3. 在 `apps/cms/src/config/component-groups.ts` 注册组件
-4. 创建对应的配置面板组件
+3. 在 `packages/ui/src/index.ts` 暴露对外入口
+4. 在 `apps/cms/src/config/` 与 `apps/cms/src/views/Decorate/config/` 中补充物料配置与默认配置
+5. 按需新增右侧配置面板组件
+6. 如需在渲染端消费，补充 `apps/crs/src/components/` 的映射和渲染入口
 
-### 编写测试
+### 测试与质量检查
 
-项目使用 Vitest 进行单元测试：
-
-```bash
-# 运行指定包测试
-pnpm --filter @cms/utils test
-
-# 运行测试并生成覆盖率报告
-pnpm test:coverage
-```
-
-**测试包说明：**
-
-- **@cms/test-utils** - 测试工具库，提供常用的测试辅助函数
-- **@cms/utils** - 核心工具函数单元测试（如表达式引擎、Schema适配器）
-- **@cms/cms** - CMS应用集成测试（如Schema V2验证）
-
-### 环境变量
-
-项目支持多种环境配置：
+提交前建议至少执行：
 
 ```bash
-# 开发环境
-.env.development
-
-# 生产环境
-.env.production
-
-# 本地开发（git忽略）
-.env.local
-```
-
-### 代码规范
-
-- 遵循 [Vue Style Guide](https://vuejs.org/style-guide/)
-- 使用TypeScript编写类型安全的代码
-- 组件命名采用PascalCase
-- 文件命名采用kebab-case
-- 使用 Composition API 和 `<script setup>` 语法
-
-## 📚 项目文档
-
-项目文档位于 `docs/` 目录：
-
-- `移动端适配重构完成报告.md` - VW 适配方案迁移报告
-- `schema-v2-refactor-report.md` - Schema V2 重构报告
-- `component-analysis.md` - 组件库分析报告
-- `refactor-completion-report.md` - 代码重构完成报告
-
-## 🤝 贡献指南
-
-欢迎任何形式的贡献！
-
-1. Fork 项目
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'feat: add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 开启 Pull Request
-
-### 开发流程
-
-```bash
-# 1. 克隆仓库
-git clone https://github.com/your-username/cms-mobile-cms.git
-
-# 2. 安装依赖
-pnpm install
-
-# 3. 创建功能分支
-git checkout -b feature/new-feature
-
-# 4. 开发并测试
-pnpm dev
+pnpm lint
+pnpm typecheck
 pnpm test
-
-# 5. 提交代码
-git add .
-git commit -m "feat: add new feature"
-
-# 6. 推送并创建PR
-git push origin feature/new-feature
 ```
 
-## 📝 License
+如果只修改了某个包，优先使用 `pnpm --filter` 定位执行，减少等待时间。
 
-MIT License
+## 文档
 
-## 🙏 致谢
+项目补充文档位于 `docs/` 目录，包含但不限于：
 
-感谢所有为这个项目做出贡献的开发者们！
+- 架构设计与重构记录
+- Schema V2 迁移说明
+- 业务与配置面板改造报告
+- 环境变量与组件规范文档
+- 面试回答参考文档
 
----
+## 说明
 
-<p align="center">Made with ❤️ by the CMS Team</p>
+- README 已按当前仓库真实结构整理
+- `apps` 下包含 `cms` 与 `crs` 两个应用
+- 如需补充部署说明、环境变量模板或接口联调规范，建议继续在 `docs/` 中拆分维护

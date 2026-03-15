@@ -3,6 +3,7 @@
     <ComGroup title="生效时间">
       <el-date-picker
         v-model="validTimeRange"
+        class="w-full"
         type="datetimerange"
         range-separator="至"
         start-placeholder="开始时间"
@@ -56,9 +57,3 @@ const validTimeRange = computed({
   },
 });
 </script>
-
-<style scoped>
-.com-valid-time :deep(.el-date-editor) {
-  width: 100%;
-}
-</style>

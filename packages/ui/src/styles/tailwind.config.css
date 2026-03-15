@@ -1,5 +1,2 @@
 @import "tailwindcss";
-
-@theme {
-  --color-primary: #419bf9;
-}
+@import "./tokens.css";
