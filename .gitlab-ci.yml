@@ -1,0 +1,54 @@
+﻿stages:
+  - quality
+  - security
+  - ai_review
+
+variables:
+  PNPM_STORE_PATH: .pnpm-store
+
+default:
+  image: node:20-bookworm
+  cache:
+    key:
+      files:
+        - pnpm-lock.yaml
+    paths:
+      - .pnpm-store/
+      - .turbo/
+  before_script:
+    - corepack enable
+    - corepack prepare pnpm@9.15.0 --activate
+    - pnpm config set store-dir $PNPM_STORE_PATH
+    - pnpm install --frozen-lockfile
+
+quality_gate:
+  stage: quality
+  script:
+    - pnpm run ci:quality
+
+security_audit:
+  stage: security
+  script:
+    - pnpm run security:audit
+
+security_secrets:
+  stage: security
+  image: zricethezav/gitleaks:v8.24.2
+  before_script: []
+  script:
+    - gitleaks detect --source . --no-banner --redact --config .gitleaks.toml
+
+security_sast:
+  stage: security
+  image: semgrep/semgrep:latest
+  before_script: []
+  script:
+    - semgrep scan --config .semgrep/rules.yml --error --exclude node_modules --exclude dist .
+
+ai_review_baseline:
+  stage: ai_review
+  script:
+    - test -f .ai-review/README.md
+    - test -f .ai-review/frontend-review-checklist.md
+    - test -f .ai-review/prompt-template.md
+    - echo "AI review baseline files verified."

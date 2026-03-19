@@ -3,31 +3,33 @@
     <h3>组件列表</h3>
     <el-collapse v-model="activeNames" class="material-collapse">
       <el-collapse-item
-        v-for="(group, index) in materialConfig.componentGroups"
-        :key="index"
-        :title="group.title"
+        v-for="(group, index) in materialGroups"
+        :key="group.key"
+        :title="group.label"
         :name="index + 1"
         class="material-collapse-item"
       >
         <ul class="component-list">
           <li
-            v-for="component in group.components"
-            :key="component.type"
-            :class="isDraggable(component) ? 'drag-enabled' : 'drag-disabled'"
-            :draggable="isDraggable(component)"
-            @dragstart="onDragstart(component, $event)"
-            @dragend="onDragend($event)"
+            v-for="material in group.materials"
+            :key="material.type"
+            :class="
+              isDraggable(material.type, material.maxCount)
+                ? 'drag-enabled'
+                : 'drag-disabled'
+            "
+            :draggable="isDraggable(material.type, material.maxCount)"
+            @dragstart="onDragstart(material.type, $event)"
+            @dragend="onDragend"
           >
-            <img
-              :src="component.icon"
-              :alt="component.label"
-              class="component-icon"
-            />
+            <div class="component-icon">
+              {{ material.icon }}
+            </div>
             <p class="name">
-              {{ component.label }}
+              {{ material.label }}
             </p>
             <p class="num">
-              {{ `${getComponentCount(component.type) || 0}/${component.max}` }}
+              {{ `${getComponentCount(material.type)}/${material.maxCount}` }}
             </p>
           </li>
         </ul>
@@ -38,68 +40,36 @@
 
 <script setup lang="ts">
 import { ref } from "vue";
-import type { MaterialConfig } from "../types";
-import type { ComponentItem } from "@/config/component-groups";
 import { usePageStore } from "@/store/usePageStore";
-import {
-  getComponentDefault,
-  getComponentMaxNum,
-} from "@/config/component-defaults";
-
-interface Props {
-  materialConfig: MaterialConfig;
-}
-
-defineProps<Props>()
+import { getMaterialDefaults, getMaterialGroups } from "@cms/ui";
 
 const pageStore = usePageStore();
 
 const activeNames = ref([1, 2]);
+const materialGroups = getMaterialGroups();
 
 const getComponentCount = (type: string): number => {
-  const components = pageStore.pageSchema?.components || [];
-  return components.filter((comp) => comp.type === type).length;
+  return Object.values(pageStore.pageSchema.componentMap).filter(
+    (component) => component.type === type,
+  ).length;
 };
 
-const isDraggable = (component: ComponentItem): boolean => {
-  const currentCount = getComponentCount(component.type);
-  const maxCount = getComponentMaxNum(component.type);
+const isDraggable = (type: string, maxCount: number): boolean => {
+  const currentCount = getComponentCount(type);
   return currentCount < maxCount;
 };
 
-const onDragstart = (component: ComponentItem, _event: DragEvent) => {
+const onDragstart = (type: string, _event: DragEvent) => {
   pageStore.setDragActive(true);
-
-  const defaultProps = getComponentDefault(component.type);
-
-  const dragComponent = {
-    ...component,
-    props: defaultProps,
-  };
-
-  pageStore.setDragComponent(dragComponent);
+  pageStore.setDragComponent({
+    type,
+    props: getMaterialDefaults(type),
+  });
 };
 
-const onDragend = (_event: DragEvent) => {
+const onDragend = () => {
   pageStore.setDragActive(false);
-  const addIndex = pageStore.addComponentIndex;
-
-  if (addIndex != null) {
-    const dragComponent = pageStore.dragComponent;
-    if (dragComponent && (dragComponent as Record<string, unknown>).type) {
-      const componentType = (dragComponent as Record<string, unknown>)
-        .type as string;
-      const defaultProps = getComponentDefault(componentType);
-
-      pageStore.addComponent({
-        index: addIndex,
-        type: componentType,
-        props: defaultProps,
-      });
-
-      pageStore.setDragIndex(null);
-    }
-  }
+  pageStore.setDragComponent({});
 };
 </script>
 
@@ -158,10 +128,17 @@ const onDragend = (_event: DragEvent) => {
 }
 
 .component-icon {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-top: 8px;
   height: 32px;
   width: 32px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .name {
@@ -175,7 +152,6 @@ const onDragend = (_event: DragEvent) => {
   font-size: 12px;
   color: #999999;
 }
-
 </style>
 
 <style>

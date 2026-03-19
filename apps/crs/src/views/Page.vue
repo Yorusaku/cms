@@ -57,6 +57,8 @@ import { usePageStore } from '@/store/usePageStore'
 import { getPageDataById, parsePageSchema } from '@/api/page'
 import SchemaRenderer from '@/components/SchemaRenderer.vue'
 import { Loading, Empty, Button } from 'vant'
+import { migrateSchema } from '@cms/utils'
+import { normalizePageSchemaMaterials } from '@cms/ui'
 
 // 涓洪伩鍏岴SLint璀﹀憡锛屾樉寮忚缃粍浠跺悕
 defineOptions({
@@ -111,10 +113,10 @@ const loadPageData = async () => {
     
     // 瑙ｆ瀽Schema鏁版嵁
     const pageData = response.data as unknown as { schema: string; [key: string]: unknown }
-    if (!pageData.schema) {
-      throw new Error('椤甸潰Schema鏁版嵁缂哄け')
-    }
-    const schema = parsePageSchema(pageData.schema)
+    const rawSchema = pageData.schema ? parsePageSchema(pageData.schema) : pageData
+    const schema = normalizePageSchemaMaterials(
+      migrateSchema(rawSchema)
+    )
     
     // 娉ㄥ叆鍒皊tore
     pageStore.importPageSchema(schema)

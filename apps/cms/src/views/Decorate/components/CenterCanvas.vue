@@ -4,10 +4,7 @@
       <div class="canvas-header">
         <h3>页面画布</h3>
         <div class="canvas-actions">
-          <el-button
-            :disabled="pageStore.pageSchema.components.length === 0"
-            @click="handlePreview"
-          >
+          <el-button :disabled="orderedComponents.length === 0" @click="handlePreview">
             预览页面
           </el-button>
         </div>
@@ -18,26 +15,23 @@
           @dragover="dragDrop.handleDragOver"
           @drop="dragDrop.handleDrop"
         >
-          <div
-            v-if="pageStore.pageSchema.components.length === 0"
-            class="empty-canvas"
-          >
-            <div class="empty-icon">📁</div>
-            <p>从左侧拖拽组件到此处</p>
-            <p class="empty-tip">支持排序和配置</p>
+          <div v-if="orderedComponents.length === 0" class="empty-canvas">
+            <div class="empty-icon">画</div>
+            <p>从左侧拖拽物料到此处</p>
+            <p class="empty-tip">支持配置与预览同步</p>
           </div>
           <div
-            v-for="(component, index) in pageStore.pageSchema.components"
+            v-for="(component, index) in orderedComponents"
             :key="component.id"
             class="canvas-component"
             :class="{ active: pageStore.activeComponentId === component.id }"
             @click="handleSelectComponent(component.id)"
           >
-            <div class="component-drag-handle">⋮⋮</div>
+            <div class="component-drag-handle">拖</div>
             <div class="component-content">
               <component
                 :is="resolveComponent(component.type)"
-                v-bind="component.props"
+                v-bind="resolveRuntimeProps(component.type, component.props)"
                 :style="component.styles"
               />
             </div>
@@ -61,33 +55,38 @@
 import { computed, defineAsyncComponent } from "vue";
 import { ElMessage } from "element-plus";
 import { usePageStore } from "../../../store/usePageStore";
-import type { MaterialConfig } from "../types";
 import { useDragDrop } from "../hooks/useDragDrop";
+import {
+  getMaterialAsyncComponent,
+  getOrderedComponents,
+  resolveMaterialRuntimeProps,
+} from "@cms/ui";
 
 interface Props {
   pageStore: ReturnType<typeof usePageStore>;
-  materialConfig: MaterialConfig;
 }
 
 const props = defineProps<Props>();
 
 const dragDrop = useDragDrop();
-
-const _activeComponent = computed(() => {
-  return (
-    props.pageStore.pageSchema.components.find(
-      (c: any) => c.id === props.pageStore.activeComponentId,
-    ) || null
-  );
-});
-
-const resolveComponent = (type: string) => {
-  return props.materialConfig.componentMap[type] || FallbackComponent;
-};
+const orderedComponents = computed(() =>
+  getOrderedComponents(props.pageStore.pageSchema),
+);
 
 const FallbackComponent = defineAsyncComponent(
   () => import("../../../components/FallbackComponent.vue"),
 );
+
+const resolveComponent = (type: string) => {
+  return getMaterialAsyncComponent(type) || FallbackComponent;
+};
+
+const resolveRuntimeProps = (
+  type: string,
+  componentProps: Record<string, unknown>,
+) => {
+  return resolveMaterialRuntimeProps(type, componentProps);
+};
 
 const handleSelectComponent = (id: string) => {
   props.pageStore.setActiveId(id);
@@ -98,7 +97,7 @@ const handleDeleteComponent = (index: number) => {
 };
 
 const handlePreview = () => {
-  ElMessage.success("预览功能待实现");
+  ElMessage.success("请使用顶部操作栏预览页面");
 };
 </script>
 
@@ -166,8 +165,17 @@ const handlePreview = () => {
 }
 
 .empty-icon {
-  font-size: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
   margin-bottom: 16px;
+  border-radius: 16px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 28px;
+  font-weight: 700;
 }
 
 .empty-canvas p {

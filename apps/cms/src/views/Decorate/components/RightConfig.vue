@@ -3,33 +3,34 @@
     <div class="config-panel">
       <div class="config-header">
         <h3 class="config-title">
-          <span v-if="activeComponent"
-            >{{ getComponentDisplayName(activeComponent.type) }} 配置</span
-          >
-          <span v-else>组件配置</span>
+          <span v-if="activeComponent">
+            {{ activeDefinition?.label || activeComponent.type }} 配置
+          </span>
+          <span v-else>页面配置</span>
         </h3>
       </div>
 
       <div class="config-body">
         <div
-          v-if="activeComponent && resolveConfigComponent(activeComponent.type)"
+          v-if="activeComponent && activeDefinition?.editorConfig.mode === 'schema'"
           class="config-content"
         >
-          <component
-            :is="resolveConfigComponent(activeComponent.type)"
-            :parmes="activeComponent.props"
-            @edit-component="handleConfigUpdate"
+          <MaterialConfigRenderer
+            :material-type="activeComponent.type"
+            :component-props="activeComponent.props"
+            @update="handleConfigUpdate"
           />
         </div>
+
         <div v-else-if="activeComponent" class="config-placeholder">
-          <div class="placeholder-icon">⚙️</div>
+          <div class="placeholder-icon">配</div>
           <p class="placeholder-text">
-            暂无 {{ getComponentDisplayName(activeComponent.type) }} 的配置面板
+            暂无 {{ activeComponent.type }} 的配置面板
           </p>
         </div>
-        <div v-else class="config-empty">
-          <div class="empty-icon">🎨</div>
-          <p class="empty-text">请选择画布中的组件</p>
+
+        <div v-else class="config-content">
+          <SetPageInfo />
         </div>
       </div>
     </div>
@@ -37,56 +38,39 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent } from "vue";
+import { computed } from "vue";
 import { usePageStore } from "@/store/usePageStore";
+import { resolveMaterialDefinition } from "@cms/ui";
+import MaterialConfigRenderer from "./MaterialConfigRenderer.vue";
+import SetPageInfo from "./SetPageInfo.vue";
 
 const pageStore = usePageStore();
 
 const activeComponent = computed(() => {
-  return (
-    pageStore.pageSchema.components.find(
-      (c: any) => c.id === pageStore.activeComponentId,
-    ) || null
-  );
+  if (!pageStore.activeComponentId) {
+    return null;
+  }
+
+  return pageStore.pageSchema.componentMap[pageStore.activeComponentId] ?? null;
 });
 
-const configComponentMap: Record<string, any> = {
-  Carousel: defineAsyncComponent(
-    () => import("@/components/configs/CarouselConfig.vue"),
-  ),
-  Notice: defineAsyncComponent(
-    () => import("@/components/configs/NoticeConfig.vue"),
-  ),
-};
-
-const resolveConfigComponent = (type: string) => {
-  return configComponentMap[type] || null;
-};
-
-const handleConfigUpdate = (newProps: any) => {
-  if (activeComponent.value) {
-    pageStore.editComponent({
-      id: activeComponent.value.id,
-      props: newProps,
-    });
+const activeDefinition = computed(() => {
+  if (!activeComponent.value) {
+    return null;
   }
-};
 
-const getComponentDisplayName = (type: string) => {
-  const displayNameMap: Record<string, string> = {
-    Notice: "公告",
-    Carousel: "轮播图",
-    ImageNav: "图片导航",
-    Product: "商品",
-    RichText: "富文本",
-    Slider: "滑块",
-    Dialog: "弹窗",
-    AssistLine: "辅助线",
-    FloatLayer: "浮动层",
-    OnlineService: "在线客服",
-    CubeSelection: "魔方选择",
-  };
-  return displayNameMap[type] || type;
+  return resolveMaterialDefinition(activeComponent.value.type) ?? null;
+});
+
+const handleConfigUpdate = (newProps: Record<string, unknown>) => {
+  if (!activeComponent.value) {
+    return;
+  }
+
+  pageStore.editComponent({
+    id: activeComponent.value.id,
+    props: newProps,
+  });
 };
 </script>
 
@@ -134,8 +118,7 @@ const getComponentDisplayName = (type: string) => {
   background-color: #fff;
 }
 
-.config-placeholder,
-.config-empty {
+.config-placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -144,14 +127,21 @@ const getComponentDisplayName = (type: string) => {
   text-align: center;
 }
 
-.placeholder-icon,
-.empty-icon {
-  font-size: 48px;
+.placeholder-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
   margin-bottom: 16px;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 22px;
+  font-weight: 700;
 }
 
-.placeholder-text,
-.empty-text {
+.placeholder-text {
   margin: 0;
   font-size: 16px;
   color: #606266;

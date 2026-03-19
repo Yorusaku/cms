@@ -143,7 +143,7 @@
 
 代码锚点：
 
-- `apps/cms/src/config/component-groups.ts`
+- `packages/ui/src/materials/definitions.ts`
 - `apps/cms/src/views/Decorate/hooks/useDragDrop.ts`
 
 ---
@@ -299,7 +299,7 @@
 - `apps/cms/src/store/usePageStore.ts`
 - `apps/cms/src/components/PreviewIframe.vue`
 - `apps/cms/src/views/Decorate/hooks/useDragDrop.ts`
-- `apps/cms/src/config/component-groups.ts`
+- `packages/ui/src/materials/definitions.ts`
 - `apps/crs/src/views/PagePreview.vue`
 - `apps/crs/src/views/Page.vue`
 - `apps/crs/src/components/SchemaRenderer.vue`

@@ -19,7 +19,17 @@
     "check:ui-governance": "node scripts/check-ui-governance.mjs",
     "test": "turbo run test",
     "test:coverage": "turbo run test:coverage",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "ci:lint": "pnpm lint",
+    "ci:typecheck": "pnpm typecheck",
+    "ci:test": "turbo run test -- --run",
+    "ci:build": "pnpm build",
+    "ci:quality": "pnpm run ci:lint && pnpm run ci:typecheck && pnpm run ci:test && pnpm run ci:build",
+    "security:audit": "pnpm audit --recursive --audit-level high",
+    "security:secrets": "pnpm dlx gitleaks detect --source . --no-banner --redact --config .gitleaks.toml",
+    "security:sast": "pnpm dlx semgrep scan --config .semgrep/rules.yml --error --exclude node_modules --exclude dist .",
+    "security:scan": "pnpm run security:audit && pnpm run security:secrets && pnpm run security:sast",
+    "ci:all": "pnpm run ci:quality && pnpm run security:scan"
   },
   "devDependencies": {
     "@cms/eslint-config": "workspace:*",

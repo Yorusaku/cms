@@ -32,6 +32,7 @@ import { RefreshLeft, RefreshRight } from '@element-plus/icons-vue'
 import { useEventListener } from '@vueuse/core'
 import { usePageStore } from '@/store/usePageStore'
 import { saveCmsPage, type SavePageParams } from '@/api/activity'
+import { migrateSchemaToV1 } from '@cms/utils'
 
 const route = useRoute()
 const router = useRouter()
@@ -123,21 +124,29 @@ const backToList = () => {
 
 const savePage = async (params?: Record<string, unknown>) => {
   const pageSchema = pageStore.exportPageSchema()
+  const legacyComponentList = migrateSchemaToV1(pageSchema).components.map(
+    (component, index) => ({
+      id: component.id,
+      sort: index,
+      data: {
+        component: component.type,
+        ...(component.props as Record<string, unknown>),
+      },
+      styles: component.styles ?? {}
+    })
+  )
+
   const pageData: SavePageParams = {
     name: ((pageSchema.pageConfig as Record<string, unknown>)?.name as string) || '',
     schema: pageSchema,
     ...(pageSchema.pageConfig as Record<string, unknown>),
-    componentList: pageSchema.components,
+    componentList: legacyComponentList,
     ...params
   }
 
   if (route.query.id) {
     pageData.id = Number(route.query.id)
   }
-
-  ;(pageData.componentList as Array<Record<string, unknown>>)?.forEach((item, index: number) => {
-    item.sort = index
-  })
 
   const resp = await saveCmsPage(pageData)
 

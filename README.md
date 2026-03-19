@@ -151,12 +151,12 @@ CRS 渲染端，包含以下核心能力：
 
 ### 新增物料组件
 
-1. 在 `packages/ui/src/components/` 新增组件
-2. 在 `packages/ui/src/components/index.ts` 导出组件
-3. 在 `packages/ui/src/index.ts` 暴露对外入口
-4. 在 `apps/cms/src/config/` 与 `apps/cms/src/views/Decorate/config/` 中补充物料配置与默认配置
-5. 按需新增右侧配置面板组件
-6. 如需在渲染端消费，补充 `apps/crs/src/components/` 的映射和渲染入口
+1. 在 `packages/ui/src/components/` 新增运行时物料组件
+2. 在 `packages/ui/src/materials/definitions.ts` 声明对应 `MaterialDefinition`（`type`、`aliases`、`group`、`label`、`icon`、`maxCount`、`defaultProps`、`runtimeComponent`、`editorConfig`）
+3. 在 `packages/types/src/materials.ts` 复用/扩展共享字段 DSL（仅在通用字段无法表达时才扩展）
+4. 在 `packages/ui/src/materials/definitions.ts` 补齐 `editorConfig.schema`，默认不再新增 CMS 专用配置组件
+5. 补齐测试：registry 解析、type 归一化、配置渲染与导入导出链路
+6. 新增物料默认不再修改 `apps/cms` 与 `apps/crs` 的业务映射文件，双端统一消费 shared registry
 
 ### 测试与质量检查
 
@@ -185,3 +185,12 @@ pnpm test
 - README 已按当前仓库真实结构整理
 - `apps` 下包含 `cms` 与 `crs` 两个应用
 - 如需补充部署说明、环境变量模板或接口联调规范，建议继续在 `docs/` 中拆分维护
+
+
+## 工程化门禁基线（新增）
+
+- CI 质量门禁：pnpm run ci:quality
+- 安全扫描：pnpm run security:scan
+- 一键全量门禁：pnpm run ci:all
+- 阶段文档索引：docs/engineering/README.md
+- Gemini Prompt 索引：docs/gemini-prompts/README.md

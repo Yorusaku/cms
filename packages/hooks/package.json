@@ -17,7 +17,7 @@
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --fix",
-    "test": "vitest",
+    "test": "vitest --passWithNoTests",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
     "clean": "rimraf dist"

@@ -1,0 +1,18 @@
+﻿title = "cms-monorepo gitleaks config"
+
+[allowlist]
+description = "Ignore docs, legacy archives, and local temp outputs"
+paths = [
+  '''^docs/''',
+  '''^old-project/''',
+  '''^tmp/''',
+  '''^pnpm-lock\.yaml$''',
+  '''^debug\.log$'''
+]
+
+# Accept obvious placeholders used in docs and demos.
+regexes = [
+  '''(?i)example[_-]?key''',
+  '''(?i)test[_-]?token''',
+  '''(?i)mock[_-]?secret'''
+]
