@@ -11,28 +11,72 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
+import { useDebounceFn } from "@vueuse/core";
 import { usePageStore } from "@/store/usePageStore";
 import { getCmsPageById } from "@/api/activity";
 import { migrateSchema } from "@cms/utils";
 import { normalizePageSchemaMaterials } from "@cms/ui";
 import { adaptPageData } from "@/utils/data-adapter";
+import { loadPageDraft, savePageDraft } from "@/utils/page-draft";
 import TopHeader from "./components/TopHeader.vue";
 import LeftMaterial from "./components/LeftMaterial.vue";
 import CenterCanvas from "./components/CenterCanvas.vue";
 import RightConfig from "./components/RightConfig.vue";
 
+interface PageDetailResponse {
+  code: number;
+  message?: string;
+  data?: Record<string, unknown>;
+}
+
 const pageStore = usePageStore();
 const route = useRoute();
+const draftReady = ref(false);
+
+const pageId = computed(() => {
+  const id = Number(route.query.id);
+  return Number.isFinite(id) && id > 0 ? id : null;
+});
+
+const restoreDraftIfNeeded = async () => {
+  const draft = loadPageDraft(pageId.value);
+  if (!draft) {
+    return;
+  }
+
+  try {
+    await ElMessageBox.confirm(
+      "检测到本地未保存草稿，是否恢复到编辑器？",
+      "恢复草稿",
+      {
+        confirmButtonText: "恢复",
+        cancelButtonText: "忽略",
+        type: "warning",
+      },
+    );
+    pageStore.importPageSchema(draft.schema);
+    ElMessage.success("已恢复本地草稿");
+  } catch {
+    // 用户主动忽略草稿时不提示
+  }
+};
+
+const debouncedSaveDraft = useDebounceFn(() => {
+  if (!draftReady.value) {
+    return;
+  }
+  savePageDraft(pageId.value, pageStore.exportPageSchema());
+}, 800);
 
 const initData = async () => {
   const { id } = route.query;
 
   if (id) {
     try {
-      const response: any = await getCmsPageById(Number(id));
+      const response = (await getCmsPageById(Number(id))) as PageDetailResponse;
 
       if (response.code !== 10000) {
         throw new Error(
@@ -68,11 +112,22 @@ const initData = async () => {
   } else {
     pageStore.setInitPageSchema();
   }
+
+  await restoreDraftIfNeeded();
+  draftReady.value = true;
 };
 
 onMounted(() => {
   initData();
 });
+
+watch(
+  () => pageStore.pageSchema,
+  () => {
+    debouncedSaveDraft();
+  },
+  { deep: true },
+);
 </script>
 
 <style scoped>

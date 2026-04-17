@@ -34,6 +34,8 @@ dist-ssr
 # Legacy directories
 /cms-manage/
 /crs/
+/old-project/
+/tmp/
 
 # Generated files
 **/auto-imports.d.ts

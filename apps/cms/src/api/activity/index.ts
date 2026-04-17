@@ -10,12 +10,14 @@ export interface PageListParams {
 export interface PageListResponse {
   code: number;
   message: string;
-  data: {
-    list: PageItem[];
-    total: number;
-    pageNum: number;
-    pageSize: number;
-  };
+  data: PageListData;
+}
+
+export interface PageListData {
+  list: PageItem[];
+  total: number;
+  pageNum: number;
+  pageSize: number;
 }
 
 export interface PageItem {
@@ -24,26 +26,26 @@ export interface PageItem {
   isAbled: number;
   create_time: string;
   update_time: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface SavePageParams {
   id?: number;
   name: string;
-  schema: any;
-  [key: string]: any;
+  schema: unknown;
+  [key: string]: unknown;
 }
 
-export function getCmsPageList(data: PageListParams) {
+export function getCmsPageList(
+  data: PageListParams,
+): Promise<PageListResponse> {
   const params = new URLSearchParams();
   Object.entries(data).forEach(([key, value]) => {
     if (value !== undefined && value !== "") {
       params.append(key, String(value));
     }
   });
-  return http.get<PageListResponse>(
-    `/atlas-cms/getPageList?${params.toString()}`,
-  );
+  return http.get<PageListData>(`/atlas-cms/getPageList?${params.toString()}`);
 }
 
 export function saveCmsPage(data: SavePageParams) {

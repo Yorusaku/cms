@@ -1,20 +1,53 @@
 <template>
   <div class="preview-box">
-    <div class="preview-page">
-      <div class="preview-header" />
-      <div class="preview-body">
-        <iframe
-          id="previewIframe"
-          class="preview-iframe"
-          :src="previewSrc"
-          title="页面预览"
-          frameborder="0"
-          allowfullscreen
-          width="100%"
-          height="100%"
-        />
+    <div class="preview-panel">
+      <div class="preview-toolbar">
+        <el-form inline>
+          <el-form-item label="设备">
+            <el-select v-model="deviceKey" class="toolbar-select">
+              <el-option
+                v-for="device in deviceOptions"
+                :key="device.key"
+                :label="device.label"
+                :value="device.key"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <el-button :loading="loading" @click="reloadPreview">刷新预览</el-button>
+          </el-form-item>
+        </el-form>
+        <p class="preview-meta">
+          <span v-if="lastLoadedAt">最后同步：{{ lastLoadedAt }}</span>
+          <span v-else>等待首次加载</span>
+        </p>
       </div>
-      <div class="preview-bottom" />
+      <div class="preview-page" :style="frameStyle">
+        <div class="preview-header" />
+        <div class="preview-body">
+          <iframe
+            :key="iframeKey"
+            id="previewIframe"
+            class="preview-iframe"
+            :src="previewSrc"
+            title="页面预览"
+            allowfullscreen
+            width="100%"
+            height="100%"
+            @load="handleLoad"
+            @error="handleError"
+          />
+          <div v-if="loading" class="iframe-overlay">
+            <el-icon class="is-loading"><Loading /></el-icon>
+            <span>预览加载中...</span>
+          </div>
+          <div v-if="loadError" class="iframe-overlay error-overlay">
+            <span>预览加载失败，请重试</span>
+            <el-button size="small" @click="reloadPreview">重试</el-button>
+          </div>
+        </div>
+        <div class="preview-bottom" />
+      </div>
     </div>
     <div class="share-box">
       <div class="code-box">
@@ -32,38 +65,103 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
-import { Picture } from "@element-plus/icons-vue";
+import { Loading, Picture } from "@element-plus/icons-vue";
 
 const route = useRoute();
+
+const deviceOptions = [
+  { key: "iphone-se", label: "iPhone SE", width: 320, height: 568 },
+  { key: "iphone-12", label: "iPhone 12", width: 390, height: 844 },
+  { key: "iphone-14-pro-max", label: "iPhone 14 Pro Max", width: 430, height: 932 },
+];
+
+const deviceKey = ref(deviceOptions[1].key);
+const loading = ref(true);
+const loadError = ref(false);
+const iframeKey = ref(0);
+const lastLoadedAt = ref("");
 const previewSrc = ref("");
-const shareSrc = ref("");
+
+const activeDevice = computed(
+  () => deviceOptions.find((device) => device.key === deviceKey.value) ?? deviceOptions[1],
+);
+
+const frameStyle = computed(() => ({
+  width: `${activeDevice.value.width}px`,
+  height: `${Math.min(activeDevice.value.height, 800)}px`,
+}));
+
+const buildPreviewUrl = () => {
+  const id = route.query.id;
+  const previewOrigin =
+    import.meta.env.VITE_CRS_PREVIEW_ORIGIN || "http://localhost:5174";
+  return `${previewOrigin}/#/pagePreview?id=${id ?? ""}`;
+};
+
+const handleLoad = () => {
+  loading.value = false;
+  loadError.value = false;
+  lastLoadedAt.value = new Date().toLocaleString("zh-CN", { hour12: false });
+};
+
+const handleError = () => {
+  loading.value = false;
+  loadError.value = true;
+};
+
+const reloadPreview = () => {
+  loading.value = true;
+  loadError.value = false;
+  iframeKey.value += 1;
+};
 
 onMounted(() => {
-  const id = route.query.id;
-  shareSrc.value = `http://localhost:5174/page-preview?id=${id}`;
-  previewSrc.value = shareSrc.value;
+  previewSrc.value = buildPreviewUrl();
 });
 </script>
 
 <style scoped>
 .preview-box {
-  height: 100%;
+  min-height: 100%;
   padding: 20px 0;
   box-sizing: border-box;
   background-color: #f5f7fa;
   display: flex;
   justify-content: center;
+  align-items: flex-start;
+  gap: 56px;
+}
+
+.preview-panel {
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 80px;
+  gap: 16px;
+}
+
+.preview-toolbar {
+  width: 100%;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  padding: 12px 16px;
+}
+
+.toolbar-select {
+  width: 180px;
+}
+
+.preview-meta {
+  margin: 2px 0 0;
+  color: #6b7280;
+  font-size: 12px;
 }
 
 .preview-page {
   display: flex;
   flex-direction: column;
-  width: 375px;
-  height: 800px;
   border: 5px solid #ddd;
   border-radius: 20px;
   overflow: hidden;
@@ -105,10 +203,27 @@ onMounted(() => {
 .preview-body {
   flex: 1;
   overflow: hidden;
+  position: relative;
 }
 
 .preview-iframe {
   border: none;
+}
+
+.iframe-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.88);
+  color: #4b5563;
+}
+
+.error-overlay {
+  color: #b91c1c;
 }
 
 .preview-bottom {

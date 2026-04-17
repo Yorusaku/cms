@@ -27,12 +27,14 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { RefreshLeft, RefreshRight } from '@element-plus/icons-vue'
 import { useEventListener } from '@vueuse/core'
 import { usePageStore } from '@/store/usePageStore'
 import { saveCmsPage, type SavePageParams } from '@/api/activity'
 import { migrateSchemaToV1 } from '@cms/utils'
+import { runPagePreflight, type PreflightIssue } from '@/utils/page-preflight'
+import { clearPageDraft } from '@/utils/page-draft'
 
 const route = useRoute()
 const router = useRouter()
@@ -40,6 +42,37 @@ const pageStore = usePageStore()
 
 const saveLoading = ref(false)
 const previewLoading = ref(false)
+
+const buildPreflightHtml = (issues: PreflightIssue[]) =>
+  issues
+    .slice(0, 20)
+    .map((issue) => `<li>${issue.message}</li>`)
+    .join('')
+
+const runPreflight = async () => {
+  const pageSchema = pageStore.exportPageSchema()
+  const result = runPagePreflight(pageSchema)
+  if (result.ok) {
+    return true
+  }
+
+  const extraText =
+    result.issues.length > 20
+      ? `<p style="margin-top: 8px;">还有 ${result.issues.length - 20} 条问题未展示，请先修复后再试。</p>`
+      : ''
+
+  await ElMessageBox.alert(
+    `<p>当前页面未通过发布前校验，请先修复以下问题：</p><ul style="margin: 8px 0 0 16px; padding: 0;">${buildPreflightHtml(result.issues)}</ul>${extraText}`,
+    '保存/发布已拦截',
+    {
+      dangerouslyUseHTMLString: true,
+      confirmButtonText: '我知道了',
+      type: 'warning',
+    },
+  )
+
+  return false
+}
 
 const handleUndo = () => {
   if (pageStore.canUndo) {
@@ -74,6 +107,11 @@ interface SavePageResponse {
 const saveAndView = async () => {
   previewLoading.value = true
   try {
+    const preflightPassed = await runPreflight()
+    if (!preflightPassed) {
+      return
+    }
+
     const res = await savePage({ online: 1 })
     ElMessage.success('上架成功')
     let id = (res as SavePageResponse)?.data?.id || ''
@@ -100,6 +138,11 @@ const goToView = (id: string | number) => {
 const saveAndContinue = async () => {
   saveLoading.value = true
   try {
+    const preflightPassed = await runPreflight()
+    if (!preflightPassed) {
+      return
+    }
+
     await savePage()
     ElMessage.success('保存成功')
   } catch (err: unknown) {
@@ -152,6 +195,12 @@ const savePage = async (params?: Record<string, unknown>) => {
 
   if ((resp as SavePageResponse)?.data?.id) {
     setIdForAddSave((resp as SavePageResponse).data!.id!)
+  }
+
+  const currentId = Number((resp as SavePageResponse)?.data?.id || route.query.id || 0)
+  clearPageDraft(null)
+  if (Number.isFinite(currentId) && currentId > 0) {
+    clearPageDraft(currentId)
   }
 
   return resp
