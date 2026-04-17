@@ -1,9 +1,12 @@
-<template>
+﻿<template>
   <div class="page-right">
     <div class="config-panel">
       <div class="config-header">
         <h3 class="config-title">
-          <span v-if="activeComponent">
+          <span v-if="isBatchMode">
+            批量配置（{{ selectedTypeLabel }}）
+          </span>
+          <span v-else-if="activeComponent">
             {{ activeDefinition?.label || activeComponent.type }} 配置
           </span>
           <span v-else>页面配置</span>
@@ -11,13 +14,51 @@
       </div>
 
       <div class="config-body">
+        <div v-if="isBatchMode" class="config-content">
+          <el-alert
+            type="info"
+            show-icon
+            :closable="false"
+            title="当前为同类型组件批量配置模式（仅通用字段）"
+            class="batch-tip"
+          />
+
+          <div class="batch-fields">
+            <el-form label-width="96px" size="small">
+              <el-form-item label="背景色">
+                <el-color-picker v-model="batchState.backgroundColor" />
+              </el-form-item>
+              <el-form-item label="上边距">
+                <el-input-number v-model="batchState.marginTop" :min="0" :max="200" />
+              </el-form-item>
+              <el-form-item label="内边距">
+                <el-input v-model="batchState.padding" placeholder="如 12px 16px" />
+              </el-form-item>
+              <el-form-item label="显示">
+                <el-switch v-model="batchState.visible" />
+              </el-form-item>
+            </el-form>
+          </div>
+        </div>
+
         <div
-          v-if="activeComponent && activeDefinition?.editorConfig.mode === 'schema'"
+          v-else-if="hasMultiSelectionButTypeMismatch"
+          class="config-placeholder"
+        >
+          <div class="placeholder-icon">提</div>
+          <p class="placeholder-text">
+            多选组件类型不一致，暂不支持跨类型批量配置
+          </p>
+        </div>
+
+        <div
+          v-else-if="activeComponent && activeDefinition?.editorConfig.mode === 'schema'"
           class="config-content"
         >
           <MaterialConfigRenderer
             :material-type="activeComponent.type"
             :component-props="activeComponent.props"
+            :batch-mode="false"
             @update="handleConfigUpdate"
           />
         </div>
@@ -38,7 +79,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, reactive, watch } from "vue";
+import { useDebounceFn } from "@vueuse/core";
 import { usePageStore } from "@/store/usePageStore";
 import { resolveMaterialDefinition } from "@cms/ui";
 import MaterialConfigRenderer from "./MaterialConfigRenderer.vue";
@@ -52,6 +94,34 @@ const activeComponent = computed(() => {
   }
 
   return pageStore.pageSchema.componentMap[pageStore.activeComponentId] ?? null;
+});
+
+const selectedComponents = computed(() =>
+  pageStore.selectedComponentIds
+    .map((id) => pageStore.pageSchema.componentMap[id])
+    .filter(Boolean),
+);
+
+const selectedTypes = computed(() =>
+  Array.from(new Set(selectedComponents.value.map((component) => component.type))),
+);
+
+const isBatchMode = computed(
+  () => selectedComponents.value.length > 1 && selectedTypes.value.length === 1,
+);
+
+const hasMultiSelectionButTypeMismatch = computed(
+  () => selectedComponents.value.length > 1 && selectedTypes.value.length > 1,
+);
+
+const selectedTypeLabel = computed(() => {
+  const type = selectedTypes.value[0];
+  if (!type) {
+    return "";
+  }
+
+  const definition = resolveMaterialDefinition(type);
+  return definition?.label ?? type;
 });
 
 const activeDefinition = computed(() => {
@@ -72,6 +142,54 @@ const handleConfigUpdate = (newProps: Record<string, unknown>) => {
     props: newProps,
   });
 };
+
+const batchState = reactive({
+  backgroundColor: "",
+  marginTop: 0,
+  padding: "",
+  visible: true,
+});
+
+watch(
+  isBatchMode,
+  (enabled) => {
+    if (!enabled) {
+      return;
+    }
+
+    const first = selectedComponents.value[0];
+    if (!first) {
+      return;
+    }
+
+    const firstProps = first.props as Record<string, unknown>;
+    batchState.backgroundColor = String(firstProps.backgroundColor ?? "");
+    batchState.marginTop = Number(firstProps.marginTop ?? 0);
+    batchState.padding = String(firstProps.padding ?? "");
+    batchState.visible = first.condition !== false;
+  },
+  { immediate: true },
+);
+
+const debouncedBatchApply = useDebounceFn(() => {
+  if (!isBatchMode.value) {
+    return;
+  }
+
+  pageStore.batchEditComponents({
+    ids: pageStore.selectedComponentIds,
+    props: {
+      backgroundColor: batchState.backgroundColor,
+      marginTop: batchState.marginTop,
+      padding: batchState.padding,
+    },
+    condition: batchState.visible,
+  });
+}, 260);
+
+watch(batchState, () => {
+  debouncedBatchApply();
+});
 </script>
 
 <style scoped>
@@ -116,6 +234,16 @@ const handleConfigUpdate = (newProps: Record<string, unknown>) => {
 
 .config-content {
   background-color: #fff;
+}
+
+.batch-tip {
+  margin-bottom: 12px;
+}
+
+.batch-fields {
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 12px;
 }
 
 .config-placeholder {

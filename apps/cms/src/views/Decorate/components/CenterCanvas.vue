@@ -1,10 +1,10 @@
-<template>
+﻿<template>
   <div class="canvas-area">
     <div class="canvas-wrapper">
       <div class="canvas-header">
         <h3>页面画布</h3>
         <div class="canvas-actions">
-          <el-button :disabled="orderedComponents.length === 0" @click="handlePreview">
+          <el-button :disabled="sortableComponents.length === 0" @click="handlePreview">
             预览页面
           </el-button>
         </div>
@@ -15,35 +15,55 @@
           @dragover="dragDrop.handleDragOver"
           @drop="dragDrop.handleDrop"
         >
-          <div v-if="orderedComponents.length === 0" class="empty-canvas">
+          <div v-if="sortableComponents.length === 0" class="empty-canvas">
             <div class="empty-icon">画</div>
             <p>从左侧拖拽物料到此处</p>
             <p class="empty-tip">支持配置与预览同步</p>
           </div>
-          <div
-            v-for="(component, index) in orderedComponents"
-            :key="component.id"
-            class="canvas-component"
-            :class="{ active: pageStore.activeComponentId === component.id }"
-            @click="handleSelectComponent(component.id)"
+          <VueDraggable
+            v-else
+            v-model="sortableComponents"
+            item-key="id"
+            handle=".component-drag-handle"
+            :animation="220"
+            ghost-class="sortable-ghost"
+            chosen-class="sortable-chosen"
+            class="sortable-list"
           >
-            <div class="component-drag-handle">拖</div>
-            <div class="component-content">
-              <component
-                :is="resolveComponent(component.type)"
-                v-bind="resolveRuntimeProps(component.type, component.props)"
-                :style="component.styles"
-              />
-            </div>
-            <div class="component-actions">
-              <el-button
-                size="small"
-                type="danger"
-                @click.stop="handleDeleteComponent(index)"
+            <template #item="{ element: component, index }">
+              <div
+                class="canvas-component"
+                :class="{
+                  active: pageStore.activeComponentId === component.id,
+                  selected: pageStore.selectedComponentIds.includes(component.id),
+                }"
+                @click="handleSelectComponent(component.id, $event)"
               >
-                删除
-              </el-button>
-            </div>
+                <div class="component-drag-handle">拖</div>
+                <div class="component-content">
+                  <component
+                    :is="resolveComponent(component.type)"
+                    v-bind="resolveRuntimeProps(component.type, component.props)"
+                    :style="component.styles"
+                  />
+                </div>
+                <div class="component-actions">
+                  <el-button size="small" @click.stop="handleDuplicateComponent(component.id)">
+                    复制
+                  </el-button>
+                  <el-button
+                    size="small"
+                    type="danger"
+                    @click.stop="handleDeleteComponent(index)"
+                  >
+                    删除
+                  </el-button>
+                </div>
+              </div>
+            </template>
+          </VueDraggable>
+          <div v-if="pageStore.activeComponentId" class="keyboard-hint">
+            支持 Delete 删除、Ctrl/Cmd+C 复制、Ctrl/Cmd+Z 撤销、Ctrl/Cmd+Y 重做、Alt+↑/↓ 调整顺序
           </div>
         </div>
       </div>
@@ -53,7 +73,9 @@
 
 <script setup lang="ts">
 import { computed, defineAsyncComponent } from "vue";
+import { useEventListener } from "@vueuse/core";
 import { ElMessage } from "element-plus";
+import { VueDraggable } from "vue-draggable-plus";
 import { usePageStore } from "../../../store/usePageStore";
 import { useDragDrop } from "../hooks/useDragDrop";
 import {
@@ -72,6 +94,12 @@ const dragDrop = useDragDrop();
 const orderedComponents = computed(() =>
   getOrderedComponents(props.pageStore.pageSchema),
 );
+const sortableComponents = computed({
+  get: () => orderedComponents.value,
+  set: (components) => {
+    props.pageStore.reorderRootIds(components.map((component) => component.id));
+  },
+});
 
 const FallbackComponent = defineAsyncComponent(
   () => import("../../../components/FallbackComponent.vue"),
@@ -88,7 +116,12 @@ const resolveRuntimeProps = (
   return resolveMaterialRuntimeProps(type, componentProps);
 };
 
-const handleSelectComponent = (id: string) => {
+const handleSelectComponent = (id: string, event: MouseEvent) => {
+  if (event.ctrlKey || event.metaKey) {
+    props.pageStore.toggleComponentSelection(id);
+    return;
+  }
+
   props.pageStore.setActiveId(id);
 };
 
@@ -96,9 +129,96 @@ const handleDeleteComponent = (index: number) => {
   props.pageStore.deleteComponent({ index });
 };
 
+const handleDuplicateComponent = (id: string) => {
+  props.pageStore.duplicateComponent({ id });
+};
+
 const handlePreview = () => {
   ElMessage.success("请使用顶部操作栏预览页面");
 };
+
+const isInputLikeTarget = (target: EventTarget | null) => {
+  if (!(target instanceof HTMLElement)) {
+    return false;
+  }
+
+  const tag = target.tagName.toLowerCase();
+  return (
+    tag === "input" ||
+    tag === "textarea" ||
+    tag === "select" ||
+    target.isContentEditable
+  );
+};
+
+const moveSelectedComponent = (direction: "up" | "down") => {
+  const currentId = props.pageStore.activeComponentId;
+  if (!currentId) {
+    return;
+  }
+
+  const currentIndex = props.pageStore.pageSchema.rootIds.findIndex(
+    (id) => id === currentId,
+  );
+  if (currentIndex < 0) {
+    return;
+  }
+
+  const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+  props.pageStore.moveComponent({ from: currentIndex, to: targetIndex });
+};
+
+useEventListener(window, "keydown", (event: KeyboardEvent) => {
+  if (isInputLikeTarget(event.target)) {
+    return;
+  }
+
+  const activeId = props.pageStore.activeComponentId;
+  const withMeta = event.ctrlKey || event.metaKey;
+
+  if ((event.key === "Delete" || event.key === "Backspace") && activeId) {
+    event.preventDefault();
+    props.pageStore.deleteActiveComponent();
+    return;
+  }
+
+  if (withMeta && event.key.toLowerCase() === "c" && activeId) {
+    event.preventDefault();
+    props.pageStore.duplicateComponent({ id: activeId });
+    return;
+  }
+
+  if (withMeta && event.key.toLowerCase() === "z" && !event.shiftKey) {
+    event.preventDefault();
+    if (props.pageStore.canUndo) {
+      props.pageStore.undo();
+    }
+    return;
+  }
+
+  if (
+    withMeta &&
+    ((event.key.toLowerCase() === "z" && event.shiftKey) ||
+      event.key.toLowerCase() === "y")
+  ) {
+    event.preventDefault();
+    if (props.pageStore.canRedo) {
+      props.pageStore.redo();
+    }
+    return;
+  }
+
+  if (event.altKey && event.key === "ArrowUp") {
+    event.preventDefault();
+    moveSelectedComponent("up");
+    return;
+  }
+
+  if (event.altKey && event.key === "ArrowDown") {
+    event.preventDefault();
+    moveSelectedComponent("down");
+  }
+});
 </script>
 
 <style scoped>
@@ -152,6 +272,11 @@ const handlePreview = () => {
   padding: 24px;
   overflow-y: auto;
   min-height: 500px;
+}
+
+.sortable-list {
+  display: flex;
+  flex-direction: column;
 }
 
 .empty-canvas {
@@ -208,6 +333,18 @@ const handlePreview = () => {
   box-shadow: 0 4px 16px rgba(64, 158, 255, 0.25);
 }
 
+.canvas-component.selected {
+  border-color: #67c23a;
+}
+
+.canvas-component.sortable-ghost {
+  opacity: 0.45;
+}
+
+.canvas-component.sortable-chosen {
+  border-color: #67c23a;
+}
+
 .component-drag-handle {
   position: absolute;
   left: -32px;
@@ -241,10 +378,17 @@ const handlePreview = () => {
   right: 16px;
   display: none;
   z-index: 10;
+  gap: 8px;
 }
 
 .canvas-component:hover .component-actions,
 .canvas-component.active .component-actions {
-  display: block;
+  display: flex;
+}
+
+.keyboard-hint {
+  margin-top: 4px;
+  color: #909399;
+  font-size: 12px;
 }
 </style>

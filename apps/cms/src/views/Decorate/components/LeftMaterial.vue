@@ -1,9 +1,17 @@
-<template>
+﻿<template>
   <div class="component-sidebar">
     <h3>组件列表</h3>
+    <div class="material-search">
+      <el-input
+        v-model="keyword"
+        placeholder="搜索物料（名称/type/alias）"
+        clearable
+        size="small"
+      />
+    </div>
     <el-collapse v-model="activeNames" class="material-collapse">
       <el-collapse-item
-        v-for="(group, index) in materialGroups"
+        v-for="(group, index) in filteredGroups"
         :key="group.key"
         :title="group.label"
         :name="index + 1"
@@ -35,18 +43,43 @@
         </ul>
       </el-collapse-item>
     </el-collapse>
+    <div v-if="keyword && filteredGroups.length === 0" class="empty-search">
+      未找到匹配的物料
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { usePageStore } from "@/store/usePageStore";
 import { getMaterialDefaults, getMaterialGroups } from "@cms/ui";
 
 const pageStore = usePageStore();
 
 const activeNames = ref([1, 2]);
+const keyword = ref("");
 const materialGroups = getMaterialGroups();
+
+const filteredGroups = computed(() => {
+  const normalizedKeyword = keyword.value.trim().toLowerCase();
+  if (!normalizedKeyword) {
+    return materialGroups;
+  }
+
+  return materialGroups
+    .map((group) => ({
+      ...group,
+      materials: group.materials.filter((material) => {
+        const aliases = material.aliases ?? [];
+        return (
+          material.label.toLowerCase().includes(normalizedKeyword) ||
+          material.type.toLowerCase().includes(normalizedKeyword) ||
+          aliases.some((alias) => alias.toLowerCase().includes(normalizedKeyword))
+        );
+      }),
+    }))
+    .filter((group) => group.materials.length > 0);
+});
 
 const getComponentCount = (type: string): number => {
   return Object.values(pageStore.pageSchema.componentMap).filter(
@@ -91,6 +124,10 @@ const onDragend = () => {
   font-size: 14px;
   color: #323233;
   font-weight: 500;
+}
+
+.material-search {
+  padding: 0 12px 8px;
 }
 
 .component-list {
@@ -151,6 +188,12 @@ const onDragend = () => {
   line-height: 16px;
   font-size: 12px;
   color: #999999;
+}
+
+.empty-search {
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #909399;
 }
 </style>
 

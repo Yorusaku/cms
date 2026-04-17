@@ -1,18 +1,18 @@
-<template>
+﻿<template>
   <div class="material-config-renderer">
     <section
       v-for="section in visibleSections"
       :key="section.label"
       class="config-section"
     >
-      <header class="section-header">
+      <header class="section-header" @click="toggleSection(section.label)">
         <h4 class="section-title">{{ section.label }}</h4>
         <p v-if="section.description" class="section-description">
           {{ section.description }}
         </p>
       </header>
 
-      <div class="section-fields">
+      <div v-if="isSectionExpanded(section.label)" class="section-fields">
         <div
           v-for="field in getRenderableFields(section.fields)"
           :key="`${field.type}-${field.path}`"
@@ -52,16 +52,23 @@ import MaterialFieldRenderer from "./MaterialFieldRenderer.vue";
 
 type MaterialRenderableField = Exclude<MaterialFieldSchema, MaterialSectionSchema>;
 
-const props = defineProps<{
-  materialType: string;
-  componentProps: Record<string, unknown>;
-}>();
+const props = withDefaults(
+  defineProps<{
+    materialType: string;
+    componentProps: Record<string, unknown>;
+    batchMode?: boolean;
+  }>(),
+  {
+    batchMode: false,
+  },
+);
 
 const emit = defineEmits<{
   (e: "update", props: Record<string, unknown>): void;
 }>();
 
 const draftProps = ref<Record<string, unknown>>(deepClone(props.componentProps));
+const expandedSections = ref<Set<string>>(new Set());
 
 const materialDefinition = computed(() =>
   resolveMaterialDefinition(props.materialType),
@@ -74,6 +81,32 @@ const materialSchema = computed(() => {
 
   return materialDefinition.value.editorConfig.schema;
 });
+
+function isVisible(rule?: MaterialVisibilityRule) {
+  if (!rule) {
+    return true;
+  }
+
+  const currentValue = getValue(rule.field);
+
+  if (rule.truthy) {
+    return Boolean(currentValue);
+  }
+
+  if (rule.in) {
+    return rule.in.includes(currentValue);
+  }
+
+  if (rule.notEquals !== undefined) {
+    return currentValue !== rule.notEquals;
+  }
+
+  if (rule.equals !== undefined) {
+    return currentValue === rule.equals;
+  }
+
+  return true;
+}
 
 const visibleSections = computed(
   () =>
@@ -90,9 +123,23 @@ watch(
   { deep: true },
 );
 
+watch(
+  visibleSections,
+  (sections) => {
+    if (expandedSections.value.size === 0 && sections.length > 0) {
+      expandedSections.value = new Set(sections.map((section) => section.label));
+    }
+  },
+  { immediate: true },
+);
+
 const debouncedEmit = useDebounceFn(() => {
   emit("update", deepClone(draftProps.value));
 }, 200);
+
+const throttledEmitForBatch = useDebounceFn(() => {
+  emit("update", deepClone(draftProps.value));
+}, 300);
 
 const getRenderableFields = (
   fields: MaterialFieldSchema[],
@@ -132,33 +179,24 @@ const setValue = (path: string, value: unknown) => {
 
 const handleFieldUpdate = (path: string, value: unknown) => {
   setValue(path, value);
+  if (props.batchMode) {
+    throttledEmitForBatch();
+    return;
+  }
+
   debouncedEmit();
 };
 
-const isVisible = (rule?: MaterialVisibilityRule) => {
-  if (!rule) {
-    return true;
+const isSectionExpanded = (label: string) => expandedSections.value.has(label);
+
+const toggleSection = (label: string) => {
+  const next = new Set(expandedSections.value);
+  if (next.has(label)) {
+    next.delete(label);
+  } else {
+    next.add(label);
   }
-
-  const currentValue = getValue(rule.field);
-
-  if (rule.truthy) {
-    return Boolean(currentValue);
-  }
-
-  if (rule.in) {
-    return rule.in.includes(currentValue);
-  }
-
-  if (rule.notEquals !== undefined) {
-    return currentValue !== rule.notEquals;
-  }
-
-  if (rule.equals !== undefined) {
-    return currentValue === rule.equals;
-  }
-
-  return true;
+  expandedSections.value = next;
 };
 </script>
 
@@ -180,6 +218,7 @@ const isVisible = (rule?: MaterialVisibilityRule) => {
   padding: 16px;
   border-bottom: 1px solid #f2f3f5;
   background: #fafafa;
+  cursor: pointer;
 }
 
 .section-title {
