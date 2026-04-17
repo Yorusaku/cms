@@ -1,2 +1,4 @@
-# 允许使用 :deep(.el-/ .van-) 的文件白名单
-# 当前白名单为空（已清零）。
+# Element/Vant 深度选择器白名单
+# 仅在确有必要时添加，路径使用仓库相对路径（POSIX 风格）
+# 示例：
+# apps/cms/src/views/Decorate/components/RightConfig.vue

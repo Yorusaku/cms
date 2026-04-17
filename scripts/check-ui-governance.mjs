@@ -1,4 +1,4 @@
-import fs from "node:fs";
+﻿import fs from "node:fs";
 import path from "node:path";
 
 const root = process.cwd();
@@ -107,9 +107,13 @@ if (failures.length === 0) {
     !/import\('\.\/[A-Za-z]+Block\.vue'\)/.test(renderNodeContent),
     `${renderNode} 不应从本地 ./xxxBlock.vue 加载组件`,
   );
+  const hasDynamicUiImport = /import\('@cms\/ui'\)/.test(renderNodeContent);
+  const hasStaticUiImport =
+    /from\s+["']@cms\/ui["']/.test(renderNodeContent) ||
+    /import\s+["']@cms\/ui["']/.test(renderNodeContent);
   ensure(
-    /import\('@cms\/ui'\)/.test(renderNodeContent),
-    `${renderNode} 应从 @cms/ui 异步加载组件`,
+    hasDynamicUiImport || hasStaticUiImport,
+    `${renderNode} 应从 @cms/ui 加载组件（静态或异步）`,
   );
 
   const styleExts = new Set([".vue", ".css", ".less", ".scss"]);

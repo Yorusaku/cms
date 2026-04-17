@@ -9,14 +9,22 @@
 
 共享能力沉淀在 `packages/*` 中。
 
+核心术语约定：
+
+- `CMS`：编辑端应用（页面生产）
+- `CRS`：渲染端应用（页面消费）
+- `Schema V2`：当前页面协议版本（`componentMap + rootIds`）
+- `共享物料注册表`：物料 `type`、默认配置、编辑配置与运行时组件的统一入口
+
 ## 项目特点
 
 - 可视化搭建：包含物料面板、画布编辑区、右侧配置区和预览能力
 - 双端分层：编辑端与渲染端拆分，便于隔离编辑态和运行态
-- Schema 驱动：围绕页面 Schema、组件配置和适配逻辑组织能力
+- Schema 驱动：围绕 `Schema V2`、组件配置和适配逻辑组织能力
 - Monorepo 架构：应用、组件库、类型、工具函数、Hooks 与测试能力统一管理
 - 工程化完善：集成 Turbo、ESLint、Prettier、TypeScript、Vitest
 - 共享组件：`packages/ui` 提供编辑端与渲染端可复用组件
+- 共享物料注册表：新增物料默认走 shared registry 单入口，降低双端映射维护成本
 
 ## 技术栈
 
@@ -151,12 +159,34 @@ CRS 渲染端，包含以下核心能力：
 
 ### 新增物料组件
 
+推荐优先使用 CLI 生成骨架，减少手工遗漏：
+
+```bash
+pnpm gen:material --name FooBar --group basic --maxCount 50 --withRuntimeProps true
+```
+
+参数说明：
+
+- `--name`：PascalCase 物料名（如 `FooBar`）
+- `--group`：物料分组，仅支持 `basic | marketing`
+- `--maxCount`：最大可添加数量（正整数）
+- `--withRuntimeProps`：是否生成 `toRuntimeProps` 模板（`true | false`）
+
+CLI 默认会完成以下动作：
+
+1. 生成运行时组件：`packages/ui/src/components/<Name>Block.vue`
+2. 生成物料模块：`packages/ui/src/materials/generated/<Name>.ts`
+3. 自动注入 `packages/ui/src/materials/definitions.ts` 注册锚点区
+4. 生成基础 smoke 测试样板：`apps/cms/tests/material-<name>.generated.test.ts`
+5. 输出统一 checklist（已生成文件、建议执行命令、治理白名单提醒）
+
+兜底手工模式（仅在特殊场景）：
+
 1. 在 `packages/ui/src/components/` 新增运行时物料组件
-2. 在 `packages/ui/src/materials/definitions.ts` 声明对应 `MaterialDefinition`（`type`、`aliases`、`group`、`label`、`icon`、`maxCount`、`defaultProps`、`runtimeComponent`、`editorConfig`）
+2. 在 `packages/ui/src/materials/definitions.ts` 注册 `MaterialDefinition`
 3. 在 `packages/types/src/materials.ts` 复用/扩展共享字段 DSL（仅在通用字段无法表达时才扩展）
-4. 在 `packages/ui/src/materials/definitions.ts` 补齐 `editorConfig.schema`，默认不再新增 CMS 专用配置组件
-5. 补齐测试：registry 解析、type 归一化、配置渲染与导入导出链路
-6. 新增物料默认不再修改 `apps/cms` 与 `apps/crs` 的业务映射文件，双端统一消费 shared registry
+4. 补齐测试：registry 解析、type 归一化、配置渲染与导入导出链路
+5. 新增物料默认不再修改 `apps/cms` 与 `apps/crs` 的业务映射文件，双端统一消费 shared registry
 
 ### 测试与质量检查
 
@@ -172,7 +202,13 @@ pnpm test
 
 ## 文档
 
-项目补充文档位于 `docs/` 目录，包含但不限于：
+项目补充文档位于 `docs/` 目录，优先阅读：
+
+- [营销 H5 可视化低代码搭建平台（飞书详版）](docs/cms-crs-project-feishu-draft.md)
+- [CMS / CRS 项目面试速查版](docs/interview-qa-cms-crs.md)
+- [CMS / CRS 项目深度讲解版](docs/cms-crs-project-deep-dive.md)
+
+其他补充文档包含但不限于：
 
 - 架构设计与重构记录
 - Schema V2 迁移说明

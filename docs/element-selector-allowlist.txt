@@ -1,2 +1,4 @@
-# 允许使用 .el-* 选择器的文件白名单
-# 当前白名单为空（components/views 范围已清零）。
+# Element 选择器白名单（.el-*）
+# 仅在无法通过设计令牌或常规样式覆盖时添加
+# 示例：
+# apps/cms/src/views/Decorate/components/TopHeader.vue
