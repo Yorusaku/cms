@@ -36,6 +36,15 @@ export interface SavePageParams {
   [key: string]: unknown;
 }
 
+export interface PublishLogItem {
+  versionId: string | number;
+  displayVersion?: string;
+  operator?: string;
+  note?: string;
+  publishedAt?: number | string;
+  [key: string]: unknown;
+}
+
 export function getCmsPageList(
   data: PageListParams,
 ): Promise<PageListResponse> {
@@ -74,4 +83,17 @@ export function deletePage(data: { id: number }) {
 
 export function login(data: { username: string; password: string }) {
   return http.post<{ token: string }>("/atlas-cms/login", data);
+}
+
+export function getPagePublishLogs(pageId: number) {
+  return http.get<PublishLogItem[]>("/atlas-cms/getPagePublishLogs", {
+    params: { pageId },
+  });
+}
+
+export function rollbackPageVersion(payload: {
+  pageId: number;
+  versionId: string | number;
+}) {
+  return http.post("/atlas-cms/rollbackPageVersion", payload);
 }
