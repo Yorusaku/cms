@@ -21,6 +21,7 @@ import { migrateSchema } from "@cms/utils";
 import { normalizePageSchemaMaterials } from "@cms/ui";
 import { adaptPageData } from "@/utils/data-adapter";
 import { loadPageDraft, savePageDraft } from "@/utils/page-draft";
+import { getLocalPublishLogs, markPageDraft } from "@/utils/page-publish";
 import TopHeader from "./components/TopHeader.vue";
 import LeftMaterial from "./components/LeftMaterial.vue";
 import CenterCanvas from "./components/CenterCanvas.vue";
@@ -114,6 +115,21 @@ const initData = async () => {
   }
 
   await restoreDraftIfNeeded();
+
+  const rollbackVersionId = String(route.query.rollbackVersionId || "");
+  if (pageId.value && rollbackVersionId) {
+    const rollbackTarget = getLocalPublishLogs(pageId.value).find(
+      (item) => item.versionId === rollbackVersionId,
+    );
+    if (rollbackTarget?.schema) {
+      pageStore.importPageSchema(rollbackTarget.schema);
+      markPageDraft(pageId.value);
+      ElMessage.success("已回滚到目标发布版本，当前为草稿待发布");
+    } else {
+      ElMessage.warning("未找到对应的本地发布版本快照，已按当前服务端数据加载");
+    }
+  }
+
   draftReady.value = true;
 };
 
