@@ -38,6 +38,23 @@ export interface IComponentSchemaV2 extends IComponentSchemaBase {
   state?: Record<string, unknown>; // 组件局部状态
 }
 
+// 组件联动配置
+export interface IComponentLinkage {
+  id: string;
+  sourceComponentId: string;
+  targetComponentId: string;
+  sourceProperty: string;
+  targetProperty: string;
+  transformFn?: string; // 序列化的转换函数
+  condition?: {
+    type: "simple" | "complex";
+    expression?: string;
+    operator?: "AND" | "OR";
+    conditions?: any[];
+  };
+  enabled: boolean;
+}
+
 // V2 页面Schema
 export interface IPageSchemaV2 {
   version: "2.0.0";
@@ -45,6 +62,7 @@ export interface IPageSchemaV2 {
   state?: Record<string, unknown>; // 页面全局状态
   componentMap: Record<string, IComponentSchemaV2>; // 扁平化组件映射
   rootIds: string[]; // 根节点ID数组
+  linkages?: IComponentLinkage[]; // 组件联动配置
 }
 
 // ==================== 类型导出 ====================

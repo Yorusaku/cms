@@ -5,15 +5,11 @@
  * Supports component-to-component communication and state synchronization.
  */
 
-export interface IComponentLinkage {
-  id: string;
-  sourceComponentId: string;
-  targetComponentId: string;
-  sourceProperty: string;
-  targetProperty: string;
+import type { IComponentLinkage as IComponentLinkageSchema } from '@cms/types';
+
+// 运行时联动配置（transformFn 是函数）
+export interface IComponentLinkage extends Omit<IComponentLinkageSchema, 'transformFn'> {
   transformFn?: (value: any) => any;
-  condition?: ILinkageCondition;
-  enabled: boolean;
 }
 
 export interface ILinkageCondition {

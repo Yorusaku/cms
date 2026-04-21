@@ -2,8 +2,9 @@ import { defineStore } from "pinia";
 import { ref, shallowRef } from "vue";
 import { useRefHistory, useDebounceFn } from "@vueuse/core";
 import { deepClone, migrateSchema } from "@cms/utils";
-import type { IPageSchemaV2, IComponentSchemaV2 } from "@cms/types";
+import type { IPageSchemaV2, IComponentSchemaV2, IComponentLinkage } from "@cms/types";
 import { normalizeMaterialType, normalizePageSchemaMaterials } from "@cms/ui";
+import { LinkageEngine } from "@/utils/linkage-engine";
 
 const generateId = (type: string): string => {
   return `${type}-${Math.random().toString(36).substr(2, 9)}`;
@@ -39,6 +40,10 @@ export const usePageStore = defineStore("page", () => {
   const addComponentIndex = ref<number | null>(null);
   const previewHeight = ref("");
   const componentsTopList = ref<number[]>([]);
+
+  // 联动相关状态
+  const linkages = ref<IComponentLinkage[]>([]);
+  const linkageEngine = new LinkageEngine();
 
   const { history, undo, redo, canUndo, canRedo, commit } = useRefHistory(
     pageSchema,
@@ -375,8 +380,68 @@ export const usePageStore = defineStore("page", () => {
     componentsTopList.value = list;
   };
 
+  // 联动相关方法
+  const addLinkage = (linkage: IComponentLinkage) => {
+    linkages.value.push(linkage);
+    // 转换为运行时格式并注册
+    const runtimeLinkage = convertToRuntimeLinkage(linkage);
+    linkageEngine.registerLinkage(runtimeLinkage);
+    commit();
+  };
+
+  const updateLinkage = (id: string, updates: Partial<IComponentLinkage>) => {
+    const index = linkages.value.findIndex((l: IComponentLinkage) => l.id === id);
+    if (index !== -1) {
+      linkages.value[index] = { ...linkages.value[index], ...updates };
+      linkageEngine.unregisterLinkage(id);
+      const runtimeLinkage = convertToRuntimeLinkage(linkages.value[index]);
+      linkageEngine.registerLinkage(runtimeLinkage);
+      commit();
+    }
+  };
+
+  const deleteLinkage = (id: string) => {
+    linkages.value = linkages.value.filter((l: IComponentLinkage) => l.id !== id);
+    linkageEngine.unregisterLinkage(id);
+    commit();
+  };
+
+  const toggleLinkage = (id: string) => {
+    const linkage = linkages.value.find((l: IComponentLinkage) => l.id === id);
+    if (linkage) {
+      linkage.enabled = !linkage.enabled;
+      linkageEngine.setLinkageEnabled(id, linkage.enabled);
+      commit();
+    }
+  };
+
+  const getLinkagesForComponent = (componentId: string) => {
+    return linkageEngine.getLinkagesForComponent(componentId);
+  };
+
+  // 将 Schema 中的联动配置转换为运行时格式
+  const convertToRuntimeLinkage = (linkage: IComponentLinkage): any => {
+    const runtime: any = { ...linkage };
+
+    // 将字符串形式的 transformFn 转换为函数
+    if (linkage.transformFn && typeof linkage.transformFn === 'string') {
+      try {
+        // eslint-disable-next-line no-new-func
+        runtime.transformFn = new Function('value', `return ${linkage.transformFn.replace(/^\(value\)\s*=>\s*/, '')}`);
+      } catch (error) {
+        console.error('Failed to parse transformFn:', error);
+        runtime.transformFn = undefined;
+      }
+    }
+
+    return runtime;
+  };
+
   const exportPageSchema = (): IPageSchemaV2 => {
-    return deepClone(pageSchema.value);
+    return {
+      ...deepClone(pageSchema.value),
+      linkages: linkages.value.length > 0 ? deepClone(linkages.value) : undefined,
+    };
   };
 
   const importPageSchema = (schema: unknown) => {
@@ -384,6 +449,18 @@ export const usePageStore = defineStore("page", () => {
     pageSchema.value = deepClone(migratedSchema);
     activeComponentId.value = null;
     selectedComponentIds.value = [];
+
+    // 加载联动配置
+    if (migratedSchema.linkages) {
+      linkages.value = deepClone(migratedSchema.linkages);
+      linkages.value.forEach((linkage: IComponentLinkage) => {
+        const runtimeLinkage = convertToRuntimeLinkage(linkage);
+        linkageEngine.registerLinkage(runtimeLinkage);
+      });
+    } else {
+      linkages.value = [];
+    }
+
     commit();
   };
 
@@ -428,5 +505,13 @@ export const usePageStore = defineStore("page", () => {
     updatePageHeight,
     exportPageSchema,
     importPageSchema,
+    // 联动相关
+    linkages,
+    linkageEngine,
+    addLinkage,
+    updateLinkage,
+    deleteLinkage,
+    toggleLinkage,
+    getLinkagesForComponent,
   };
 });

@@ -13,8 +13,10 @@
         </h3>
       </div>
 
-      <div class="config-body">
-        <div v-if="isBatchMode" class="config-content">
+      <el-tabs v-model="activeTab" class="config-tabs">
+        <el-tab-pane label="基础配置" name="basic">
+          <div class="config-body">
+            <div v-if="isBatchMode" class="config-content">
           <el-alert
             type="info"
             show-icon
@@ -74,19 +76,27 @@
           <SetPageInfo />
         </div>
       </div>
+    </el-tab-pane>
+
+    <el-tab-pane label="联动配置" name="linkage">
+      <LinkageConfig />
+    </el-tab-pane>
+  </el-tabs>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, watch, ref } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 import { usePageStore } from "@/store/usePageStore";
 import { resolveMaterialDefinition } from "@cms/ui";
 import MaterialConfigRenderer from "./MaterialConfigRenderer.vue";
 import SetPageInfo from "./SetPageInfo.vue";
+import LinkageConfig from "./LinkageConfig.vue";
 
 const pageStore = usePageStore();
+const activeTab = ref('basic');
 
 const activeComponent = computed(() => {
   if (!pageStore.activeComponentId) {
