@@ -41,3 +41,10 @@ dist-ssr
 **/auto-imports.d.ts
 **/components.d.ts
 **/*.tsbuildinfo
+
+# Test coverage
+coverage
+**/coverage/
+
+# Claude workspace
+.claude/
