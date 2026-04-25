@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, defineComponent, h } from "vue";
+import { computed, defineComponent, h, onMounted, onUnmounted, watch, ref } from "vue";
 import type { IComponentSchemaV2 } from "@cms/types";
 import {
   getMaterialAsyncComponent,
   resolveMaterialRuntimeProps,
 } from "@cms/ui";
+import { usePageStore } from "@/store/usePageStore";
 
 const FallbackComponent = defineComponent({
   name: "CrsMaterialFallback",
@@ -26,6 +27,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const pageStore = usePageStore();
 
 const currentNode = computed(() => {
   return props.componentMap[props.nodeId];
@@ -45,6 +47,66 @@ const shouldRender = computed(() => {
 
   return true;
 });
+
+// 联动相关：合并组件 props 和联动状态
+const mergedProps = ref<Record<string, any>>({});
+
+const updateMergedProps = () => {
+  if (!currentNode.value) return;
+
+  const baseProps = resolveMaterialRuntimeProps(
+    currentNode.value.type,
+    currentNode.value.props
+  );
+
+  // 获取联动引擎中的组件状态
+  const linkageState = pageStore.linkageEngine.getComponentState(props.nodeId);
+
+  // 合并 props 和联动状态
+  mergedProps.value = {
+    ...baseProps,
+    ...linkageState,
+  };
+};
+
+// 订阅联动事件
+let unsubscribe: (() => void) | null = null;
+
+onMounted(() => {
+  updateMergedProps();
+
+  // 订阅联动事件，当该组件作为目标组件时更新 props
+  unsubscribe = pageStore.linkageEngine.subscribe(props.nodeId, () => {
+    updateMergedProps();
+  });
+});
+
+onUnmounted(() => {
+  if (unsubscribe) {
+    unsubscribe();
+  }
+});
+
+// 监听组件 props 变化，触发联动
+watch(
+  () => currentNode.value?.props,
+  (newProps, oldProps) => {
+    if (!newProps || !oldProps) return;
+
+    // 检测哪些属性发生了变化
+    Object.keys(newProps).forEach((key) => {
+      if (newProps[key] !== oldProps[key]) {
+        // 触发联动
+        pageStore.linkageEngine.triggerLinkage(
+          props.nodeId,
+          key,
+          newProps[key]
+        );
+      }
+    });
+  },
+  { deep: true }
+);
 </script>
 
 <template>
@@ -52,7 +114,7 @@ const shouldRender = computed(() => {
     <component
       :is="resolveComponent(currentNode.type)"
       :key="currentNode.id"
-      v-bind="resolveMaterialRuntimeProps(currentNode.type, currentNode.props)"
+      v-bind="mergedProps"
       :styles="currentNode.styles"
     >
       <template v-for="childId in currentNode.children" :key="childId">

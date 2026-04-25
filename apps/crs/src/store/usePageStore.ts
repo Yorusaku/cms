@@ -2,8 +2,9 @@ import { defineStore } from "pinia";
 import { ref, shallowRef } from "vue";
 import { useRefHistory } from "@vueuse/core";
 import { deepClone } from "@cms/utils";
-import type { IPageSchemaV2, IComponentSchemaV2 } from "@cms/types";
+import type { IPageSchemaV2, IComponentSchemaV2, IComponentLinkage } from "@cms/types";
 import { normalizeMaterialType, normalizePageSchemaMaterials } from "@cms/ui";
+import { LinkageEngine } from "@/utils/linkage-engine";
 
 const generateId = (type: string): string => {
   return `${type}-${Math.random().toString(36).substr(2, 9)}`;
@@ -37,6 +38,10 @@ export const usePageStore = defineStore("page", () => {
   const addComponentIndex = ref<number | null>(null);
   const previewHeight = ref("");
   const componentsTopList = ref<number[]>([]);
+
+  // 联动相关状态
+  const linkages = ref<IComponentLinkage[]>([]);
+  const linkageEngine = new LinkageEngine();
 
   const { history, undo, redo, canUndo, canRedo, commit } = useRefHistory(
     pageSchema,
@@ -184,8 +189,29 @@ export const usePageStore = defineStore("page", () => {
     componentsTopList.value = list;
   };
 
+  // 将 Schema 中的联动配置转换为运行时格式
+  const convertToRuntimeLinkage = (linkage: IComponentLinkage): any => {
+    const runtime: any = { ...linkage };
+
+    // 将字符串形式的 transformFn 转换为函数
+    if (linkage.transformFn && typeof linkage.transformFn === 'string') {
+      try {
+        // eslint-disable-next-line no-new-func
+        runtime.transformFn = new Function('value', `return ${linkage.transformFn.replace(/^\(value\)\s*=>\s*/, '')}`);
+      } catch (error) {
+        console.error('Failed to parse transformFn:', error);
+        runtime.transformFn = undefined;
+      }
+    }
+
+    return runtime;
+  };
+
   const exportPageSchema = (): IPageSchemaV2 => {
-    return deepClone(pageSchema.value);
+    return {
+      ...deepClone(pageSchema.value),
+      linkages: linkages.value.length > 0 ? deepClone(linkages.value) : undefined,
+    };
   };
 
   const importPageSchema = (schema: IPageSchemaV2) => {
@@ -195,6 +221,19 @@ export const usePageStore = defineStore("page", () => {
     }
 
     pageSchema.value = deepClone(normalizePageSchemaMaterials(schema));
+
+    // 加载联动配置
+    linkageEngine.clearAllLinkages();
+    if (schema.linkages) {
+      linkages.value = deepClone(schema.linkages);
+      linkages.value.forEach((linkage: IComponentLinkage) => {
+        const runtimeLinkage = convertToRuntimeLinkage(linkage);
+        linkageEngine.registerLinkage(runtimeLinkage);
+      });
+    } else {
+      linkages.value = [];
+    }
+
     commit();
   };
 
@@ -230,5 +269,8 @@ export const usePageStore = defineStore("page", () => {
     updatePageHeight,
     exportPageSchema,
     importPageSchema,
+    // 联动相关
+    linkages,
+    linkageEngine,
   };
 });
