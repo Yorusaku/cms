@@ -81,6 +81,10 @@
     <el-tab-pane label="联动配置" name="linkage">
       <LinkageConfig />
     </el-tab-pane>
+
+    <el-tab-pane label="联动调试" name="debug">
+      <LinkageDebugPanel />
+    </el-tab-pane>
   </el-tabs>
     </div>
   </div>
@@ -94,6 +98,7 @@ import { resolveMaterialDefinition } from "@cms/ui";
 import MaterialConfigRenderer from "./MaterialConfigRenderer.vue";
 import SetPageInfo from "./SetPageInfo.vue";
 import LinkageConfig from "./LinkageConfig.vue";
+import LinkageDebugPanel from "./LinkageDebugPanel.vue";
 
 const pageStore = usePageStore();
 const activeTab = ref('basic');
