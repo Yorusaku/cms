@@ -10,11 +10,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { ref, watch, onMounted } from "vue";
 import { useEventListener, useDebounceFn } from "@vueuse/core";
 import { usePageStore } from "../store/usePageStore";
 import { MESSAGE_TYPE } from "@cms/types";
 import type { IMessagePayload, IPageSchema } from "@cms/types";
+import {
+  MessageSequenceTracker,
+  createSecureMessage,
+  verifySecureMessage,
+  validateOrigin,
+  type SecureMessagePayload,
+} from "@cms/utils";
 
 defineProps<{
   previewUrl: string;
@@ -24,22 +31,31 @@ const pageStore = usePageStore();
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const iframeLoaded = ref(false);
 
+// 消息序列追踪器
+const outgoingSequenceTracker = new MessageSequenceTracker();
+const incomingSequenceTracker = new MessageSequenceTracker();
+
 const getTargetOrigin = (): string => {
-  return import.meta.env.DEV ? "*" : window.location.origin;
+  // 开发环境也使用白名单，不再使用 "*"
+  return import.meta.env.DEV ? "http://localhost:5174" : window.location.origin;
 };
 
-const sendSchemaToIframe = (schema: IPageSchema) => {
+const sendSchemaToIframe = async (schema: IPageSchema) => {
   if (!iframeRef.value?.contentWindow || !iframeLoaded.value) {
     return;
   }
 
   try {
     const clonedSchema = JSON.parse(JSON.stringify(schema));
-    const payload: IMessagePayload<IPageSchema> = {
-      type: MESSAGE_TYPE.SYNC_SCHEMA,
-      data: clonedSchema,
-    };
-    iframeRef.value.contentWindow.postMessage(payload, getTargetOrigin());
+
+    // 创建安全消息
+    const securePayload = await createSecureMessage(
+      MESSAGE_TYPE.SYNC_SCHEMA,
+      clonedSchema,
+      outgoingSequenceTracker
+    );
+
+    iframeRef.value.contentWindow.postMessage(securePayload, getTargetOrigin());
   } catch (error) {
     console.warn("发送 Schema 到 iframe 失败:", error);
   }
@@ -54,15 +70,38 @@ const handleIframeLoad = () => {
   sendSchemaToIframe(pageStore.pageSchema);
 };
 
-useEventListener(window, "message", (event: MessageEvent) => {
-  const { type, data } = event.data as IMessagePayload;
-  if (
-    type === MESSAGE_TYPE.ON_SELECT_BLOCK &&
-    data &&
-    typeof data === "object" &&
-    "id" in data
-  ) {
-    pageStore.setActiveId(data.id as string);
+useEventListener(window, "message", async (event: MessageEvent) => {
+  // 验证来源
+  if (!validateOrigin(event.origin)) {
+    console.warn("拒绝来自未授权源的消息:", event.origin);
+    return;
+  }
+
+  try {
+    const payload = event.data as SecureMessagePayload;
+
+    // 验证安全消息
+    const verification = await verifySecureMessage(payload, incomingSequenceTracker);
+
+    if (!verification.valid) {
+      console.warn("消息验证失败:", verification.error);
+      return;
+    }
+
+    // 处理验证通过的消息
+    const { type } = payload;
+    const data = verification.data;
+
+    if (
+      type === MESSAGE_TYPE.ON_SELECT_BLOCK &&
+      data &&
+      typeof data === "object" &&
+      "id" in data
+    ) {
+      pageStore.setActiveId(data.id as string);
+    }
+  } catch (error) {
+    console.warn("处理消息失败:", error);
   }
 });
 

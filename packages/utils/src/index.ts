@@ -2,6 +2,7 @@ export * from "./utils";
 export * from "./date";
 export * from "./schema-adapter";
 export * from "./expression";
+export * from "./message-security";
 export { default as Request } from "./request";
 export type {
   RequestConfig,
