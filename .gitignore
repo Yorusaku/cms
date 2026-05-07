@@ -46,5 +46,8 @@ dist-ssr
 coverage
 **/coverage/
 
+# Docs (local only)
+docs/
+
 # Claude workspace
 .claude/
