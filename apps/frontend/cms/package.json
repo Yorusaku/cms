@@ -11,7 +11,10 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:debug": "playwright test --debug"
   },
   "dependencies": {
     "@cms/hooks": "workspace:*",
@@ -35,6 +38,7 @@
   "devDependencies": {
     "@cms/eslint-config": "workspace:*",
     "@cms/prettier-config": "workspace:*",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "catalog:",
     "@testing-library/vue": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",

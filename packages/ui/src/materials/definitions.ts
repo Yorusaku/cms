@@ -1,4 +1,4 @@
-﻿import type { MaterialDefinition, MaterialEditorSchema } from "@cms/types";
+import type { MaterialDefinition, MaterialEditorSchema } from "@cms/types";
 import type { Component } from "vue";
 import {
   normalizeLinkValue,
@@ -62,33 +62,33 @@ const carouselEditorSchema: MaterialEditorSchema = {
   sections: [
     {
       type: "section",
-      label: "杞挱鍐呭",
+      label: "轮播内容",
       fields: [
         {
           type: "array",
           path: "imageList",
-          label: "杞挱椤?,
-          addText: "娣诲姞杞挱鍥?,
+          label: "轮播项",
+          addText: "添加轮播图",
           limit: 10,
           preset: "picList",
           showImage: true,
           showText: true,
           itemSchema: [
-            { key: "imageUrl", type: "image", label: "鍥剧墖" },
-            { key: "text", type: "text", label: "鏍囬" },
-            { key: "link", type: "link", label: "閾炬帴" },
+            { key: "imageUrl", type: "image", label: "图片" },
+            { key: "text", type: "text", label: "标题" },
+            { key: "link", type: "link", label: "链接" },
           ],
         },
       ],
     },
     {
       type: "section",
-      label: "灞曠ず璁剧疆",
+      label: "展示设置",
       fields: [
         {
           type: "number",
           path: "autoplay",
-          label: "鑷姩鎾斁闂撮殧(ms)",
+          label: "自动播放间隔(ms)",
           min: 1000,
           max: 10000,
           step: 500,
@@ -96,38 +96,38 @@ const carouselEditorSchema: MaterialEditorSchema = {
         {
           type: "switch",
           path: "showIndicators",
-          label: "鏄剧ず鎸囩ず鍣?,
+          label: "显示指示器",
         },
         {
           type: "switch",
           path: "showArrows",
-          label: "鏄剧ず鍒囨崲绠ご",
+          label: "显示切换箭头",
         },
         {
           type: "switch",
           path: "loop",
-          label: "寰幆鎾斁",
+          label: "循环播放",
         },
         {
           type: "text",
           path: "height",
-          label: "杞挱楂樺害",
+          label: "轮播高度",
           placeholder: "200px",
         },
         {
           type: "select",
           path: "imageFit",
-          label: "鍥剧墖濉厖妯″紡",
+          label: "图片填充模式",
           options: [
-            { label: "瑁佸垏濉厖", value: "cover" },
-            { label: "瀹屾暣鏄剧ず", value: "contain" },
-            { label: "鎷変几閾烘弧", value: "fill" },
+            { label: "裁切填充", value: "cover" },
+            { label: "完整显示", value: "contain" },
+            { label: "拉伸铺满", value: "fill" },
           ],
         },
         {
           type: "color",
           path: "backgroundColor",
-          label: "鑳屾櫙棰滆壊",
+          label: "背景颜色",
         },
       ],
     },
@@ -138,65 +138,65 @@ const imageNavEditorSchema: MaterialEditorSchema = {
   sections: [
     {
       type: "section",
-      label: "瀵艰埅鍐呭",
+      label: "导航内容",
       fields: [
         {
           type: "array",
           path: "list",
-          label: "瀵艰埅椤?,
-          addText: "娣诲姞瀵艰埅椤?,
+          label: "导航项",
+          addText: "添加导航项",
           limit: 10,
           preset: "picList",
           showImage: true,
           showText: true,
           itemSchema: [
-            { key: "imageUrl", type: "image", label: "鍥剧墖" },
-            { key: "text", type: "text", label: "鏍囬" },
-            { key: "link", type: "link", label: "閾炬帴" },
+            { key: "imageUrl", type: "image", label: "图片" },
+            { key: "text", type: "text", label: "标题" },
+            { key: "link", type: "link", label: "链接" },
           ],
         },
       ],
     },
     {
       type: "section",
-      label: "鏍峰紡璁剧疆",
+      label: "样式设置",
       fields: [
         {
           type: "number",
           path: "columnPadding",
-          label: "涓婁笅闂磋窛",
+          label: "上下间距",
           min: 0,
           max: 50,
         },
         {
           type: "number",
           path: "rowPadding",
-          label: "宸﹀彸闂磋窛",
+          label: "左右间距",
           min: 0,
           max: 50,
         },
         {
           type: "color",
           path: "backgroundColor",
-          label: "鑳屾櫙棰滆壊",
+          label: "背景颜色",
         },
         {
           type: "color",
           path: "textColor",
-          label: "鏂囧瓧棰滆壊",
+          label: "文字颜色",
         },
         {
           type: "number",
           path: "borderRadius",
-          label: "鍦嗚",
+          label: "圆角",
           min: 0,
           max: 20,
         },
         {
           type: "image",
           path: "defaultImage",
-          label: "榛樿鍥剧墖",
-          uploadText: "涓婁紶榛樿鍥剧墖",
+          label: "默认图片",
+          uploadText: "上传默认图片",
         },
       ],
     },
@@ -207,30 +207,30 @@ const richTextEditorSchema: MaterialEditorSchema = {
   sections: [
     {
       type: "section",
-      label: "鍐呭閰嶇疆",
+      label: "内容配置",
       fields: [
         {
           type: "richText",
           path: "content",
-          label: "瀵屾枃鏈唴瀹?,
+          label: "富文本内容",
           rows: 8,
-          placeholder: "璇疯緭鍏?HTML 鍐呭",
+          placeholder: "请输入 HTML 内容",
         },
       ],
     },
     {
       type: "section",
-      label: "鏍峰紡璁剧疆",
+      label: "样式设置",
       fields: [
         {
           type: "color",
           path: "backgroundColor",
-          label: "鑳屾櫙棰滆壊",
+          label: "背景颜色",
         },
         {
           type: "text",
           path: "padding",
-          label: "鍐呰竟璺?,
+          label: "内边距",
           placeholder: "10px 10px 0",
         },
       ],
@@ -242,48 +242,48 @@ const noticeEditorSchema: MaterialEditorSchema = {
   sections: [
     {
       type: "section",
-      label: "鍏憡鍐呭",
+      label: "公告内容",
       fields: [
         {
           type: "array",
           path: "noticeList",
-          label: "鍏憡鍒楄〃",
-          addText: "娣诲姞鍏憡",
+          label: "公告列表",
+          addText: "添加公告",
           limit: 10,
           preset: "picList",
           showImage: false,
           showText: false,
           itemSchema: [
-            { key: "text", type: "text", label: "鏂囨" },
-            { key: "link", type: "link", label: "閾炬帴" },
+            { key: "text", type: "text", label: "文案" },
+            { key: "link", type: "link", label: "链接" },
           ],
         },
       ],
     },
     {
       type: "section",
-      label: "灞曠ず璁剧疆",
+      label: "展示设置",
       fields: [
         {
           type: "image",
           path: "iconUrl",
-          label: "鍥炬爣",
-          uploadText: "涓婁紶鍥炬爣",
+          label: "图标",
+          uploadText: "上传图标",
         },
         {
           type: "color",
           path: "backgroundColor",
-          label: "鑳屾櫙棰滆壊",
+          label: "背景颜色",
         },
         {
           type: "color",
           path: "textColor",
-          label: "鏂囧瓧棰滆壊",
+          label: "文字颜色",
         },
         {
           type: "number",
           path: "speed",
-          label: "婊氬姩閫熷害",
+          label: "滚动速度",
           min: 5,
           max: 100,
           step: 1,
@@ -297,46 +297,46 @@ const dialogEditorSchema: MaterialEditorSchema = {
   sections: [
     {
       type: "section",
-      label: "鍩虹璁剧疆",
+      label: "基础设置",
       fields: [
         {
           type: "switch",
           path: "visible",
-          label: "榛樿鏄剧ず",
+          label: "默认显示",
         },
         {
           type: "text",
           path: "title",
-          label: "鏍囬",
-          placeholder: "璇疯緭鍏ユ爣棰?,
+          label: "标题",
+          placeholder: "请输入标题",
         },
         {
           type: "textarea",
           path: "content",
-          label: "鍐呭",
-          placeholder: "璇疯緭鍏ュ唴瀹?,
+          label: "内容",
+          placeholder: "请输入内容",
           rows: 3,
         },
       ],
     },
     {
       type: "section",
-      label: "鎸夐挳璁剧疆",
+      label: "按钮设置",
       fields: [
         {
           type: "switch",
           path: "showClose",
-          label: "鏄剧ず鍏抽棴鎸夐挳",
+          label: "显示关闭按钮",
         },
         {
           type: "switch",
           path: "showActions",
-          label: "鏄剧ず搴曢儴鎸夐挳",
+          label: "显示底部按钮",
         },
         {
           type: "switch",
           path: "showCancel",
-          label: "鏄剧ず鍙栨秷鎸夐挳",
+          label: "显示取消按钮",
           visibleWhen: {
             field: "showActions",
             equals: true,
@@ -345,7 +345,7 @@ const dialogEditorSchema: MaterialEditorSchema = {
         {
           type: "text",
           path: "cancelText",
-          label: "鍙栨秷鏂囨",
+          label: "取消文案",
           visibleWhen: {
             field: "showCancel",
             equals: true,
@@ -354,7 +354,7 @@ const dialogEditorSchema: MaterialEditorSchema = {
         {
           type: "text",
           path: "confirmText",
-          label: "纭鏂囨",
+          label: "确认文案",
           visibleWhen: {
             field: "showActions",
             equals: true,
@@ -364,27 +364,27 @@ const dialogEditorSchema: MaterialEditorSchema = {
     },
     {
       type: "section",
-      label: "鏍峰紡璁剧疆",
+      label: "样式设置",
       fields: [
         {
           type: "color",
           path: "backgroundColor",
-          label: "鑳屾櫙棰滆壊",
+          label: "背景颜色",
         },
         {
           type: "color",
           path: "titleColor",
-          label: "鏍囬棰滆壊",
+          label: "标题颜色",
         },
         {
           type: "color",
           path: "contentColor",
-          label: "鍐呭棰滆壊",
+          label: "内容颜色",
         },
         {
           type: "color",
           path: "confirmColor",
-          label: "纭鎸夐挳棰滆壊",
+          label: "确认按钮颜色",
         },
       ],
     },
@@ -395,46 +395,46 @@ const productEditorSchema: MaterialEditorSchema = {
   sections: [
     {
       type: "section",
-      label: "鍟嗗搧鍒楄〃",
+      label: "商品列表",
       fields: [
         {
           type: "array",
           path: "list",
-          label: "鍟嗗搧椤?,
-          addText: "娣诲姞鍟嗗搧",
+          label: "商品项",
+          addText: "添加商品",
           limit: 50,
           itemSchema: [
-            { key: "imageUrl", type: "image", label: "鍟嗗搧鍥剧墖" },
-            { key: "brand", type: "text", label: "鍟嗗搧鏍囬", placeholder: "璇疯緭鍏ユ爣棰? },
-            { key: "categoryNames", type: "text", label: "鍓爣棰?, placeholder: "璇疯緭鍏ュ壇鏍囬" },
-            { key: "price", type: "number", label: "浠锋牸", min: 0, step: 0.01 },
+            { key: "imageUrl", type: "image", label: "商品图片" },
+            { key: "brand", type: "text", label: "商品标题", placeholder: "请输入标题" },
+            { key: "categoryNames", type: "text", label: "副标题", placeholder: "请输入副标题" },
+            { key: "price", type: "number", label: "价格", min: 0, step: 0.01 },
           ],
         },
       ],
     },
     {
       type: "section",
-      label: "灞曠ず璁剧疆",
+      label: "展示设置",
       fields: [
         {
           type: "select",
           path: "layoutType",
-          label: "甯冨眬鏍峰紡",
+          label: "布局样式",
           options: [
-            { label: "璇︽儏鍒楄〃", value: "listDetail" },
-            { label: "涓€琛屼竴涓?, value: "oneLineOne" },
-            { label: "涓€琛屼袱涓?, value: "oneLineTwo" },
+            { label: "详情列表", value: "listDetail" },
+            { label: "一行一个", value: "oneLineOne" },
+            { label: "一行两个", value: "oneLineTwo" },
           ],
         },
         {
           type: "switch",
           path: "showPurchase",
-          label: "鏄剧ず璐拱鎸夐挳",
+          label: "显示购买按钮",
         },
         {
           type: "color",
           path: "priceColor",
-          label: "浠锋牸棰滆壊",
+          label: "价格颜色",
         },
       ],
     },
@@ -445,62 +445,62 @@ const cubeSelectionEditorSchema: MaterialEditorSchema = {
   sections: [
     {
       type: "section",
-      label: "鍐呭閰嶇疆",
+      label: "内容配置",
       fields: [
         {
           type: "select",
           path: "template",
-          label: "妯℃澘鏍峰紡",
+          label: "模板样式",
           options: [
-            { label: "鍗曡2鍒?, value: "oneLine2" },
-            { label: "鍗曡3鍒?, value: "oneLine3" },
-            { label: "鍙岃2鍒?, value: "twoLine2" },
-            { label: "鍙岃3鍒?, value: "twoLine3" },
+            { label: "单行2列", value: "oneLine2" },
+            { label: "单行3列", value: "oneLine3" },
+            { label: "双行2列", value: "twoLine2" },
+            { label: "双行3列", value: "twoLine3" },
           ],
         },
         {
           type: "array",
           path: "imageList",
-          label: "鍥剧墖鍒楄〃",
-          addText: "娣诲姞鍥剧墖",
+          label: "图片列表",
+          addText: "添加图片",
           limit: 12,
           itemSchema: [
-            { key: "imageUrl", type: "image", label: "鍥剧墖" },
-            { key: "link", type: "link", label: "閾炬帴" },
+            { key: "imageUrl", type: "image", label: "图片" },
+            { key: "link", type: "link", label: "链接" },
           ],
         },
       ],
     },
     {
       type: "section",
-      label: "鏍峰紡璁剧疆",
+      label: "样式设置",
       fields: [
         {
           type: "number",
           path: "pageMargin",
-          label: "椤甸潰杈硅窛",
+          label: "页面边距",
           min: 0,
           max: 100,
         },
         {
           type: "number",
           path: "imgMargin",
-          label: "鍥剧墖闂磋窛",
+          label: "图片间距",
           min: 0,
           max: 50,
         },
         {
           type: "number",
           path: "radius",
-          label: "鍦嗚鍗婂緞",
+          label: "圆角半径",
           min: 0,
           max: 50,
         },
         {
           type: "image",
           path: "defaultImg",
-          label: "榛樿鍥剧墖",
-          uploadText: "涓婁紶榛樿鍥剧墖",
+          label: "默认图片",
+          uploadText: "上传默认图片",
         },
       ],
     },
@@ -511,12 +511,12 @@ const assistLineEditorSchema: MaterialEditorSchema = {
   sections: [
     {
       type: "section",
-      label: "鍩虹閰嶇疆",
+      label: "基础配置",
       fields: [
         {
           type: "number",
           path: "height",
-          label: "绾挎潯楂樺害",
+          label: "线条高度",
           min: 1,
           max: 20,
           step: 1,
@@ -524,26 +524,26 @@ const assistLineEditorSchema: MaterialEditorSchema = {
         {
           type: "switch",
           path: "paddingVisible",
-          label: "鏄剧ず鍐呰竟璺?,
+          label: "显示内边距",
         },
         {
           type: "select",
           path: "type",
-          label: "绾挎潯绫诲瀷",
+          label: "线条类型",
           options: [
-            { label: "瀹炵嚎", value: 1 },
-            { label: "鏃犺竟妗?, value: 0 },
+            { label: "实线", value: 1 },
+            { label: "无边框", value: 0 },
           ],
         },
         {
           type: "select",
           path: "borderStyle",
-          label: "杈规鏍峰紡",
+          label: "边框样式",
           options: [
-            { label: "瀹炵嚎", value: "solid" },
-            { label: "铏氱嚎", value: "dashed" },
-            { label: "鐐圭嚎", value: "dotted" },
-            { label: "鍙岀嚎", value: "double" },
+            { label: "实线", value: "solid" },
+            { label: "虚线", value: "dashed" },
+            { label: "点线", value: "dotted" },
+            { label: "双线", value: "double" },
           ],
           visibleWhen: {
             field: "type",
@@ -554,17 +554,17 @@ const assistLineEditorSchema: MaterialEditorSchema = {
     },
     {
       type: "section",
-      label: "棰滆壊閰嶇疆",
+      label: "颜色配置",
       fields: [
         {
           type: "color",
           path: "backgroundColor",
-          label: "鑳屾櫙棰滆壊",
+          label: "背景颜色",
         },
         {
           type: "color",
           path: "borderColor",
-          label: "绾挎潯棰滆壊",
+          label: "线条颜色",
         },
       ],
     },
@@ -575,63 +575,63 @@ const floatLayerEditorSchema: MaterialEditorSchema = {
   sections: [
     {
       type: "section",
-      label: "瀹氫綅閰嶇疆",
+      label: "定位配置",
       fields: [
         {
           type: "number",
           path: "width",
-          label: "瀹藉害",
+          label: "宽度",
           min: 20,
           max: 200,
         },
         {
           type: "number",
           path: "bottom",
-          label: "璺濈搴曢儴",
+          label: "距离底部",
           min: 0,
           max: 500,
         },
         {
           type: "number",
           path: "right",
-          label: "璺濈鍙充晶",
+          label: "距离右侧",
           min: 0,
           max: 500,
         },
         {
           type: "number",
           path: "zIndex",
-          label: "灞傜骇(z-index)",
+          label: "层级(z-index)",
           min: 1,
           max: 999,
         },
         {
           type: "switch",
           path: "hideByPageScroll",
-          label: "婊氬姩鏃堕殣钘?,
+          label: "滚动时隐藏",
         },
       ],
     },
     {
       type: "section",
-      label: "鍐呭閰嶇疆",
+      label: "内容配置",
       fields: [
         {
           type: "image",
           path: "imageUrl",
-          label: "娴眰鍥剧墖",
-          uploadText: "涓婁紶娴眰鍥剧墖",
+          label: "浮层图片",
+          uploadText: "上传浮层图片",
         },
         {
           type: "image",
           path: "defaultImage",
-          label: "榛樿鍥剧墖",
-          uploadText: "涓婁紶榛樿鍥剧墖",
+          label: "默认图片",
+          uploadText: "上传默认图片",
         },
         {
           type: "link",
           path: "link",
-          label: "鐐瑰嚮璺宠浆",
+          label: "点击跳转",
         },
       ],
     },
@@ -642,70 +642,70 @@ const onlineServiceEditorSchema: MaterialEditorSchema = {
   sections: [
     {
       type: "section",
-      label: "瀹氫綅閰嶇疆",
+      label: "定位配置",
       fields: [
         {
           type: "number",
           path: "width",
-          label: "瀹藉害",
+          label: "宽度",
           min: 20,
           max: 100,
         },
         {
           type: "number",
           path: "height",
-          label: "楂樺害",
+          label: "高度",
           min: 20,
           max: 100,
         },
         {
           type: "number",
           path: "bottom",
-          label: "璺濈搴曢儴",
+          label: "距离底部",
           min: 0,
           max: 500,
         },
         {
           type: "number",
           path: "right",
-          label: "璺濈鍙充晶",
+          label: "距离右侧",
           min: 0,
           max: 500,
         },
         {
           type: "number",
           path: "zIndex",
-          label: "灞傜骇(z-index)",
+          label: "层级(z-index)",
           min: 1,
           max: 999,
         },
         {
           type: "switch",
           path: "hideByPageScroll",
-          label: "婊氬姩鏃堕殣钘?,
+          label: "滚动时隐藏",
         },
       ],
     },
     {
       type: "section",
-      label: "鏍峰紡閰嶇疆",
+      label: "样式配置",
       fields: [
         {
           type: "color",
           path: "backgroundColor",
-          label: "鑳屾櫙棰滆壊",
+          label: "背景颜色",
         },
         {
           type: "image",
           path: "serviceImage",
-          label: "瀹㈡湇鍥剧墖",
-          uploadText: "涓婁紶瀹㈡湇鍥剧墖",
+          label: "客服图片",
+          uploadText: "上传客服图片",
         },
         {
           type: "text",
           path: "text",
-          label: "鏄剧ず鏂囨湰",
-          placeholder: "瀹㈡湇",
+          label: "显示文本",
+          placeholder: "客服",
         },
       ],
     },
@@ -716,78 +716,78 @@ const sliderEditorSchema: MaterialEditorSchema = {
   sections: [
     {
       type: "section",
-      label: "婊戝潡鍥剧墖",
+      label: "滑块图片",
       fields: [
         {
           type: "array",
           path: "list",
-          label: "鍥剧墖鍒楄〃",
-          addText: "娣诲姞鍥剧墖",
+          label: "图片列表",
+          addText: "添加图片",
           limit: 20,
           itemSchema: [
-            { key: "imageUrl", type: "image", label: "鍥剧墖" },
-            { key: "link", type: "link", label: "閾炬帴" },
-            { key: "text", type: "text", label: "鏂囨" },
+            { key: "imageUrl", type: "image", label: "图片" },
+            { key: "link", type: "link", label: "链接" },
+            { key: "text", type: "text", label: "文案" },
           ],
         },
       ],
     },
     {
       type: "section",
-      label: "鏍峰紡閰嶇疆",
+      label: "样式配置",
       fields: [
         {
           type: "color",
           path: "backgroundColor",
-          label: "鑳屾櫙棰滆壊",
+          label: "背景颜色",
         },
         {
           type: "number",
           path: "padding.0",
-          label: "鍐呰竟璺?涓?涓?",
+          label: "内边距(上/下)",
           min: 0,
           max: 50,
         },
         {
           type: "number",
           path: "padding.1",
-          label: "鍐呰竟璺?宸?鍙?",
+          label: "内边距(左/右)",
           min: 0,
           max: 50,
         },
         {
           type: "number",
           path: "imageMargin",
-          label: "鍥剧墖闂磋窛",
+          label: "图片间距",
           min: 0,
           max: 30,
         },
         {
           type: "number",
           path: "borderRadius",
-          label: "鍦嗚鍗婂緞",
+          label: "圆角半径",
           min: 0,
           max: 20,
         },
         {
           type: "number",
           path: "imageWidth",
-          label: "鍥剧墖瀹藉害",
+          label: "图片宽度",
           min: 50,
           max: 300,
         },
         {
           type: "number",
           path: "imageHeight",
-          label: "鍥剧墖楂樺害",
+          label: "图片高度",
           min: 50,
           max: 300,
         },
         {
           type: "image",
           path: "defaultImage",
-          label: "榛樿鍥剧墖",
-          uploadText: "涓婁紶榛樿鍥剧墖",
+          label: "默认图片",
+          uploadText: "上传默认图片",
         },
       ],
     },
@@ -798,7 +798,7 @@ const carouselDefaultProps = {
   imageList: [
     {
       imageUrl: "",
-      text: "杞挱1",
+      text: "轮播1",
       link: {
         clickType: 0,
         data: null,
@@ -816,10 +816,10 @@ const carouselDefaultProps = {
 
 const imageNavDefaultProps = {
   list: [
-    { imageUrl: "", text: "瀵艰埅1", link: { clickType: 0, data: null } },
-    { imageUrl: "", text: "瀵艰埅2", link: { clickType: 0, data: null } },
-    { imageUrl: "", text: "瀵艰埅3", link: { clickType: 0, data: null } },
-    { imageUrl: "", text: "瀵艰埅4", link: { clickType: 0, data: null } },
+    { imageUrl: "", text: "导航1", link: { clickType: 0, data: null } },
+    { imageUrl: "", text: "导航2", link: { clickType: 0, data: null } },
+    { imageUrl: "", text: "导航3", link: { clickType: 0, data: null } },
+    { imageUrl: "", text: "导航4", link: { clickType: 0, data: null } },
   ],
   columnPadding: 20,
   rowPadding: 20,
@@ -831,7 +831,7 @@ const imageNavDefaultProps = {
 
 const richTextDefaultProps = {
   content:
-    "<p>鍙互鍦ㄨ繖閲岀紪杈戝瘜鏂囨湰鍐呭锛屾敮鎸佸姞绮椼€佹枩浣撱€佷笅鍒掔嚎绛夊熀纭€鑳藉姏銆?/p>",
+    "<p>可以在这里编辑富文本内容，支持加粗、斜体、下划线等基础能力。</p>",
   backgroundColor: "#ffffff",
   padding: "10px 10px 0",
 };
@@ -839,8 +839,8 @@ const richTextDefaultProps = {
 const noticeDefaultProps = {
   component: "Notice",
   validTime: [],
-  noticeList: [{ text: "璇峰～鍐欏叕鍛婂唴瀹?, link: { clickType: 0, data: null } }],
-  noticelist: [{ text: "璇峰～鍐欏叕鍛婂唴瀹?, link: { clickType: 0, data: null } }],
+  noticeList: [{ text: "请填写公告内容", link: { clickType: 0, data: null } }],
+  noticelist: [{ text: "请填写公告内容", link: { clickType: 0, data: null } }],
   iconUrl: "",
   imageUrl: "",
   backgroundColor: "#FFF8E9",
@@ -854,13 +854,13 @@ const dialogDefaultProps = {
   timing: "every",
   imageList: [{ text: "", imageUrl: "", link: null }],
   visible: false,
-  title: "娲诲姩鎻愮ず",
-  content: "璇风‘璁ゆ槸鍚︾户缁搷浣?,
+  title: "活动提示",
+  content: "请确认是否继续操作",
   showClose: true,
   showActions: true,
   showCancel: true,
-  cancelText: "鍙栨秷",
-  confirmText: "纭畾",
+  cancelText: "取消",
+  confirmText: "确定",
   backgroundColor: "#ffffff",
   titleColor: "#1f2937",
   contentColor: "#6b7280",
@@ -889,8 +889,8 @@ const productDefaultList = [
     id: "product-1",
     imageUrl: "",
     imgUrl: "",
-    brand: "鍟嗗搧鏍囬",
-    categoryNames: "鍟嗗搧鍓爣棰?,
+    brand: "商品标题",
+    categoryNames: "商品副标题",
     price: 99,
     link: { clickType: 0, data: null },
   },
@@ -964,7 +964,7 @@ const floatLayerDefaultProps = {
 const onlineServiceDefaultProps = {
   component: "OnlineService",
   validTime: [],
-  text: "瀹㈡湇",
+  text: "客服",
   hideByPageScroll: true,
   width: 48,
   height: 48,
@@ -976,9 +976,9 @@ const onlineServiceDefaultProps = {
 };
 
 const sliderDefaultList = [
-  { imageUrl: "", text: "鍥剧墖1", link: { clickType: 0, data: null } },
-  { imageUrl: "", text: "鍥剧墖2", link: { clickType: 0, data: null } },
-  { imageUrl: "", text: "鍥剧墖3", link: { clickType: 0, data: null } },
+  { imageUrl: "", text: "图片1", link: { clickType: 0, data: null } },
+  { imageUrl: "", text: "图片2", link: { clickType: 0, data: null } },
+  { imageUrl: "", text: "图片3", link: { clickType: 0, data: null } },
 ];
 
 const sliderDefaultProps = {
@@ -998,14 +998,13 @@ const sliderDefaultProps = {
 
 // MATERIALS_AUTO_SCHEMAS_START
 // MATERIALS_AUTO_SCHEMAS_END
-
 export const materialRegistry: MaterialRegistryItem[] = [
   {
     type: "Carousel",
     aliases: ["carousel"],
     group: "basic",
-    label: "杞挱鍥?,
-    icon: "鎾?,
+    label: "轮播图",
+    icon: "播",
     maxCount: 50,
     defaultProps: carouselDefaultProps,
     runtimeComponent: () => import("../components/CarouselBlock.vue"),
@@ -1044,8 +1043,8 @@ export const materialRegistry: MaterialRegistryItem[] = [
     type: "ImageNav",
     aliases: ["imagenav"],
     group: "basic",
-    label: "鍥炬枃瀵艰埅",
-    icon: "瀵?,
+    label: "图文导航",
+    icon: "导",
     maxCount: 50,
     defaultProps: imageNavDefaultProps,
     runtimeComponent: () => import("../components/ImageNavBlock.vue"),
@@ -1105,8 +1104,8 @@ export const materialRegistry: MaterialRegistryItem[] = [
     type: "RichText",
     aliases: ["richtext"],
     group: "basic",
-    label: "瀵屾枃鏈?,
-    icon: "鏂?,
+    label: "富文本",
+    icon: "文",
     maxCount: 50,
     defaultProps: richTextDefaultProps,
     runtimeComponent: () => import("../components/RichTextBlock.vue"),
@@ -1127,8 +1126,8 @@ export const materialRegistry: MaterialRegistryItem[] = [
     type: "Notice",
     aliases: ["notice"],
     group: "basic",
-    label: "鍏憡",
-    icon: "鍛?,
+    label: "公告",
+    icon: "告",
     maxCount: 1,
     defaultProps: noticeDefaultProps,
     runtimeComponent: () => import("../components/NoticeBlock.vue"),
@@ -1197,8 +1196,8 @@ export const materialRegistry: MaterialRegistryItem[] = [
     type: "CubeSelection",
     aliases: ["cubeselection"],
     group: "basic",
-    label: "榄旀柟",
-    icon: "鏍?,
+    label: "魔方",
+    icon: "格",
     maxCount: 50,
     defaultProps: cubeSelectionDefaultProps,
     runtimeComponent: () => import("../components/CubeSelectionBlock.vue"),
@@ -1249,8 +1248,8 @@ export const materialRegistry: MaterialRegistryItem[] = [
     type: "AssistLine",
     aliases: ["assistline"],
     group: "basic",
-    label: "杈呭姪绾?,
-    icon: "绾?,
+    label: "辅助线",
+    icon: "线",
     maxCount: 50,
     defaultProps: assistLineDefaultProps,
     runtimeComponent: () => import("../components/AssistLineBlock.vue"),
@@ -1286,8 +1285,8 @@ export const materialRegistry: MaterialRegistryItem[] = [
     type: "FloatLayer",
     aliases: ["floatlayer"],
     group: "marketing",
-    label: "娴眰",
-    icon: "娴?,
+    label: "浮层",
+    icon: "浮",
     maxCount: 1,
     defaultProps: floatLayerDefaultProps,
     runtimeComponent: () => import("../components/FloatLayerBlock.vue"),
@@ -1333,8 +1332,8 @@ export const materialRegistry: MaterialRegistryItem[] = [
     type: "OnlineService",
     aliases: ["onlineservice"],
     group: "marketing",
-    label: "鍦ㄧ嚎瀹㈡湇",
-    icon: "瀹?,
+    label: "在线客服",
+    icon: "客",
     maxCount: 1,
     defaultProps: onlineServiceDefaultProps,
     runtimeComponent: () => import("../components/OnlineServiceBlock.vue"),
@@ -1347,7 +1346,7 @@ export const materialRegistry: MaterialRegistryItem[] = [
       return {
         component: "OnlineService",
         validTime: toArrayValue(normalizedProps.validTime, (item) => item),
-        text: toStringValue(normalizedProps.text, "瀹㈡湇") || "瀹㈡湇",
+        text: toStringValue(normalizedProps.text, "客服") || "客服",
         hideByPageScroll: toFlexibleBoolean(normalizedProps.hideByPageScroll, true),
         width: toFiniteNumber(normalizedProps.width, 48),
         height: toFiniteNumber(normalizedProps.height, 48),
@@ -1364,7 +1363,7 @@ export const materialRegistry: MaterialRegistryItem[] = [
     toRuntimeProps: (props) => {
       const normalizedProps = toRecord(props);
       return {
-        text: toStringValue(normalizedProps.text, "瀹㈡湇") || "瀹㈡湇",
+        text: toStringValue(normalizedProps.text, "客服") || "客服",
         width: toFiniteNumber(normalizedProps.width, 48),
         height: toFiniteNumber(normalizedProps.height, 48),
         bottom: toFiniteNumber(normalizedProps.bottom, 24),
@@ -1382,8 +1381,8 @@ export const materialRegistry: MaterialRegistryItem[] = [
     type: "Slider",
     aliases: ["slider"],
     group: "marketing",
-    label: "妯悜婊戝姩",
-    icon: "婊?,
+    label: "横向滑动",
+    icon: "滑",
     maxCount: 50,
     defaultProps: sliderDefaultProps,
     runtimeComponent: () => import("../components/SliderBlock.vue"),
@@ -1465,8 +1464,8 @@ export const materialRegistry: MaterialRegistryItem[] = [
     type: "Dialog",
     aliases: ["dialog"],
     group: "marketing",
-    label: "寮圭獥",
-    icon: "寮?,
+    label: "弹窗",
+    icon: "弹",
     maxCount: 1,
     defaultProps: dialogDefaultProps,
     runtimeComponent: () => import("../components/DialogBlock.vue"),
@@ -1489,13 +1488,13 @@ export const materialRegistry: MaterialRegistryItem[] = [
           };
         }),
         visible: toFlexibleBoolean(normalizedProps.visible, false),
-        title: toStringValue(normalizedProps.title, "娲诲姩鎻愮ず"),
-        content: toStringValue(normalizedProps.content, "璇风‘璁ゆ槸鍚︾户缁搷浣?),
+        title: toStringValue(normalizedProps.title, "活动提示"),
+        content: toStringValue(normalizedProps.content, "请确认是否继续操作"),
         showClose: toFlexibleBoolean(normalizedProps.showClose, true),
         showActions: toFlexibleBoolean(normalizedProps.showActions, true),
         showCancel: toFlexibleBoolean(normalizedProps.showCancel, true),
-        cancelText: toStringValue(normalizedProps.cancelText, "鍙栨秷"),
-        confirmText: toStringValue(normalizedProps.confirmText, "纭畾"),
+        cancelText: toStringValue(normalizedProps.cancelText, "取消"),
+        confirmText: toStringValue(normalizedProps.confirmText, "确定"),
         backgroundColor: toStringValue(normalizedProps.backgroundColor, "#ffffff"),
         titleColor: toStringValue(normalizedProps.titleColor, "#1f2937"),
         contentColor: toStringValue(normalizedProps.contentColor, "#6b7280"),
@@ -1507,8 +1506,8 @@ export const materialRegistry: MaterialRegistryItem[] = [
     type: "Product",
     aliases: ["product"],
     group: "marketing",
-    label: "鍟嗗搧",
-    icon: "璐?,
+    label: "商品",
+    icon: "货",
     maxCount: 50,
     defaultProps: productDefaultProps,
     runtimeComponent: () => import("../components/ProductBlock.vue"),
@@ -1580,4 +1579,3 @@ export const materialRegistry: MaterialRegistryItem[] = [
   // MATERIALS_AUTO_REGISTRY_START
   // MATERIALS_AUTO_REGISTRY_END
 ];
-
