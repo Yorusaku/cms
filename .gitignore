@@ -46,6 +46,10 @@ dist-ssr
 coverage
 **/coverage/
 
+# Playwright
+playwright-report/
+test-results/
+
 # Docs (local only)
 docs/
 
