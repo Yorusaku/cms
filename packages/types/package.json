@@ -1,4 +1,4 @@
-{
+﻿{
   "name": "@cms/types",
   "version": "1.0.0",
   "private": true,
@@ -18,6 +18,9 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --fix",
     "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@cms/eslint-config": "workspace:*",

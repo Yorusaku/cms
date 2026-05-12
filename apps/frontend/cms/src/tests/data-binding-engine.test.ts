@@ -1,7 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   DataBindingEngine,
-  IDataSource,
   IDataBinding,
   createAPIDataSource,
   createStaticDataSource,
@@ -86,7 +85,7 @@ describe("DataBindingEngine", () => {
       const source = createStaticDataSource("source-1", "Static Data", {
         items: [1, 2, 3],
       });
-      source.transformFn = (data) => ({
+      source.transformFn = (data: any) => ({
         ...data,
         count: data.items.length,
       });

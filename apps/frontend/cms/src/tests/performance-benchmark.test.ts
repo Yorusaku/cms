@@ -179,7 +179,7 @@ describe("Performance Benchmarks", () => {
       }
 
       metrics.mark("operation-end");
-      const duration = metrics.measure("operation", "operation-start", "operation-end");
+      metrics.measure("operation", "operation-start", "operation-end");
 
       const report = metrics.getMetrics("operation");
       expect(report).toBeDefined();

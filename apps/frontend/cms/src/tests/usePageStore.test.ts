@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { setActivePinia, createPinia } from "pinia";
 import { usePageStore } from "../store/usePageStore";
 import type { IPageSchemaV2, IComponentSchemaV2 } from "@cms/types";
@@ -155,8 +155,8 @@ describe("usePageStore", () => {
         styles: { color: "red", fontSize: "16px" },
       });
       const component = store.pageSchema.componentMap[store.pageSchema.rootIds[0]];
-      expect(component.styles.color).toBe("red");
-      expect(component.styles.fontSize).toBe("16px");
+      expect(component.styles!.color).toBe("red");
+      expect(component.styles!.fontSize).toBe("16px");
     });
 
     it("should add multiple components in order", () => {
@@ -210,7 +210,7 @@ describe("usePageStore", () => {
       store.addComponent({ index: 1, type: "Text" });
       const activeId = store.activeComponentId;
       store.deleteActiveComponent();
-      expect(store.pageSchema.componentMap[activeId]).toBeUndefined();
+      expect(store.pageSchema.componentMap[activeId!]).toBeUndefined();
     });
 
     it("should not delete when no active component", () => {
@@ -261,7 +261,7 @@ describe("usePageStore", () => {
       const componentId = store.pageSchema.rootIds[0];
       store.editComponent({ id: componentId, styles: { color: "blue" } });
       const component = store.pageSchema.componentMap[componentId];
-      expect(component.styles.color).toBe("blue");
+      expect(component.styles!.color).toBe("blue");
     });
 
     it("should edit both props and styles", () => {
@@ -274,7 +274,7 @@ describe("usePageStore", () => {
       });
       const component = store.pageSchema.componentMap[componentId];
       expect(component.props.text).toBe("New");
-      expect(component.styles.fontSize).toBe("20px");
+      expect(component.styles!.fontSize).toBe("20px");
     });
 
     it("should not edit non-existent component", () => {
@@ -295,7 +295,7 @@ describe("usePageStore", () => {
       ids.forEach((id) => {
         const component = store.pageSchema.componentMap[id];
         expect(component.props.disabled).toBe(true);
-        expect(component.styles.opacity).toBe("0.5");
+        expect(component.styles!.opacity).toBe("0.5");
       });
     });
 
@@ -523,7 +523,7 @@ describe("usePageStore", () => {
       for (let i = 0; i < 60; i++) {
         store.addComponent({ index: i, type: "Button" });
       }
-      expect(store.history.length).toBeLessThanOrEqual(51);
+      expect((store.history as any).length).toBeLessThanOrEqual(51);
     });
   });
 

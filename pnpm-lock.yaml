@@ -123,6 +123,9 @@ catalogs:
     vue-tsc:
       specifier: 2.2.0
       version: 2.2.0
+    zod:
+      specifier: 3.24.0
+      version: 3.24.0
 
 importers:
 
@@ -309,9 +312,6 @@ importers:
       vue-router:
         specifier: 'catalog:'
         version: 4.5.0(vue@3.5.13(typescript@5.7.3))
-      vuedraggable:
-        specifier: ^2.24.3
-        version: 2.24.3
     devDependencies:
       '@cms/eslint-config':
         specifier: workspace:*
@@ -561,6 +561,10 @@ importers:
         version: 5.7.3
 
   packages/types:
+    dependencies:
+      zod:
+        specifier: 'catalog:'
+        version: 3.24.0
     devDependencies:
       '@cms/eslint-config':
         specifier: workspace:*
@@ -608,6 +612,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.1(vite@6.0.11(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.47.0)(yaml@2.8.2))(vue@3.5.13(typescript@5.7.3))
+      '@vue/test-utils':
+        specifier: 'catalog:'
+        version: 2.4.6
       autoprefixer:
         specifier: 'catalog:'
         version: 10.4.20(postcss@8.5.1)
@@ -617,6 +624,9 @@ importers:
       eslint-plugin-vue:
         specifier: 'catalog:'
         version: 9.32.0(eslint@9.18.0(jiti@2.6.1))
+      jsdom:
+        specifier: 'catalog:'
+        version: 26.0.0
       postcss:
         specifier: 'catalog:'
         version: 8.5.1
@@ -632,6 +642,9 @@ importers:
       vite-plugin-dts:
         specifier: ^4.5.4
         version: 4.5.4(@types/node@25.3.0)(rollup@4.58.0)(typescript@5.7.3)(vite@6.0.11(@types/node@25.3.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.47.0)(yaml@2.8.2))
+      vitest:
+        specifier: 'catalog:'
+        version: 3.0.2(@types/node@25.3.0)(jiti@2.6.1)(jsdom@26.0.0)(lightningcss@1.30.2)(terser@5.47.0)(yaml@2.8.2)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.2.0(typescript@5.7.3)
@@ -4995,9 +5008,6 @@ packages:
     resolution: {integrity: sha512-iOBWFgUX7caIZiuutICxVgX1SdxwAVFFKwt1EvMYYec/NWO5meOJ6K5uQxhrYBdQJne4KxiqZc+KptFOWFSI9w==}
     engines: {node: '>=18'}
 
-  sortablejs@1.10.2:
-    resolution: {integrity: sha512-YkPGufevysvfwn5rfdlGyrGjt7/CRHwvRPogD/lC+TnvcN29jDpCifKP+rBqf+LRldfXSTh+0CGLcSg0VIxq3A==}
-
   source-map-js@1.2.1:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
@@ -5700,9 +5710,6 @@ packages:
       typescript:
         optional: true
 
-  vuedraggable@2.24.3:
-    resolution: {integrity: sha512-6/HDXi92GzB+Hcs9fC6PAAozK1RLt1ewPTLjK0anTYguXLAeySDmcnqE8IC0xa7shvSzRjQXq3/+dsZ7ETGF3g==}
-
   w3c-keyname@2.2.8:
     resolution: {integrity: sha512-dpojBhNsCNN7T82Tm7k26A6G9ML3NkhDsnw9n/eoxSRlVBB4CEtIQ/KTCLI2Fwf3ataSXRhYFkQi3SlnFwPvPQ==}
 
@@ -5881,6 +5888,9 @@ packages:
   yocto-queue@0.1.0:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
+
+  zod@3.24.0:
+    resolution: {integrity: sha512-Hz+wiY8yD0VLA2k/+nsg2Abez674dDGTai33SwNvMPuf9uIrBC9eFgIMQxBBbHFxVXi8W+5nX9DcAh9YNSQm/w==}
 
 snapshots:
 
@@ -10858,8 +10868,6 @@ snapshots:
       ansi-styles: 6.2.3
       is-fullwidth-code-point: 5.1.0
 
-  sortablejs@1.10.2: {}
-
   source-map-js@1.2.1: {}
 
   source-map-support@0.5.13:
@@ -11490,10 +11498,6 @@ snapshots:
     optionalDependencies:
       typescript: 5.7.3
 
-  vuedraggable@2.24.3:
-    dependencies:
-      sortablejs: 1.10.2
-
   w3c-keyname@2.2.8: {}
 
   w3c-xmlserializer@5.0.0:
@@ -11678,3 +11682,5 @@ snapshots:
   yn@3.1.1: {}
 
   yocto-queue@0.1.0: {}
+
+  zod@3.24.0: {}

@@ -46,7 +46,7 @@ export const usePageStore = defineStore("page", () => {
   const linkageEngine = new LinkageEngine();
 
   const { history, undo, redo, canUndo, canRedo, commit } = useRefHistory(
-    pageSchema,
+    pageSchema as any,
     {
       capacity: 50,
       deep: true,

@@ -5,14 +5,14 @@
       :key="section.label"
       class="config-section"
     >
-      <header class="section-header" @click="toggleSection(section.label)">
+      <header class="section-header" @click="toggleSection(section.label!)">
         <h4 class="section-title">{{ section.label }}</h4>
         <p v-if="section.description" class="section-description">
           {{ section.description }}
         </p>
       </header>
 
-      <div v-if="isSectionExpanded(section.label)" class="section-fields">
+      <div v-if="isSectionExpanded(section.label!)" class="section-fields">
         <div
           v-for="field in getRenderableFields(section.fields)"
           :key="`${field.type}-${field.path}`"
@@ -127,7 +127,7 @@ watch(
   visibleSections,
   (sections) => {
     if (expandedSections.value.size === 0 && sections.length > 0) {
-      expandedSections.value = new Set(sections.map((section) => section.label));
+      expandedSections.value = new Set(sections.map((section) => section.label!).filter(Boolean));
     }
   },
   { immediate: true },

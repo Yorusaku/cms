@@ -10,11 +10,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from "vue";
+import { ref, watch } from "vue";
 import { useEventListener, useDebounceFn } from "@vueuse/core";
 import { usePageStore } from "../store/usePageStore";
 import { MESSAGE_TYPE } from "@cms/types";
-import type { IMessagePayload, IPageSchema } from "@cms/types";
+import type { IPageSchema } from "@cms/types";
 import {
   MessageSequenceTracker,
   createSecureMessage,

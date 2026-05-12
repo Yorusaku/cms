@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Condition Engine
  *
  * Evaluates conditions to determine component visibility and behavior.
@@ -7,11 +7,10 @@
 
 export interface IConditionExpression {
   type: "simple" | "complex";
-  operator?: "AND" | "OR";
-  conditions?: IConditionExpression[];
-  // Simple condition fields
   field?: string;
-  operator?: "==" | "!=" | ">" | "<" | ">=" | "<=" | "in" | "contains";
+  // Logical operator for complex conditions, comparison operator for simple conditions
+  operator?: "AND" | "OR" | "==" | "!=" | ">" | "<" | ">=" | "<=" | "in" | "contains";
+  conditions?: IConditionExpression[];
   value?: any;
 }
 
@@ -189,12 +188,12 @@ export class ConditionEngine {
    * Evaluate all rules for a component
    */
   evaluateRulesForComponent(
-    componentId: string,
+    _componentId: string,
     context: EvaluationContext
   ): Map<string, boolean> {
     const results = new Map<string, boolean>();
 
-    for (const [ruleId, rule] of this.rules) {
+    for (const [ruleId, _rule] of this.rules) {
       const result = this.evaluateRule(ruleId, context);
       results.set(ruleId, result);
     }
@@ -206,7 +205,7 @@ export class ConditionEngine {
    * Get visibility for a component based on rules
    */
   getComponentVisibility(
-    componentId: string,
+    _componentId: string,
     context: EvaluationContext
   ): boolean {
     let isVisible = true;
@@ -236,7 +235,7 @@ export class ConditionEngine {
    * Get enabled state for a component based on rules
    */
   getComponentEnabled(
-    componentId: string,
+    _componentId: string,
     context: EvaluationContext
   ): boolean {
     let isEnabled = true;

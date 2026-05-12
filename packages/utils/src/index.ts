@@ -1,4 +1,4 @@
-export * from "./utils";
+﻿export * from "./utils";
 export * from "./date";
 export * from "./schema-adapter";
 export * from "./expression";
@@ -9,4 +9,7 @@ export type {
   RequestConfig,
   ResponseData,
   CustomRequestError,
+  ErrorDisplayFn,
+  LoginRedirectFn,
+  RequestOptions,
 } from "./request";

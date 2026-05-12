@@ -1,4 +1,4 @@
-import { deepClone } from "@cms/utils";
+﻿import { deepClone } from "@cms/utils";
 import type { IPageSchemaV2 } from "@cms/types";
 import {
   getPagePublishLogs,
@@ -34,7 +34,7 @@ export const getLocalPublishLogs = async (
     if ((resp as { code?: number }).code !== 10000) {
       return [];
     }
-    const data = (resp as { data?: PublishLogRecord[] }).data;
+    const data = (resp as unknown as { data?: PublishLogRecord[] }).data;
     return Array.isArray(data) ? data : [];
   } catch {
     return [];

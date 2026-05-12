@@ -32,7 +32,14 @@
 
           <div v-if="linkage.condition" class="flex items-center gap-2 text-xs text-gray-500">
             <el-icon><Filter /></el-icon>
-            <span>条件：{{ linkage.condition.expression }}</span>
+            <span>条件：</span>
+            <template v-if="linkage.condition.type === 'simple'">
+              <el-tag size="small" type="info">{{ linkage.condition.expression }}</el-tag>
+            </template>
+            <template v-else-if="linkage.condition.type === 'complex'">
+              <el-tag size="small" type="warning">{{ linkage.condition.operator }}</el-tag>
+              <span>({{ linkage.condition.conditions?.length ?? 0 }} 个子条件)</span>
+            </template>
           </div>
         </div>
       </div>
@@ -54,7 +61,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
 import { ElMessageBox } from 'element-plus';
 import { Right, Edit, Delete, Operation, Filter, Hide, View } from '@element-plus/icons-vue';
 import type { IComponentLinkage } from '@cms/types';

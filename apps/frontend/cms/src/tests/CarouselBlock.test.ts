@@ -1,7 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { mount, flushPromises } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import CarouselBlock from "@cms/ui/components/CarouselBlock.vue";
-import type { ICarouselItem } from "@cms/ui/components/CarouselBlock.vue";
+type ICarouselItem = { id?: string; imageUrl: string; text?: string; link?: any };
+
 
 describe("CarouselBlock", () => {
   beforeEach(() => {

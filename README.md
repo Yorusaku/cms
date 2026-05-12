@@ -1,10 +1,11 @@
 # CMS 可视化搭建平台
 
-> 面向营销 H5 的低代码可视化搭建平台，基于 Schema 驱动 + Monorepo 架构，支持拖拽编辑、组件联动、条件渲染、数据绑定等复杂业务场景。
+> 面向营销 H5 的低代码可视化搭建平台，基于 Schema 驱动 + Monorepo 架构，支持拖拽编辑、组件联动、条件渲染、数据绑定等复杂业务场景。内建 NestJS 后端服务，提供页面管理、发布回滚和用户认证 API。
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.5-green)](https://vuejs.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.x-purple)](https://vitejs.dev/)
+[![Vite](https://img.shields.io/badge/Vite-6.x-purple)](https://vitejs.dev/)
+[![NestJS](https://img.shields.io/badge/NestJS-10.x-red)](https://nestjs.com/)
 [![Test Coverage](https://img.shields.io/badge/coverage-35%25-yellow)](./docs/TESTING.md)
 
 ---
@@ -18,9 +19,9 @@
 
 ### 🏗️ 架构设计
 - **Schema V2 协议**：`componentMap + rootIds` 扁平结构，支持高频编辑操作
-- **Monorepo 架构**：编辑器（CMS）与渲染器（CRS）分离，共享层统一协议和物料
+- **Monorepo 架构**：编辑器（CMS）与渲染器（CRS）分离，共享层统一协议和物料；自建 NestJS 后端提供 REST API
 - **共享物料注册表**：单入口声明，双端消费，降低扩展成本
-- **预览隔离机制**：iframe + postMessage，避免后台样式污染移动端
+- **预览隔离机制**：iframe + postMessage 安全通信，避免后台样式污染移动端
 
 ### 🚀 核心功能
 
@@ -46,6 +47,8 @@
 - 弹窗（Dialog）：自定义内容、触发条件
 - 浮层（FloatLayer）：悬浮按钮、快捷入口
 - 在线客服（OnlineService）：客服接入、咨询入口
+- 优惠券（Coupon）：券面展示、领取入口
+- 图片（Image）：单图/多图展示
 
 **物料特性：**
 - 动态加载：按需加载，减少包体积
@@ -56,14 +59,14 @@
 #### 3. 三大引擎系统
 
 ##### 🔗 组件联动引擎（LinkageEngine）
-**功能：** 实现组件间数据流管理和联动效果
+**功能：** 实现组件间数据流管理和联动效果，支持可视化配置零代码使用。
 
 **核心能力：**
 - 数据流转：一个组件的属性变化触发另一个组件更新
-- 转换函数：支持 uppercase、multiply、clamp、map 等内置转换
-- 条件触发：基于条件表达式控制联动是否执行
+- 转换函数：内置 9 种预设（乘系数、加数值、转大小写、限制范围、值域映射、格式化货币、取反），支持自定义函数
+- 条件触发：可视化条件构建器（VisualConditionBuilder），支持 > < >= <= === !== 包含/为空/不为空 9 种运算符，支持 AND/OR 复合条件嵌套（3 层深度），高级表达式模式作为兜底
+- 联动调试面板：实时追踪联动触发链路，记录事件历史和触发结果，便于调试
 - 事件订阅：支持监听联动事件，实现自定义逻辑
-- 操作历史：记录联动历史，便于调试和回溯
 
 **应用场景：**
 - 价格联动：商品价格变化自动更新总价
@@ -88,7 +91,7 @@ linkageEngine.triggerLinkage('product-1', 'price', 150)
 ```
 
 ##### 🎭 条件渲染引擎（ConditionEngine）
-**功能：** 基于条件控制组件的显示/隐藏和启用/禁用
+**功能：** 基于条件控制组件的显示/隐藏和启用/禁用。
 
 **核心能力：**
 - 简单条件：支持 equals、greaterThan、lessThan、in、isTruthy、isEmpty 等
@@ -127,7 +130,7 @@ const shouldShow = conditionEngine.evaluateRule('vip-rule', {
 ```
 
 ##### 📊 数据绑定引擎（DataBindingEngine）
-**功能：** 管理数据源和组件数据绑定关系
+**功能：** 管理数据源和组件数据绑定关系。
 
 **核心能力：**
 - 多种数据源：API（动态数据）、Static（静态数据）、Computed（计算数据）
@@ -171,8 +174,8 @@ await dataBindingEngine.applyDataBinding('product-binding')
 
 **引擎系统价值：**
 - 降低复杂度：将复杂业务逻辑抽象为可配置的引擎
-- 提升灵活性：支持动态配置，无需修改代码
-- 增强可维护性：统一管理，便于调试和优化
+- 零代码配置：联动条件和转换函数完全可视化，消除代码表达式输入
+- 增强可维护性：统一管理，联动调试面板辅助排错
 - 支持扩展：易于添加新的转换函数、条件类型、数据源类型
 
 #### 4. 发布流程与版本管理
@@ -218,31 +221,43 @@ await dataBindingEngine.applyDataBinding('product-binding')
 - 草稿保存：100 次/秒 → 3 次/秒（97% ↓）
 - 内存占用：200MB → 50MB（75% ↓）
 
+#### 6. iframe 安全通信
+
+- **来源验证**：postMessage 通信中严格校验 message 来源域名
+- **消息安全**：结构化消息格式校验，防止恶意注入
+- **沙箱隔离**：预览 iframe 使用 sandbox 属性限制能力
+- **安全审计**：完整的消息安全单元测试覆盖
+
 ---
 
 ## 🛠️ 技术栈
 
-### 核心框架
-- **前端框架**：Vue 3.5 + TypeScript 5.x + Composition API
-- **构建工具**：Vite 5.x + TurboRepo
+### 前端
+- **框架**：Vue 3.5 + TypeScript 5.x + Composition API
+- **构建工具**：Vite 6.x + TurboRepo
 - **状态管理**：Pinia
 - **路由管理**：Vue Router 4.x
-
-### UI 框架
-- **B 端（编辑器）**：Element Plus + Tailwind CSS
-- **C 端（渲染器）**：Vant + 原生组件
-- **图标库**：@icon-park/vue-next
-
-### 拖拽交互
+- **B 端 UI**：Element Plus + Tailwind CSS
+- **C 端 UI**：Vant + 原生组件
+- **图标库**：@element-plus/icons-vue
 - **拖拽库**：vue-draggable-plus（基于 Sortable.js）
 - **预览隔离**：iframe + postMessage
+
+### 后端
+- **框架**：NestJS 10.x
+- **ORM**：TypeORM 0.3.x
+- **数据库**：PostgreSQL
+- **认证**：Passport + JWT + bcrypt
+- **文件上传**：Multer
+- **校验**：class-validator + class-transformer
 
 ### 工程化
 - **包管理**：pnpm workspace
 - **Monorepo**：TurboRepo
 - **代码规范**：ESLint + Prettier + EditorConfig
 - **Git 规范**：Husky + lint-staged + Commitlint + Commitizen
-- **测试框架**：Vitest（单元测试）+ Playwright（E2E 测试）
+- **单元测试**：Vitest（单元测试 + 组件测试）
+- **E2E 测试**：Playwright
 - **安全扫描**：gitleaks + semgrep + npm audit
 
 ---
@@ -252,58 +267,93 @@ await dataBindingEngine.applyDataBinding('product-binding')
 ```
 cms-vue3/
 ├── apps/
-│   ├── cms/                          # 编辑器应用（B 端）
-│   │   ├── src/
-│   │   │   ├── views/
-│   │   │   │   ├── Decorate/         # 装修页（编辑器主页面）
-│   │   │   │   │   ├── components/
-│   │   │   │   │   │   ├── TopHeader.vue      # 顶部操作栏
-│   │   │   │   │   │   ├── LeftMaterial.vue   # 左侧物料区
-│   │   │   │   │   │   ├── CenterCanvas.vue   # 中间画布区
-│   │   │   │   │   │   └── RightConfig.vue    # 右侧配置区
-│   │   │   │   │   └── index.vue
-│   │   │   │   ├── Activity.vue      # 活动管理页
-│   │   │   │   └── Preview.vue       # 预览页
-│   │   │   ├── store/
-│   │   │   │   └── usePageStore.ts   # 页面状态管理
-│   │   │   ├── components/           # 通用组件
-│   │   │   ├── api/                  # API 接口
-│   │   │   ├── utils/                # 工具函数
-│   │   │   └── tests/                # 测试文件
-│   │   └── package.json
-│   └── crs/                          # 渲染器应用（C 端）
+│   ├── frontend/
+│   │   ├── cms/                        # 编辑器应用（B 端）
+│   │   │   ├── src/
+│   │   │   │   ├── views/
+│   │   │   │   │   ├── Decorate/       # 装修页（编辑器主页面）
+│   │   │   │   │   │   ├── components/
+│   │   │   │   │   │   │   ├── TopHeader.vue        # 顶部操作栏
+│   │   │   │   │   │   │   ├── LeftMaterial.vue     # 左侧物料区
+│   │   │   │   │   │   │   ├── CenterCanvas.vue     # 中间画布区
+│   │   │   │   │   │   │   ├── RightConfig.vue      # 右侧配置区
+│   │   │   │   │   │   │   ├── LinkageConfig.vue    # 联动配置
+│   │   │   │   │   │   │   ├── LinkageRuleDialog.vue # 联动规则对话框
+│   │   │   │   │   │   │   ├── LinkageRuleItem.vue  # 联动规则卡片
+│   │   │   │   │   │   │   └── LinkageDebugPanel.vue # 联动调试面板
+│   │   │   │   │   │   └── index.vue
+│   │   │   │   │   ├── Activity.vue    # 活动管理页
+│   │   │   │   │   └── Preview.vue     # 预览页
+│   │   │   │   ├── store/
+│   │   │   │   │   └── usePageStore.ts # 页面状态管理
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── basic/
+│   │   │   │   │   │   └── VisualConditionBuilder.vue # 可视化条件构建器
+│   │   │   │   │   ├── PreviewIframe.vue
+│   │   │   │   │   └── VirtualScroll.vue
+│   │   │   │   ├── utils/
+│   │   │   │   │   ├── linkage-engine.ts       # 组件联动引擎
+│   │   │   │   │   ├── condition-engine.ts     # 条件渲染引擎
+│   │   │   │   │   ├── data-binding-engine.ts  # 数据绑定引擎
+│   │   │   │   │   ├── condition-serializer.ts # 条件序列化（可视化 ↔ 存储格式）
+│   │   │   │   │   ├── performance-monitor.ts  # 性能监控
+│   │   │   │   │   ├── editor-optimization.ts  # 编辑器优化
+│   │   │   │   │   ├── page-draft.ts           # 草稿自动保存
+│   │   │   │   │   └── page-preflight.ts       # 发布前校验
+│   │   │   │   ├── api/                # API 接口
+│   │   │   │   └── tests/              # 测试文件
+│   │   │   └── package.json
+│   │   └── crs/                        # 渲染器应用（C 端）
+│   │       ├── src/
+│   │       │   ├── views/
+│   │       │   │   └── PagePreview.vue # 页面渲染
+│   │       │   ├── components/
+│   │       │   │   ├── SchemaRenderer.vue
+│   │       │   │   └── RenderNode.vue
+│   │       │   ├── store/
+│   │       │   │   └── usePageStore.ts # 页面状态（消费态）
+│   │       │   └── utils/
+│   │       │       └── linkage-engine.ts # 预览端联动引擎
+│   │       └── package.json
+│   └── backend/                        # NestJS 后端服务
 │       ├── src/
-│       │   ├── views/
-│       │   │   └── PagePreview.vue   # 页面渲染
-│       │   └── store/
-│       │       └── usePageStore.ts   # 页面状态（消费态）
+│       │   ├── modules/
+│       │   │   ├── auth/               # 用户认证模块
+│       │   │   ├── page/               # 页面管理模块
+│       │   │   └── upload/             # 文件上传模块
+│       │   ├── database/               # 数据源配置 & 迁移
+│       │   └── common/                 # 公共守卫/拦截器/装饰器
 │       └── package.json
 ├── packages/
-│   ├── types/                        # 类型定义
+│   ├── types/                          # 类型定义
 │   │   └── src/
-│   │       └── schema.ts             # Schema V2 协议
-│   ├── ui/                           # UI 组件库
+│   │       └── schema.ts               # Schema V2 协议
+│   ├── ui/                             # UI 物料库
 │   │   └── src/
-│   │       ├── components/           # 14+ 业务组件
-│   │       ├── materials/            # 物料注册表
-│   │       └── renderer/             # 渲染引擎
-│   ├── utils/                        # 工具函数
+│   │       ├── components/             # 14+ 业务组件
+│   │       ├── materials/              # 物料注册表
+│   │       └── renderer/               # 渲染器
+│   ├── utils/                          # 共享工具函数
 │   │   └── src/
-│   │       ├── linkage-engine.ts     # 组件联动引擎
-│   │       ├── condition-engine.ts   # 条件渲染引擎
-│   │       ├── data-binding-engine.ts # 数据绑定引擎
-│   │       └── schema-migration.ts   # Schema 迁移
-│   ├── hooks/                        # 通用 Hooks
-│   ├── eslint-config/                # ESLint 配置
-│   ├── prettier-config/              # Prettier 配置
-│   └── test-utils/                   # 测试工具
-├── docs/                             # 文档
-│   ├── ARCHITECTURE.md               # 架构设计
-│   ├── PERFORMANCE.md                # 性能优化
-│   ├── DEVELOPMENT.md                # 开发指南
-│   ├── API.md                        # API 文档
-│   └── CASE-STUDIES.md               # 优化案例
-└── turbo.json                        # TurboRepo 配置
+│   │       ├── date.ts                 # 日期工具
+│   │       ├── expression.ts           # 表达式工具
+│   │       ├── message-security.ts     # iframe 消息安全
+│   │       ├── schema-adapter.ts       # Schema 适配
+│   │       └── request.ts              # HTTP 请求
+│   ├── hooks/                          # 通用 Hooks
+│   ├── eslint-config/                  # ESLint 配置
+│   ├── prettier-config/                # Prettier 配置
+│   └── test-utils/                     # 测试工具
+├── docs/                               # 文档
+│   ├── ARCHITECTURE.md                 # 架构设计
+│   ├── PERFORMANCE.md                  # 性能优化
+│   ├── CASE-STUDIES.md                 # 优化案例
+│   ├── DEVELOPMENT.md                  # 开发指南
+│   ├── API.md                          # API 文档
+│   └── BUILD-OPTIMIZATION.md           # 构建优化
+├── scripts/                            # 辅助脚本
+├── pnpm-workspace.yaml                 # pnpm workspace 配置
+└── turbo.json                          # TurboRepo 配置
 ```
 
 ---
@@ -312,7 +362,8 @@ cms-vue3/
 
 ### 环境要求
 - Node.js >= 18.x
-- pnpm >= 8.x
+- pnpm >= 9.x
+- PostgreSQL >= 14.x（后端需要）
 
 ### 安装依赖
 ```bash
@@ -327,7 +378,10 @@ pnpm dev:cms
 # 启动渲染器（默认端口 5174）
 pnpm dev:crs
 
-# 同时启动两个应用
+# 启动后端服务（默认端口 3000）
+pnpm dev:backend
+
+# 同时启动所有应用
 pnpm dev
 ```
 
@@ -339,6 +393,7 @@ pnpm build
 # 构建指定应用
 pnpm --filter @cms/cms build
 pnpm --filter @cms/crs build
+pnpm --filter @cms/backend build
 ```
 
 ### 运行测试
@@ -346,11 +401,17 @@ pnpm --filter @cms/crs build
 # 运行所有测试
 pnpm test
 
-# 运行指定测试
-pnpm --filter @cms/cms test -- usePageStore.test.ts
+# 运行单元测试
+pnpm --filter @cms/cms test
 
 # 生成覆盖率报告
 pnpm test:coverage
+
+# 运行 E2E 测试
+pnpm --filter @cms/cms test:e2e
+
+# E2E 测试 UI 模式
+pnpm --filter @cms/cms test:e2e:ui
 ```
 
 ### 代码质量检查
@@ -363,6 +424,9 @@ pnpm typecheck
 
 # 格式化代码
 pnpm format
+
+# 完整 CI 检查 (lint + typecheck + test + build)
+pnpm ci:all
 ```
 
 ---
@@ -373,7 +437,8 @@ pnpm format
 - [性能优化指南](./docs/PERFORMANCE.md) - 性能优化策略和最佳实践
 - [开发指南](./docs/DEVELOPMENT.md) - 本地开发、调试、贡献指南
 - [API 文档](./docs/API.md) - 核心模块的 API 说明
-- [优化案例](./docs/CASE-STUDIES.md) - 4 个详细的优化案例
+- [优化案例](./docs/CASE-STUDIES.md) - 详细的优化案例
+- [构建优化](./docs/BUILD-OPTIMIZATION.md) - 构建流程优化方案
 
 ---
 
@@ -381,19 +446,24 @@ pnpm format
 
 ### 当前状态
 - **总覆盖率**：35%+
-- **测试用例**：109 个
-- **测试文件**：32 个
+- **测试文件**：30 个
+- **单元/组件测试**：Vitest（20+ 测试文件）
+- **E2E 测试**：Playwright（6 个 spec 文件）
 
 ### 核心模块覆盖
-- **usePageStore**：100% 语句覆盖率（57 个测试）
-- **UI 组件**：52 个测试
-- **复杂业务场景**：80+ 测试（LinkageEngine、ConditionEngine、DataBindingEngine）
+- **usePageStore**：100% 语句覆盖率
+- **联动引擎**：完整的联动单元测试
+- **条件序列化**：37 个测试用例覆盖所有运算符和边界
+- **可视化条件构建器**：组件渲染和交互测试
+- **消息安全**：iframe 通信安全完整测试
+- **复杂业务场景**：LinkageEngine、ConditionEngine、DataBindingEngine 集成测试
 
 ### 测试类型
-- **单元测试**：Vitest
-- **集成测试**：业务场景测试
+- **单元测试**：Vitest — 工具函数、引擎逻辑
+- **组件测试**：Vitest + Vue Test Utils — UI 组件渲染、事件、props
+- **集成测试**：业务流程端到端测试
 - **性能测试**：性能基准测试
-- **E2E 测试**：Playwright（计划中）
+- **E2E 测试**：Playwright — 完整用户操作链路
 
 ---
 
@@ -416,7 +486,7 @@ pnpm format
 
 ### 4. 预览隔离
 - **iframe 隔离**：避免后台样式污染移动端
-- **postMessage 通信**：实时同步编辑状态
+- **postMessage 安全通信**：来源校验 + 结构化消息验证
 - **所见即所得**：预览结果接近真实交付
 
 ---
@@ -425,9 +495,9 @@ pnpm format
 
 ### 架构设计
 1. **Schema V2 协议**：componentMap + rootIds 扁平结构，支持高频编辑、历史回退、运行时解析
-2. **Monorepo 架构**：编辑器与渲染器分离，共享层统一协议和物料，降低维护成本
+2. **全栈 Monorepo**：编辑器 + 渲染器 + NestJS 后端，共享类型协议，统一构建
 3. **共享物料注册表**：单入口声明，双端消费，新增物料改动收敛到共享层
-4. **预览隔离机制**：iframe + postMessage，避免样式污染，保证所见即所得
+4. **预览隔离机制**：iframe + postMessage 安全通信，来源校验防注入
 
 ### 性能优化
 1. **虚拟滚动**：处理 100+ 组件场景，渲染时间降低 67%
@@ -436,13 +506,13 @@ pnpm format
 4. **性能监控**：Core Web Vitals 实时追踪
 
 ### 复杂业务场景
-1. **组件联动引擎**：支持数据流转、转换函数、条件触发、事件订阅
+1. **组件联动引擎**：9 种内置转换、可视化条件构建、联动调试面板、预览端集成
 2. **条件渲染引擎**：支持简单/复合条件、AND/OR 逻辑、嵌套表达式
 3. **数据绑定引擎**：支持 API/静态/计算数据源、缓存、定时刷新
 
 ### 工程化能力
-1. **完整的工程化链路**：ESLint + Prettier + Husky + Commitlint
-2. **测试覆盖**：35%+ 覆盖率，109 个测试用例
+1. **完整的工程化链路**：ESLint + Prettier + Husky + Commitlint + CI 流水线
+2. **测试体系**：Vitest 单元测试 + Playwright E2E 测试 + CI/CD 集成
 3. **安全扫描**：gitleaks + semgrep + npm audit
 4. **发布流程**：草稿/发布双轨、审计日志、一键回滚
 

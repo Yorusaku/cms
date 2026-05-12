@@ -1,4 +1,4 @@
-import axios, {
+﻿import axios, {
   AxiosInstance,
   AxiosRequestConfig,
   AxiosResponse,
@@ -42,34 +42,52 @@ export interface CustomRequestError {
 export type ErrorDisplayFn = (message: string) => void;
 
 /**
+ * 登录跳转回调函数类型
+ */
+export type LoginRedirectFn = () => void;
+
+/**
+ * Request 构造函数选项
+ */
+export interface RequestOptions {
+  baseURL: string;
+  errorDisplayFn?: ErrorDisplayFn;
+  loginRedirectFn?: LoginRedirectFn;
+}
+
+/**
  * HTTP 请求封装类
  * 提供统一的请求拦截、响应拦截、错误处理等功能
  *
  * @example
- * const request = new Request('/api')
+ * const request = new Request({ baseURL: '/api' })
  * const result = await request.get<UserInfo>('/user/info')
  */
 class Request {
   private instance: AxiosInstance;
   private loadingCount = 0;
   private errorDisplayFn: ErrorDisplayFn | null = null;
+  private loginRedirectFn: LoginRedirectFn | null = null;
 
   /**
    * 构造函数
-   * @param baseURL - API 基础路径
-   * @param errorDisplayFn - 可选的错误显示函数，由调用方传入（如 ElMessage.error）
+   * @param options - 请求配置选项
    */
-  constructor(baseURL: string, errorDisplayFn?: ErrorDisplayFn) {
+  constructor(options: RequestOptions) {
     this.instance = axios.create({
-      baseURL,
+      baseURL: options.baseURL,
       timeout: 15000,
       headers: {
         "Content-Type": "application/json",
       },
     });
 
-    if (errorDisplayFn) {
-      this.errorDisplayFn = errorDisplayFn;
+    if (options.errorDisplayFn) {
+      this.errorDisplayFn = options.errorDisplayFn;
+    }
+
+    if (options.loginRedirectFn) {
+      this.loginRedirectFn = options.loginRedirectFn;
     }
 
     this.setupInterceptors();
@@ -84,6 +102,14 @@ class Request {
   }
 
   /**
+   * 设置登录跳转回调
+   * @param fn - 登录跳转回调函数
+   */
+  public setLoginRedirect(fn: LoginRedirectFn): void {
+    this.loginRedirectFn = fn;
+  }
+
+  /**
    * 设置请求和响应拦截器
    */
   private setupInterceptors(): void {
@@ -95,10 +121,10 @@ class Request {
         if (requestConfig.showLoading) {
           this.showLoading();
         }
-        // 添加 Token
+        // 添加 Token（使用标准 Authorization 头）
         const token = this.getToken();
         if (token && !requestConfig.skipAuth) {
-          config.headers["X-token"] = token;
+          config.headers["Authorization"] = `Bearer ${token}`;
         }
         return config;
       },
@@ -217,7 +243,12 @@ class Request {
    */
   private toLogin(): void {
     localStorage.removeItem("token");
-    window.location.href = window.location.origin + "/cms-manage/#/login";
+    if (this.loginRedirectFn) {
+      this.loginRedirectFn();
+    } else {
+      // 降级方案：硬编码跳转
+      window.location.href = window.location.origin + "/cms-manage/#/login";
+    }
   }
 
   /**
@@ -228,7 +259,6 @@ class Request {
     if (this.errorDisplayFn) {
       this.errorDisplayFn(message);
     } else {
-      // 默认使用 console.error
       console.error(message);
     }
   }

@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div class="min-h-screen bg-gray-50 p-6">
     <div class="bg-white rounded-lg shadow-sm p-6">
       <div class="mb-6">
@@ -82,6 +82,8 @@
               type="success"
               size="small"
               :loading="row.loading"
+              :disabled="!canPublish"
+              :title="canPublish ? '' : '仅管理员可发布'"
               @click="handleToggleActivity(row)"
             >
               {{ row.isAbled === 0 ? "上线" : "下线" }}
@@ -144,11 +146,22 @@
         </el-timeline>
       </template>
     </el-drawer>
+
+    <TemplatePicker
+      v-model="showTemplatePicker"
+      @created="handleTemplateCreated"
+      @skip="handleSkipTemplate"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
+import TemplatePicker from "@/components/TemplatePicker.vue";
+
+const userRole = ref(localStorage.getItem("role") || "editor");
+const showTemplatePicker = ref(false);
+const canPublish = computed(() => userRole.value === "admin");
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Plus, Search, Refresh } from "@element-plus/icons-vue";
@@ -391,6 +404,12 @@ const handleDuplicate = async (id: number) => {
 };
 
 const handleAdd = () => {
+  showTemplatePicker.value = true;
+};
+const handleTemplateCreated = (pageId: number) => {
+  router.push({ path: "/decorate", query: { id: pageId } });
+};
+const handleSkipTemplate = () => {
   pageStore.setInitPageSchema();
   router.push("/decorate");
 };

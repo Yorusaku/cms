@@ -36,7 +36,7 @@
 <script setup lang="ts" generic="T extends { id: string }">
 import { ref, computed, onMounted, watch } from "vue";
 
-interface Props {
+const props = withDefaults(defineProps<{
   items: T[];
   itemHeight: number;
   bufferSize?: number;
@@ -44,9 +44,7 @@ interface Props {
   dynamicHeight?: boolean;
   heightCache?: Map<string, number>;
   gapSize?: number;
-}
-
-const props = withDefaults(defineProps<Props>(), {
+}>(), {
   bufferSize: 5,
   containerHeight: 600,
   dynamicHeight: false,

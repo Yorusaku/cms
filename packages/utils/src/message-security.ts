@@ -157,7 +157,7 @@ export function validateMessageSize(message: any, maxSizeBytes = 1024 * 1024): b
  * Origin whitelist for development and production
  */
 export function getOriginWhitelist(): string[] {
-  const isDev = import.meta.env.DEV;
+  const isDev = typeof import.meta !== "undefined" && (import.meta as any).env?.DEV;
 
   if (isDev) {
     // Development: allow localhost with different ports

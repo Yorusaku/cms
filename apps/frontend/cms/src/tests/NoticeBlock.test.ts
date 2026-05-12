@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { mount } from "@vue/test-utils";
 import NoticeBlock from "@cms/ui/components/NoticeBlock.vue";
-import type { INoticeItem } from "@cms/ui/components/NoticeBlock.vue";
+type INoticeItem = { id?: string; text: string; link?: any };
 
 describe("NoticeBlock", () => {
   it("should render notice block with default props", () => {

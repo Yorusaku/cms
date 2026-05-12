@@ -20,6 +20,8 @@
     "**/*.less"
   ],
   "scripts": {
+    "test": "vitest",
+    "test:coverage": "vitest run --coverage",
     "build": "vue-tsc --noEmit && vite build",
     "dev": "vite build --watch",
     "typecheck": "vue-tsc --noEmit",
@@ -46,7 +48,10 @@
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "^4.5.4",
-    "vue-tsc": "catalog:"
+    "vue-tsc": "catalog:",
+    "vitest": "catalog:",
+    "@vue/test-utils": "catalog:",
+    "jsdom": "catalog:"
   },
   "peerDependencies": {
     "vue": "^3.3.4"

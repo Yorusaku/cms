@@ -6,6 +6,8 @@ import { ConfigService } from "@nestjs/config";
 import { User } from "../modules/auth/entities/user.entity";
 import { Page } from "../modules/page/entities/page.entity";
 import { PublishLog } from "../modules/page/entities/publish-log.entity";
+import { Template } from "../modules/template/entities/template.entity";
+import { TEMPLATE_SEEDS } from "./seeds/template-seeds";
 
 const DEMO_PAGES = [
   { name: "618 年中大促", isAbled: 1, status: "published" },
@@ -18,6 +20,12 @@ const DEMO_PAGES = [
   { name: "直播间活动页", isAbled: 0, status: "draft" },
 ] as const;
 
+const SEED_USERS = [
+  { username: "editor", password: "editor123", role: "editor" as const, nickname: "编辑员" },
+  { username: "viewer", password: "viewer123", role: "viewer" as const, nickname: "观察员" },
+];
+
+
 @Injectable()
 export class SeedService implements OnModuleInit {
   private readonly logger = new Logger(SeedService.name);
@@ -29,23 +37,44 @@ export class SeedService implements OnModuleInit {
     private readonly pageRepo: Repository<Page>,
     @InjectRepository(PublishLog)
     private readonly publishLogRepo: Repository<PublishLog>,
+    @InjectRepository(Template)
+    private readonly templateRepo: Repository<Template>,
     private readonly configService: ConfigService,
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await this.seedAdminUser();
+    await this.seedUsers();
     await this.seedDemoPages();
+    await this.seedTemplates();
   }
 
-  private async seedAdminUser(): Promise<void> {
+  private async seedUsers(): Promise<void> {
     const count = await this.userRepo.count();
     if (count > 0) return;
 
-    const username = this.configService.get<string>("ADMIN_USERNAME", "admin");
-    const password = this.configService.get<string>("ADMIN_PASSWORD", "admin123456");
-    const hash = await bcrypt.hash(password, 10);
-    await this.userRepo.save({ username, password: hash });
-    this.logger.log(`Seeded admin user: ${username}`);
+    // Admin
+    const adminUsername = this.configService.get<string>("ADMIN_USERNAME", "admin");
+    const adminPassword = this.configService.get<string>("ADMIN_PASSWORD", "admin123456");
+    const adminHash = await bcrypt.hash(adminPassword, 10);
+    await this.userRepo.save({
+      username: adminUsername,
+      password: adminHash,
+      role: "admin",
+      nickname: "管理员",
+    });
+    this.logger.log(`Seeded admin user: ${adminUsername}`);
+
+    // Editor & Viewer
+    for (const u of SEED_USERS) {
+      const hash = await bcrypt.hash(u.password, 10);
+      await this.userRepo.save({
+        username: u.username,
+        password: hash,
+        role: u.role,
+        nickname: u.nickname,
+      });
+      this.logger.log(`Seeded ${u.role} user: ${u.username}`);
+    }
   }
 
   private async seedDemoPages(): Promise<void> {
@@ -68,11 +97,13 @@ export class SeedService implements OnModuleInit {
         rootIds: [],
       };
 
+      const shareDesc = p.name + " 分享描述";
+
       const page = this.pageRepo.create({
         name: p.name,
         schema,
         componentList: [],
-        shareDesc: `${p.name} — 分享描述`,
+        shareDesc,
         shareImage: "",
         backgroundColor: "#ffffff",
         backgroundImage: "",
@@ -100,5 +131,24 @@ export class SeedService implements OnModuleInit {
     }
 
     this.logger.log(`Seeded ${DEMO_PAGES.length} demo pages`);
+  }
+
+  private async seedTemplates(): Promise<void> {
+    const count = await this.templateRepo.count();
+    if (count > 0) return;
+
+    for (const t of TEMPLATE_SEEDS) {
+      await this.templateRepo.save({
+        name: t.name,
+        thumbnail: t.thumbnail,
+        category: t.category,
+        schema: t.schema,
+        description: t.description,
+        useCount: 0,
+        isActive: true,
+      });
+    }
+
+    this.logger.log(`Seeded ${TEMPLATE_SEEDS.length} templates`);
   }
 }

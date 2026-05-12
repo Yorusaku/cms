@@ -179,7 +179,6 @@ export class LinkageEngine {
   private evaluateExpression(expression: string, value: any): boolean {
     try {
       // Create a safe evaluation context
-      const context = { value };
       const func = new Function("value", `return ${expression}`);
       return func(value);
     } catch (error) {

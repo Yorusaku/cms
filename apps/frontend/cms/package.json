@@ -32,8 +32,7 @@
     "qrcode.vue": "catalog:",
     "vue": "catalog:",
     "vue-draggable-plus": "catalog:",
-    "vue-router": "catalog:",
-    "vuedraggable": "^2.24.3"
+    "vue-router": "catalog:"
   },
   "devDependencies": {
     "@cms/eslint-config": "workspace:*",

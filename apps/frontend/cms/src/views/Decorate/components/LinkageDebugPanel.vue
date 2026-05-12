@@ -97,7 +97,12 @@
             </div>
             <div v-if="linkage.condition" class="rule-condition">
               <el-tag size="small" type="danger">条件</el-tag>
-              <code>{{ linkage.condition.expression }}</code>
+              <template v-if="linkage.condition.type === 'simple'">
+                <code>{{ linkage.condition.expression }}</code>
+              </template>
+              <template v-else-if="linkage.condition.type === 'complex'">
+                <code>{{ linkage.condition.operator }} ({{ linkage.condition.conditions?.length ?? 0 }} 个子条件)</code>
+              </template>
             </div>
           </div>
           <el-empty v-if="linkages.length === 0" description="暂无联动规则" />
@@ -195,7 +200,7 @@ const formatTime = (timestamp: number) => {
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
-    fractionalSecondDigits: 3,
+    // fractionalSecondDigits: 3,
   });
 };
 

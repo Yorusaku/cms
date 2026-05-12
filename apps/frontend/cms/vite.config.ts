@@ -21,13 +21,6 @@ export default defineConfig({
       "@": resolve(__dirname, "src"),
     },
   },
-  css: {
-    preprocessorOptions: {
-      less: {
-        additionalData: `@import "${resolve(__dirname, "src/styles/mixin.less")}";`,
-      },
-    },
-  },
   server: {
     host: "127.0.0.1",
     port: 3011,

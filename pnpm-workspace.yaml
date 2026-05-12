@@ -1,20 +1,20 @@
-packages:
+﻿packages:
   - 'apps/**'
   - 'packages/*'
 
 catalog:
-  # Vue 生态 (升级到最新 3.5.x)
+  # Vue
   vue: 3.5.13
   vue-router: 4.5.0
   pinia: 3.0.0
   '@vueuse/core': 12.0.0
 
-  # UI 组件库
+  # UI
   element-plus: 2.9.7
   vant: 4.8.10
   '@element-plus/icons-vue': 2.3.2
 
-  # 构建工具
+  # Build
   vite: 6.0.11
   typescript: 5.7.3
   vue-tsc: 2.2.0
@@ -39,41 +39,44 @@ catalog:
   # Prettier
   prettier: 3.4.2
 
-  # 测试
+  # Test
   vitest: 3.0.2
   '@vitest/ui': 3.0.2
   '@vue/test-utils': 2.4.6
   '@testing-library/vue': 8.1.0
   jsdom: 26.0.0
 
-  # 其他工具
+  # Utils
   axios: 1.7.9
   nprogress: 0.2.0
   '@types/nprogress': 0.2.3
 
-  # 富文本编辑器
+  # Editor
   '@tiptap/starter-kit': 2.11.5
   '@tiptap/vue-3': 2.11.5
 
-  # 拖拽
+  # Drag
   vue-draggable-plus: 0.6.1
 
-  # 二维码
+  # QRCode
   qrcode.vue: 3.8.0
 
-  # 自动导入
+  # Auto Import
   unplugin-auto-import: 19.0.0
   unplugin-vue-components: 28.0.0
 
   # Turbo
   turbo: 2.3.3
 
-  # Husky & lint-staged
+  # Git Hooks
   husky: 9.1.7
   lint-staged: 15.4.1
 
-  # 工具库
+  # Utils
   rimraf: 6.0.1
 
-  # Vite 插件
+  # Vite Plugin
   vite-plugin-dts: 4.5.0
+
+  # Validation
+  zod: 3.24.0

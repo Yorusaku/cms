@@ -48,6 +48,24 @@ describe('LinkageRuleDialog.vue', () => {
           'el-input': { template: '<input />' },
           'el-input-number': { template: '<input type="number" />' },
           'el-button': { template: '<button><slot /></button>' },
+          'el-radio-group': { template: '<div><slot /></div>' },
+          'el-radio-button': { template: '<div><slot /></div>' },
+          'el-icon': { template: '<span></span>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          VisualConditionBuilder: {
+            template: '<div class="visual-condition-builder-stub"><slot /></div>',
+            props: ['modelValue', 'depth', 'maxDepth'],
+            emits: ['update:modelValue'],
+          },
+          'el-radio-group': { template: '<div><slot /></div>' },
+          'el-radio-button': { template: '<div><slot /></div>' },
+          'el-icon': { template: '<span></span>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          VisualConditionBuilder: {
+            template: '<div class="visual-condition-builder-stub"><slot /></div>',
+            props: ['modelValue', 'depth', 'maxDepth'],
+            emits: ['update:modelValue'],
+          },
         },
       },
     });
@@ -82,6 +100,24 @@ describe('LinkageRuleDialog.vue', () => {
           'el-input': { template: '<input />' },
           'el-input-number': { template: '<input type="number" />' },
           'el-button': { template: '<button><slot /></button>' },
+          'el-radio-group': { template: '<div><slot /></div>' },
+          'el-radio-button': { template: '<div><slot /></div>' },
+          'el-icon': { template: '<span></span>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          VisualConditionBuilder: {
+            template: '<div class="visual-condition-builder-stub"><slot /></div>',
+            props: ['modelValue', 'depth', 'maxDepth'],
+            emits: ['update:modelValue'],
+          },
+          'el-radio-group': { template: '<div><slot /></div>' },
+          'el-radio-button': { template: '<div><slot /></div>' },
+          'el-icon': { template: '<span></span>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          VisualConditionBuilder: {
+            template: '<div class="visual-condition-builder-stub"><slot /></div>',
+            props: ['modelValue', 'depth', 'maxDepth'],
+            emits: ['update:modelValue'],
+          },
         },
       },
     });
@@ -158,6 +194,15 @@ describe('LinkageRuleDialog.vue', () => {
           'el-input': { template: '<input />' },
           'el-input-number': { template: '<input type="number" />' },
           'el-button': { template: '<button><slot /></button>' },
+          'el-radio-group': { template: '<div><slot /></div>' },
+          'el-radio-button': { template: '<div><slot /></div>' },
+          'el-icon': { template: '<span></span>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          VisualConditionBuilder: {
+            template: '<div class="visual-condition-builder-stub"><slot /></div>',
+            props: ['modelValue', 'depth', 'maxDepth'],
+            emits: ['update:modelValue'],
+          },
         },
       },
     });
@@ -196,6 +241,15 @@ describe('LinkageRuleDialog.vue', () => {
           'el-input': { template: '<input />' },
           'el-input-number': { template: '<input type="number" />' },
           'el-button': { template: '<button><slot /></button>' },
+          'el-radio-group': { template: '<div><slot /></div>' },
+          'el-radio-button': { template: '<div><slot /></div>' },
+          'el-icon': { template: '<span></span>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          VisualConditionBuilder: {
+            template: '<div class="visual-condition-builder-stub"><slot /></div>',
+            props: ['modelValue', 'depth', 'maxDepth'],
+            emits: ['update:modelValue'],
+          },
         },
       },
     });
@@ -233,6 +287,15 @@ describe('LinkageRuleDialog.vue', () => {
           'el-input': { template: '<input />' },
           'el-input-number': { template: '<input type="number" />' },
           'el-button': { template: '<button><slot /></button>' },
+          'el-radio-group': { template: '<div><slot /></div>' },
+          'el-radio-button': { template: '<div><slot /></div>' },
+          'el-icon': { template: '<span></span>' },
+          'el-tag': { template: '<span><slot /></span>' },
+          VisualConditionBuilder: {
+            template: '<div class="visual-condition-builder-stub"><slot /></div>',
+            props: ['modelValue', 'depth', 'maxDepth'],
+            emits: ['update:modelValue'],
+          },
         },
       },
     });
@@ -241,8 +304,7 @@ describe('LinkageRuleDialog.vue', () => {
     wrapper.vm.form.sourceProperty = 'price';
     wrapper.vm.form.targetComponentId = 'comp-2';
     wrapper.vm.form.targetProperty = 'totalPrice';
-    wrapper.vm.conditionType = 'gt';
-    wrapper.vm.conditionValue = '100';
+    wrapper.vm.conditionData = { type: 'simple', expression: 'value > 100' };
 
     wrapper.vm.formRef = {
       validate: vi.fn().mockResolvedValue(true),
