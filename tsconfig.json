@@ -18,8 +18,8 @@
   },
   "include": [],
   "references": [
-    { "path": "./apps/cms" },
-    { "path": "./apps/crs" },
+    { "path": "./apps/frontend/cms" },
+    { "path": "./apps/frontend/crs" },
     { "path": "./packages/types" },
     { "path": "./packages/utils" },
     { "path": "./packages/hooks" },

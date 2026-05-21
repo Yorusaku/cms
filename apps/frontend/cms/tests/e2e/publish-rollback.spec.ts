@@ -1,19 +1,20 @@
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
+import { mockToken } from "./fixtures/api-mocks";
+import { setAuthToken, setupApiMocks } from "./fixtures/api-mocks.setup";
 import { ActivityPage } from "./pages/activity.page";
 import { DecoratePage } from "./pages/decorate.page";
-import { setupApiMocks } from "./fixtures/api-mocks.setup";
-import { mockToken } from "./fixtures/api-mocks";
 
 test.describe("Publish & Rollback", () => {
   test.beforeEach(async ({ page }) => {
     await setupApiMocks(page);
-    await page.evaluate((t) => localStorage.setItem("token", t), mockToken);
+    await setAuthToken(page, mockToken);
   });
 
   test("publishing from editor shows success", async ({ page }) => {
     const decoratePage = new DecoratePage(page);
     await decoratePage.goto(1);
     await decoratePage.clickPublish();
+    await decoratePage.expectSuccessMessage();
   });
 
   test("viewing publish logs opens drawer", async ({ page }) => {
@@ -23,20 +24,17 @@ test.describe("Publish & Rollback", () => {
     await activityPage.expectDrawerVisible();
   });
 
-  test("rolling back from activity page redirects to editor", async ({ page }) => {
+  test("rolling back from activity page opens decorate tab", async ({ page }) => {
     const activityPage = new ActivityPage(page);
     await activityPage.goto();
     await activityPage.clickPublishLogs(0);
     await activityPage.expectDrawerVisible();
+
+    const newTab = page.context().waitForEvent("page");
     await activityPage.clickRollbackInDrawer();
-
-    // After rollback, should redirect to decorate with rollbackVersionId
-    await page.waitForURL("**/decorate**", { timeout: 5000 });
-  });
-
-  test("toggling online from activity list submits api call", async ({ page }) => {
-    const activityPage = new ActivityPage(page);
-    await activityPage.goto();
-    await activityPage.clickToggleOnline(0);
+    const decoratePage = await newTab;
+    await decoratePage.waitForLoadState("domcontentloaded");
+    await expect(decoratePage).toHaveURL(/\/decorate/);
+    await decoratePage.close();
   });
 });

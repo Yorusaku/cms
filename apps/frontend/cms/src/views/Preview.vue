@@ -96,7 +96,7 @@ const frameStyle = computed(() => ({
 const buildPreviewUrl = () => {
   const id = route.query.id;
   const previewOrigin =
-    import.meta.env.VITE_CRS_PREVIEW_ORIGIN || "http://localhost:5174";
+    import.meta.env.VITE_CRS_PREVIEW_ORIGIN || "http://127.0.0.1:3010";
   return `${previewOrigin}/#/pagePreview?id=${id ?? ""}`;
 };
 

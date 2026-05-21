@@ -1,11 +1,10 @@
-<template>
+﻿<template>
   <el-dialog
     v-model="visible"
     title="选择模板"
     width="900px"
     :close-on-click-modal="false"
   >
-    <!-- 分类 Tab -->
     <el-tabs v-model="activeCategory" @tab-change="handleCategoryChange">
       <el-tab-pane label="全部" name="all" />
       <el-tab-pane label="营销" name="marketing" />
@@ -14,7 +13,6 @@
       <el-tab-pane label="通用" name="general" />
     </el-tabs>
 
-    <!-- 模板网格 -->
     <div v-loading="loading" class="template-grid">
       <div
         v-for="item in templates"
@@ -41,7 +39,7 @@
       </div>
 
       <div v-if="templates.length === 0 && !loading" class="empty-state">
-        <p>暂无可用的模板</p>
+        <p>暂无可用模板</p>
       </div>
     </div>
 
@@ -57,7 +55,8 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { ElMessage } from "element-plus";
-import { getTemplateList, createPageFromTemplate, type TemplateItem } from "@/api/activity";
+import { createPageFromTemplate, getTemplateList, type TemplateItem } from "@/api/activity";
+import { trackEvent } from "@/utils/tracking";
 
 interface Props {
   modelValue: boolean;
@@ -65,9 +64,9 @@ interface Props {
 
 const props = defineProps<Props>();
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: boolean): void;
-  (e: 'created', pageId: number): void;
-  (e: 'skip'): void;
+  (e: "update:modelValue", value: boolean): void;
+  (e: "created", pageId: number): void;
+  (e: "skip"): void;
 }>();
 
 const visible = ref(false);
@@ -77,23 +76,26 @@ const activeCategory = ref("all");
 const selectedId = ref<number | null>(null);
 const templates = ref<TemplateItem[]>([]);
 
-watch(() => props.modelValue, (val) => {
-  visible.value = val;
-  if (val) {
-    fetchTemplates();
-  }
-});
+watch(
+  () => props.modelValue,
+  (val) => {
+    visible.value = val;
+    if (val) {
+      fetchTemplates();
+    }
+  },
+);
 
 watch(visible, (val) => {
-  emit('update:modelValue', val);
+  emit("update:modelValue", val);
 });
 
 const fetchTemplates = async () => {
   loading.value = true;
   selectedId.value = null;
   try {
-    const cat = activeCategory.value === 'all' ? undefined : activeCategory.value;
-    const res = await getTemplateList(cat);
+    const category = activeCategory.value === "all" ? undefined : activeCategory.value;
+    const res = await getTemplateList(category);
     templates.value = (res as any).data || [];
   } catch {
     ElMessage.error("获取模板列表失败");
@@ -118,9 +120,19 @@ const handleUse = async () => {
     });
     const pageId = (res as any).data?.id;
     if (pageId) {
+      await trackEvent({
+        eventType: "cta_click",
+        pageId,
+        ctaText: "use_template",
+        payload: {
+          templateId: selectedId.value,
+          templateName: template?.name || "",
+          category: template?.category || "unknown",
+        },
+      });
       ElMessage.success(`已从模板创建页面: ${name}`);
       visible.value = false;
-      emit('created', pageId);
+      emit("created", pageId);
     }
   } catch {
     ElMessage.error("创建页面失败");
@@ -131,35 +143,35 @@ const handleUse = async () => {
 
 const handleSkip = () => {
   visible.value = false;
-  emit('skip');
+  emit("skip");
 };
 
 const categoryColor = (cat: string) => {
   const map: Record<string, string> = {
-    marketing: '#ff6b6b',
-    ecommerce: '#ffd93d',
-    brand: '#6c5ce7',
-    general: '#00b894',
+    marketing: "#ff6b6b",
+    ecommerce: "#ffd93d",
+    brand: "#6c5ce7",
+    general: "#00b894",
   };
-  return map[cat] || '#95a5a6';
+  return map[cat] || "#95a5a6";
 };
 
-const categoryTagType = (cat: string): 'danger' | 'warning' | 'success' | 'info' => {
-  const map: Record<string, 'danger' | 'warning' | 'success' | 'info'> = {
-    marketing: 'danger',
-    ecommerce: 'warning',
-    brand: 'info',
-    general: 'success',
+const categoryTagType = (cat: string): "danger" | "warning" | "success" | "info" => {
+  const map: Record<string, "danger" | "warning" | "success" | "info"> = {
+    marketing: "danger",
+    ecommerce: "warning",
+    brand: "info",
+    general: "success",
   };
-  return map[cat] || 'info';
+  return map[cat] || "info";
 };
 
 const categoryLabel = (cat: string) => {
   const map: Record<string, string> = {
-    marketing: '营销',
-    ecommerce: '电商',
-    brand: '品牌',
-    general: '通用',
+    marketing: "营销",
+    ecommerce: "电商",
+    brand: "品牌",
+    general: "通用",
   };
   return map[cat] || cat;
 };

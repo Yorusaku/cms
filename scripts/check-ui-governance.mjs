@@ -13,9 +13,9 @@ const ensure = (condition, message) => {
   if (!condition) failures.push(message);
 };
 
-const cmsMain = "apps/cms/src/styles/main.css";
-const crsMain = "apps/crs/src/styles/main.css";
-const renderNode = "apps/crs/src/components/RenderNode.vue";
+const cmsMain = "apps/frontend/cms/src/styles/main.css";
+const crsMain = "apps/frontend/crs/src/styles/main.css";
+const renderNode = "apps/frontend/crs/src/components/RenderNode.vue";
 const tokensCss = "packages/ui/src/styles/tokens.css";
 const uiPkg = "packages/ui/package.json";
 
@@ -118,8 +118,8 @@ if (failures.length === 0) {
 
   const styleExts = new Set([".vue", ".css", ".less", ".scss"]);
 
-  const allStyleCandidates = walkFiles("apps/cms/src", styleExts).concat(
-    walkFiles("apps/crs/src", styleExts),
+  const allStyleCandidates = walkFiles("apps/frontend/cms/src", styleExts).concat(
+    walkFiles("apps/frontend/crs/src", styleExts),
   );
 
   const deepAllowlist = readAllowlist(deepOverrideAllowlist);
@@ -147,10 +147,10 @@ if (failures.length === 0) {
   }
 
   const selectorAllowlist = readAllowlist(elementSelectorAllowlist);
-  const selectorCandidates = walkFiles("apps/cms/src/components", styleExts)
-    .concat(walkFiles("apps/cms/src/views", styleExts))
-    .concat(walkFiles("apps/crs/src/components", styleExts))
-    .concat(walkFiles("apps/crs/src/views", styleExts));
+  const selectorCandidates = walkFiles("apps/frontend/cms/src/components", styleExts)
+    .concat(walkFiles("apps/frontend/cms/src/views", styleExts))
+    .concat(walkFiles("apps/frontend/crs/src/components", styleExts))
+    .concat(walkFiles("apps/frontend/crs/src/views", styleExts));
 
   const selectorPattern = /(^|[^\w-])\.el-[A-Za-z0-9_-]+/m;
   const selectorFiles = selectorCandidates

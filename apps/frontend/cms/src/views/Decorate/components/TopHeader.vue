@@ -40,6 +40,7 @@ import { migrateSchemaToV1 } from "@cms/utils";
 import { runPagePreflight, type PreflightIssue } from "@/utils/page-preflight";
 import { clearPageDraft } from "@/utils/page-draft";
 import { markPageDraft, markPagePublished } from "@/utils/page-publish";
+import { trackEvent } from "@/utils/tracking";
 
 const route = useRoute();
 const router = useRouter();
@@ -131,6 +132,11 @@ const saveAndPreview = async () => {
         schema: pageStore.exportPageSchema(),
         note: "发布并预览",
       });
+      await trackEvent({
+        eventType: "cta_click",
+        pageId,
+        ctaText: "publish_and_preview",
+      });
       openPreview(pageId);
     }
     ElMessage.success("发布成功");
@@ -158,6 +164,11 @@ const publishPage = async () => {
         schema: pageStore.exportPageSchema(),
         note: "发布",
       });
+      await trackEvent({
+        eventType: "cta_click",
+        pageId,
+        ctaText: "publish_page",
+      });
     }
     ElMessage.success("发布成功");
   } catch (err: unknown) {
@@ -175,6 +186,11 @@ const saveDraft = async () => {
     const pageId = getCurrentPageId(response);
     if (pageId) {
       markPageDraft(pageId);
+      await trackEvent({
+        eventType: "cta_click",
+        pageId,
+        ctaText: "save_draft",
+      });
     }
     ElMessage.success("草稿保存成功");
   } catch (err: unknown) {

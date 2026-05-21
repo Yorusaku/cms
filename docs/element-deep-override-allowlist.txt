@@ -2,3 +2,4 @@
 # 仅在确有必要时添加，路径使用仓库相对路径（POSIX 风格）
 # 示例：
 # apps/cms/src/views/Decorate/components/RightConfig.vue
+apps/frontend/cms/src/views/Decorate/components/LinkageDebugPanel.vue

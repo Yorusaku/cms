@@ -5,6 +5,8 @@ import { User } from "../modules/auth/entities/user.entity";
 import { Page } from "../modules/page/entities/page.entity";
 import { PublishLog } from "../modules/page/entities/publish-log.entity";
 import { Template } from "../modules/template/entities/template.entity";
+import { Lead } from "../modules/lead/entities/lead.entity";
+import { TrackingEvent } from "../modules/tracking/entities/tracking-event.entity";
 import { SeedService } from "./seed.service";
 
 @Module({
@@ -19,12 +21,12 @@ import { SeedService } from "./seed.service";
         username: config.get<string>("DB_USERNAME", "postgres"),
         password: config.get<string>("DB_PASSWORD", "postgres"),
         database: config.get<string>("DB_DATABASE", "cms_platform"),
-        entities: [User, Page, PublishLog, Template],
+        entities: [User, Page, PublishLog, Template, Lead, TrackingEvent],
         synchronize: config.get<string>("NODE_ENV") === "development",
         logging: config.get<string>("NODE_ENV") === "development",
       }),
     }),
-    TypeOrmModule.forFeature([User, Page, PublishLog, Template]),
+    TypeOrmModule.forFeature([User, Page, PublishLog, Template, Lead, TrackingEvent]),
   ],
   providers: [SeedService],
 })

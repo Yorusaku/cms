@@ -1,10 +1,7 @@
 <script setup lang="ts">
-import { computed, defineComponent, h, onMounted, onUnmounted, watch, ref } from "vue";
+import { computed, defineComponent, h, inject, onMounted, onUnmounted, ref, watch } from "vue";
 import type { IComponentSchemaV2 } from "@cms/types";
-import {
-  getMaterialAsyncComponent,
-  resolveMaterialRuntimeProps,
-} from "@cms/ui";
+import { getMaterialAsyncComponent, resolveMaterialRuntimeProps } from "@cms/ui";
 import { usePageStore } from "@/store/usePageStore";
 
 const FallbackComponent = defineComponent({
@@ -16,7 +13,7 @@ const FallbackComponent = defineComponent({
         {
           class: "material-fallback",
         },
-        "未找到对应物料",
+        "未找到对应物料组件",
       );
   },
 });
@@ -28,10 +25,12 @@ interface Props {
 
 const props = defineProps<Props>();
 const pageStore = usePageStore();
+const sendSelectEvent = inject<(componentId: string) => Promise<void> | void>(
+  "sendSelectEvent",
+  () => {},
+);
 
-const currentNode = computed(() => {
-  return props.componentMap[props.nodeId];
-});
+const currentNode = computed(() => props.componentMap[props.nodeId]);
 
 const resolveComponent = (type: string) => {
   return getMaterialAsyncComponent(type) || FallbackComponent;
@@ -39,43 +38,39 @@ const resolveComponent = (type: string) => {
 
 const shouldRender = computed(() => {
   if (!currentNode.value) return false;
-
-  const condition = currentNode.value.condition;
-  if (typeof condition === "boolean") {
-    return condition;
+  if (typeof currentNode.value.condition === "boolean") {
+    return currentNode.value.condition;
   }
-
   return true;
 });
 
-// 联动相关：合并组件 props 和联动状态
-const mergedProps = ref<Record<string, any>>({});
+const mergedProps = ref<Record<string, unknown>>({});
 
 const updateMergedProps = () => {
   if (!currentNode.value) return;
 
   const baseProps = resolveMaterialRuntimeProps(
     currentNode.value.type,
-    currentNode.value.props
+    currentNode.value.props,
   );
-
-  // 获取联动引擎中的组件状态
   const linkageState = pageStore.linkageEngine.getComponentState(props.nodeId);
 
-  // 合并 props 和联动状态
   mergedProps.value = {
     ...baseProps,
     ...linkageState,
   };
 };
 
-// 订阅联动事件
+const handleClick = async () => {
+  if (sendSelectEvent) {
+    await sendSelectEvent(props.nodeId);
+  }
+};
+
 let unsubscribe: (() => void) | null = null;
 
 onMounted(() => {
   updateMergedProps();
-
-  // 订阅联动事件，当该组件作为目标组件时更新 props
   unsubscribe = pageStore.linkageEngine.subscribe(props.nodeId, () => {
     updateMergedProps();
   });
@@ -87,25 +82,17 @@ onUnmounted(() => {
   }
 });
 
-// 监听组件 props 变化，触发联动
 watch(
   () => currentNode.value?.props,
   (newProps, oldProps) => {
     if (!newProps || !oldProps) return;
-
-    // 检测哪些属性发生了变化
     Object.keys(newProps).forEach((key) => {
       if (newProps[key] !== oldProps[key]) {
-        // 触发联动
-        pageStore.linkageEngine.triggerLinkage(
-          props.nodeId,
-          key,
-          newProps[key]
-        );
+        pageStore.linkageEngine.triggerLinkage(props.nodeId, key, newProps[key]);
       }
     });
   },
-  { deep: true }
+  { deep: true },
 );
 </script>
 
@@ -116,6 +103,7 @@ watch(
       :key="currentNode.id"
       v-bind="mergedProps"
       :styles="currentNode.styles"
+      @click.stop="handleClick"
     >
       <template v-for="childId in currentNode.children" :key="childId">
         <RenderNode :node-id="childId" :component-map="componentMap" />
@@ -164,7 +152,6 @@ watch(
   0% {
     transform: rotate(0deg);
   }
-
   100% {
     transform: rotate(360deg);
   }

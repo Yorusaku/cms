@@ -12,6 +12,7 @@ import {
 export type MaterialRuntimeLoader = () => Promise<Component | { default: Component }>;
 export type MaterialRegistryItem = MaterialDefinition<MaterialRuntimeLoader, string>;
 // MATERIALS_AUTO_IMPORTS_START
+import { LeadFormMaterialDefinition } from "./generated/LeadForm";
 // MATERIALS_AUTO_IMPORTS_END
 
 const toFiniteNumber = (value: unknown, fallback: number) => {
@@ -997,6 +998,7 @@ const sliderDefaultProps = {
 };
 
 // MATERIALS_AUTO_SCHEMAS_START
+// LeadForm: schema/defaultProps 在 ./generated/LeadForm.ts
 // MATERIALS_AUTO_SCHEMAS_END
 export const materialRegistry: MaterialRegistryItem[] = [
   {
@@ -1577,5 +1579,6 @@ export const materialRegistry: MaterialRegistryItem[] = [
     },
   },
   // MATERIALS_AUTO_REGISTRY_START
-  // MATERIALS_AUTO_REGISTRY_END
+  LeadFormMaterialDefinition,
+// MATERIALS_AUTO_REGISTRY_END
 ];

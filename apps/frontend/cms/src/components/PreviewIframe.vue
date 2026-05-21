@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="preview-iframe-container">
     <iframe
       ref="iframeRef"
@@ -31,13 +31,15 @@ const pageStore = usePageStore();
 const iframeRef = ref<HTMLIFrameElement | null>(null);
 const iframeLoaded = ref(false);
 
-// 消息序列追踪器
 const outgoingSequenceTracker = new MessageSequenceTracker();
 const incomingSequenceTracker = new MessageSequenceTracker();
 
 const getTargetOrigin = (): string => {
-  // 开发环境也使用白名单，不再使用 "*"
-  return import.meta.env.DEV ? "http://localhost:5174" : window.location.origin;
+  const configured = import.meta.env.VITE_CRS_PREVIEW_ORIGIN;
+  if (typeof configured === "string" && configured.trim().length > 0) {
+    return configured;
+  }
+  return "http://127.0.0.1:3010";
 };
 
 const sendSchemaToIframe = async (schema: IPageSchema) => {
@@ -48,11 +50,10 @@ const sendSchemaToIframe = async (schema: IPageSchema) => {
   try {
     const clonedSchema = JSON.parse(JSON.stringify(schema));
 
-    // 创建安全消息
     const securePayload = await createSecureMessage(
       MESSAGE_TYPE.SYNC_SCHEMA,
       clonedSchema,
-      outgoingSequenceTracker
+      outgoingSequenceTracker,
     );
 
     iframeRef.value.contentWindow.postMessage(securePayload, getTargetOrigin());
@@ -71,24 +72,21 @@ const handleIframeLoad = () => {
 };
 
 useEventListener(window, "message", async (event: MessageEvent) => {
-  // 验证来源
   if (!validateOrigin(event.origin)) {
-    console.warn("拒绝来自未授权源的消息:", event.origin);
+    console.warn("拒绝未授权来源消息:", event.origin);
     return;
   }
 
   try {
     const payload = event.data as SecureMessagePayload;
 
-    // 验证安全消息
     const verification = await verifySecureMessage(payload, incomingSequenceTracker);
 
     if (!verification.valid) {
-      console.warn("消息验证失败:", verification.error);
+      console.warn("消息验签失败:", verification.error);
       return;
     }
 
-    // 处理验证通过的消息
     const { type } = payload;
     const data = verification.data;
 
@@ -130,3 +128,5 @@ watch(
   display: block;
 }
 </style>
+
+

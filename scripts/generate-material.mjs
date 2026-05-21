@@ -212,7 +212,7 @@ function run() {
   );
   const generatedDir = path.join(rootDir, "packages/ui/src/materials/generated");
   const componentDir = path.join(rootDir, "packages/ui/src/components");
-  const testsDir = path.join(rootDir, "apps/cms/tests");
+  const testsDir = path.join(rootDir, "apps/frontend/cms/tests");
 
   ensure(fs.existsSync(definitionsPath), `缺少文件: ${definitionsPath}`);
   ensure(fs.existsSync(componentDir), `缺少目录: ${componentDir}`);

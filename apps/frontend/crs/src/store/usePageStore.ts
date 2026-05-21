@@ -1,10 +1,15 @@
 import { defineStore } from "pinia";
 import { ref, shallowRef } from "vue";
-import { useRefHistory } from "@vueuse/core";
+import { useDebounceFn, useRefHistory } from "@vueuse/core";
 import { deepClone } from "@cms/utils";
-import type { IPageSchemaV2, IComponentSchemaV2, IComponentLinkage } from "@cms/types";
+import type {
+  IComponentLinkage,
+  IComponentSchemaV2,
+  IPageSchemaV2,
+} from "@cms/types";
 import { normalizeMaterialType, normalizePageSchemaMaterials } from "@cms/ui";
 import { LinkageEngine } from "@/utils/linkage-engine";
+import type { IComponentLinkage as RuntimeLinkage } from "@/utils/linkage-engine";
 
 const generateId = (type: string): string => {
   return `${type}-${Math.random().toString(36).substr(2, 9)}`;
@@ -39,12 +44,11 @@ export const usePageStore = defineStore("page", () => {
   const previewHeight = ref("");
   const componentsTopList = ref<number[]>([]);
 
-  // 联动相关状态
   const linkages = ref<IComponentLinkage[]>([]);
   const linkageEngine = new LinkageEngine();
 
   const { history, undo, redo, canUndo, canRedo, commit } = useRefHistory(
-    pageSchema,
+    pageSchema as any,
     {
       capacity: 50,
       deep: true,
@@ -53,6 +57,7 @@ export const usePageStore = defineStore("page", () => {
       flush: "post",
     },
   );
+  const debouncedCommit = useDebounceFn(commit, 300);
 
   const setInitPageSchema = () => {
     pageSchema.value = deepClone(emptyPageSchema);
@@ -72,9 +77,7 @@ export const usePageStore = defineStore("page", () => {
     dialogImageVisible.value = value;
   };
 
-  const setUpLoadImgSuccess = (
-    value: ((...args: unknown[]) => void) | null,
-  ) => {
+  const setUpLoadImgSuccess = (value: ((...args: unknown[]) => void) | null) => {
     upLoadImgSuccess.value = value;
   };
 
@@ -106,7 +109,6 @@ export const usePageStore = defineStore("page", () => {
     styles?: Record<string, string>;
   }) => {
     if (!type) {
-      console.warn("addComponent: 组件类型不能为空");
       return;
     }
 
@@ -164,42 +166,54 @@ export const usePageStore = defineStore("page", () => {
     styles?: Record<string, string>;
   }) => {
     const component = pageSchema.value.componentMap[id];
-    if (component) {
-      if (props) component.props = { ...component.props, ...props };
-      if (styles) component.styles = { ...component.styles, ...styles };
-      commit();
+    if (!component) {
+      return;
+    }
+
+    let changed = false;
+    if (props) {
+      const nextProps = { ...component.props, ...props };
+      changed = changed || JSON.stringify(nextProps) !== JSON.stringify(component.props);
+      component.props = nextProps;
+    }
+    if (styles) {
+      const nextStyles = { ...(component.styles || {}), ...styles };
+      changed =
+        changed || JSON.stringify(nextStyles) !== JSON.stringify(component.styles || {});
+      component.styles = nextStyles;
+    }
+
+    if (changed) {
+      debouncedCommit();
     }
   };
 
   const updatePageSchema = ({ data }: { data?: Partial<IPageSchemaV2> }) => {
-    if (data) {
-      pageSchema.value = { ...pageSchema.value, ...data };
-      commit();
+    if (!data) {
+      return;
     }
+    pageSchema.value = { ...pageSchema.value, ...data };
+    commit();
   };
 
-  const updatePageHeight = ({
-    height,
-    list,
-  }: {
-    height: string;
-    list: number[];
-  }) => {
+  const updatePageHeight = ({ height, list }: { height: string; list: number[] }) => {
     previewHeight.value = height;
     componentsTopList.value = list;
   };
 
-  // 将 Schema 中的联动配置转换为运行时格式
-  const convertToRuntimeLinkage = (linkage: IComponentLinkage): any => {
-    const runtime: any = { ...linkage };
+  const convertToRuntimeLinkage = (linkage: IComponentLinkage): RuntimeLinkage => {
+    const runtime: RuntimeLinkage = {
+      ...linkage,
+      transformFn: undefined,
+    };
 
-    // 将字符串形式的 transformFn 转换为函数
-    if (linkage.transformFn && typeof linkage.transformFn === 'string') {
+    if (linkage.transformFn && typeof linkage.transformFn === "string") {
       try {
-        // eslint-disable-next-line no-new-func
-        runtime.transformFn = new Function('value', `return ${linkage.transformFn.replace(/^\(value\)\s*=>\s*/, '')}`);
-      } catch (error) {
-        console.error('Failed to parse transformFn:', error);
+        runtime.transformFn = new Function(
+          "value",
+          `return ${linkage.transformFn.replace(/^\(value\)\s*=>\s*/, "")}`,
+        ) as (value: unknown) => unknown;
+      } catch {
         runtime.transformFn = undefined;
       }
     }
@@ -216,19 +230,16 @@ export const usePageStore = defineStore("page", () => {
 
   const importPageSchema = (schema: IPageSchemaV2) => {
     if (!schema || !schema.componentMap || !schema.rootIds) {
-      console.warn("importPageSchema: 无效的页面 Schema");
       return;
     }
 
     pageSchema.value = deepClone(normalizePageSchemaMaterials(schema));
-
-    // 加载联动配置
     linkageEngine.clearAllLinkages();
+
     if (schema.linkages) {
       linkages.value = deepClone(schema.linkages);
-      linkages.value.forEach((linkage: IComponentLinkage) => {
-        const runtimeLinkage = convertToRuntimeLinkage(linkage);
-        linkageEngine.registerLinkage(runtimeLinkage);
+      linkages.value.forEach((linkage) => {
+        linkageEngine.registerLinkage(convertToRuntimeLinkage(linkage));
       });
     } else {
       linkages.value = [];
@@ -269,7 +280,6 @@ export const usePageStore = defineStore("page", () => {
     updatePageHeight,
     exportPageSchema,
     importPageSchema,
-    // 联动相关
     linkages,
     linkageEngine,
   };

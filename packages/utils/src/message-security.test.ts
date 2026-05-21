@@ -199,6 +199,8 @@ describe('Message Security Utilities', () => {
     it('accepts whitelisted origins', () => {
       expect(validateOrigin('http://localhost:5173')).toBe(true);
       expect(validateOrigin('http://localhost:5174')).toBe(true);
+      expect(validateOrigin('http://127.0.0.1:3010')).toBe(true);
+      expect(validateOrigin('http://127.0.0.1:3011')).toBe(true);
     });
 
     it('rejects non-whitelisted origins', () => {

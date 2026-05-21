@@ -74,7 +74,9 @@ const upload = ref<any>(null);
 const actionUrl = "/api/atlas-cms/uploadImage";
 
 const headers = {
-  "X-token": localStorage.getItem("token") || "",
+  Authorization: localStorage.getItem("token")
+    ? `Bearer ${localStorage.getItem("token")}`
+    : "",
 };
 
 watch(

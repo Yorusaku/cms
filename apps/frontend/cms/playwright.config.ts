@@ -1,5 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 
+const useSystemBrowser = process.env.PLAYWRIGHT_USE_SYSTEM_BROWSER !== "0";
+const browserChannel = process.env.PLAYWRIGHT_BROWSER_CHANNEL || "chrome";
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,
@@ -10,15 +13,18 @@ export default defineConfig({
   expect: { timeout: 10000 },
 
   use: {
-    baseURL: "http://127.0.0.1:3011/cms-manage/",
+    baseURL: "http://127.0.0.1:3011/cms-manage",
     screenshot: "only-on-failure",
     trace: "on-first-retry",
   },
 
   projects: [
     {
-      name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      name: useSystemBrowser ? `system-${browserChannel}` : "chromium",
+      use: {
+        ...devices["Desktop Chrome"],
+        ...(useSystemBrowser ? { channel: browserChannel as "chrome" | "msedge" } : {}),
+      },
     },
   ],
 

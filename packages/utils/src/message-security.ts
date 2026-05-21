@@ -158,21 +158,31 @@ export function validateMessageSize(message: any, maxSizeBytes = 1024 * 1024): b
  */
 export function getOriginWhitelist(): string[] {
   const isDev = typeof import.meta !== "undefined" && (import.meta as any).env?.DEV;
+  const env = (typeof import.meta !== "undefined" && (import.meta as any).env) || {};
+  const configuredOrigins = [
+    env.VITE_CRS_PREVIEW_ORIGIN,
+    env.VITE_POSTMESSAGE_PARENT_ORIGIN,
+  ].filter((item: unknown): item is string => typeof item === "string" && item.trim().length > 0);
 
   if (isDev) {
     // Development: allow localhost with different ports
-    return [
+    const defaults = [
       'http://localhost:5173',
       'http://localhost:5174',
+      'http://localhost:3010',
+      'http://localhost:3011',
       'http://localhost:3000',
       'http://127.0.0.1:5173',
       'http://127.0.0.1:5174',
+      'http://127.0.0.1:3010',
+      'http://127.0.0.1:3011',
       'http://127.0.0.1:3000',
     ];
+    return Array.from(new Set([...defaults, ...configuredOrigins]));
   }
 
   // Production: only allow same origin
-  return [window.location.origin];
+  return Array.from(new Set([window.location.origin, ...configuredOrigins]));
 }
 
 /**

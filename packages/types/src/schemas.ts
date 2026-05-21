@@ -102,6 +102,12 @@ export const PageSchemaV2Schema = z.object({
   rootIds: z.array(z.string()),
   state: z.record(z.unknown()).optional(),
   linkages: z.array(ComponentLinkageSchema).optional(),
+  tracking: z
+    .object({
+      enabled: z.boolean().optional(),
+      context: z.record(z.unknown()).optional(),
+    })
+    .optional(),
 }).passthrough();
 
 // ==================== 物料定义 Schema ====================

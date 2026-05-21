@@ -32,4 +32,8 @@ export default defineConfig({
       },
     },
   },
+
+  optimizeDeps: {
+    exclude: ['@cms/utils', '@cms/types', '@cms/ui', '@cms/hooks'],
+  },
 });

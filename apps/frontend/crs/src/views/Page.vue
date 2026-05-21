@@ -1,155 +1,132 @@
 ﻿<template>
   <div class="page-container">
-    <!-- 鍔犺浇鐘舵€?-->
-    <div 
-      v-if="loading" 
+    <div
+      v-if="loading"
       class="loading-overlay flex items-center justify-center min-h-screen bg-white"
     >
       <div class="text-center">
-        <Loading 
-          type="spinner" 
-          color="#1989fa" 
-          size="40px" 
-          class="mb-4"
-        />
-        <p class="text-gray-600 text-lg">椤甸潰鍔犺浇涓?..</p>
-        <p class="text-gray-400 text-sm mt-2">姝ｅ湪鑾峰彇椤甸潰鏁版嵁</p>
+        <Loading type="spinner" color="#1989fa" size="40px" class="mb-4" />
+        <p class="text-gray-600 text-lg">页面加载中...</p>
+        <p class="text-gray-400 text-sm mt-2">正在获取页面数据</p>
       </div>
     </div>
 
-    <!-- 閿欒鐘舵€?-->
-    <div 
-      v-else-if="error" 
+    <div
+      v-else-if="error"
       class="error-overlay flex items-center justify-center min-h-screen bg-gray-50"
     >
-      <Empty 
-        :description="errorMessage"
-        image="error"
-        class="w-full max-w-md px-4"
-      >
+      <Empty :description="errorMessage" image="error" class="w-full max-w-md px-4">
         <template #bottom>
-          <Button 
-            class="mt-4"
-            type="primary" 
-            @click="retryLoad"
-          >
-            閲嶆柊鍔犺浇
+          <Button class="mt-4" type="primary" @click="retryLoad">
+            重新加载
           </Button>
         </template>
       </Empty>
     </div>
 
-    <!-- 椤甸潰鍐呭 -->
-    <div 
-      v-else 
-      class="page-content"
-      :style="{ backgroundColor: pageBackgroundColor }"
-    >
+    <div v-else class="page-content" :style="{ backgroundColor: pageBackgroundColor }">
       <SchemaRenderer :page-schema="pageStore.pageSchema" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
-import { usePageStore } from '@/store/usePageStore'
-import { getPageDataById, parsePageSchema } from '@/api/page'
-import SchemaRenderer from '@/components/SchemaRenderer.vue'
-import { Loading, Empty, Button } from 'vant'
-import { migrateSchema } from '@cms/utils'
-import { normalizePageSchemaMaterials } from '@cms/ui'
+import { computed, onMounted, ref } from "vue";
+import { useRoute } from "vue-router";
+import { Loading, Empty, Button } from "vant";
+import { migrateSchema } from "@cms/utils";
+import { normalizePageSchemaMaterials } from "@cms/ui";
+import { getPageDataById, parsePageSchema } from "@/api/page";
+import SchemaRenderer from "@/components/SchemaRenderer.vue";
+import { usePageStore } from "@/store/usePageStore";
+import { getMarketingParamsFromLocation, trackEvent } from "@/utils/tracking";
 
-// 涓洪伩鍏岴SLint璀﹀憡锛屾樉寮忚缃粍浠跺悕
 defineOptions({
-  name: 'CrsPageView'
-})
+  name: "CrsPageView",
+});
 
-const route = useRoute()
-const pageStore = usePageStore()
+const route = useRoute();
+const pageStore = usePageStore();
 
-// 鐘舵€佺鐞?
-const loading = ref(true)
-const error = ref(false)
-const errorMessage = ref('')
+const loading = ref(true);
+const error = ref(false);
+const errorMessage = ref("");
 
-// 璁＄畻灞炴€?
 const pageId = computed(() => {
-  const id = route.query.id
-  return id ? Number(id) : null
-})
+  const id = route.query.id;
+  return id ? Number(id) : null;
+});
 
 const pageBackgroundColor = computed(() => {
-  const bgColor = pageStore.pageSchema.pageConfig?.backgroundColor
-  return typeof bgColor === 'string' ? bgColor : '#ffffff'
-})
+  const bgColor = pageStore.pageSchema.pageConfig?.backgroundColor;
+  return typeof bgColor === "string" ? bgColor : "#ffffff";
+});
 
-// 椤甸潰鍔犺浇鍑芥暟
 const loadPageData = async () => {
-  // 妫€鏌ラ〉闈D
   if (!pageId.value) {
-    error.value = true
-    errorMessage.value = '椤甸潰ID涓嶅瓨鍦紝璇锋鏌RL鍙傛暟'
-    loading.value = false
-    return
+    error.value = true;
+    errorMessage.value = "页面ID不存在，请检查URL参数";
+    loading.value = false;
+    return;
   }
 
   try {
-    loading.value = true
-    error.value = false
-    errorMessage.value = ''
-    
-    // 鑾峰彇椤甸潰鏁版嵁
-    const response = await getPageDataById(pageId.value)
-    
-    // 妫€鏌ュ搷搴旂姸鎬?
+    loading.value = true;
+    error.value = false;
+    errorMessage.value = "";
+
+    const response = await getPageDataById(pageId.value);
+
     if (response.code !== 10000) {
-      throw new Error(response.message || `鑾峰彇椤甸潰鏁版嵁澶辫触 (code: ${response.code})`)
+      throw new Error(response.message || `获取页面数据失败 (code: ${response.code})`);
     }
-    
+
     if (!response.data) {
-      throw new Error('椤甸潰鏁版嵁涓虹┖')
+      throw new Error("页面数据为空");
     }
-    
-    // 瑙ｆ瀽Schema鏁版嵁
-    const pageData = response.data as unknown as { schema: string; [key: string]: unknown }
-    const rawSchema = pageData.schema ? parsePageSchema(pageData.schema) : pageData
-    const schema = normalizePageSchemaMaterials(
-      migrateSchema(rawSchema)
-    )
-    
-    // 娉ㄥ叆鍒皊tore
-    pageStore.importPageSchema(schema)
-    
-    // Set page title
+
+    const pageData = response.data as unknown as {
+      schema: string;
+      [key: string]: unknown;
+    };
+    const rawSchema = pageData.schema ? parsePageSchema(pageData.schema) : pageData;
+    const schema = normalizePageSchemaMaterials(migrateSchema(rawSchema));
+
+    pageStore.importPageSchema(schema);
+
     const pageTitle =
-      typeof schema.pageConfig?.name === 'string'
+      typeof schema.pageConfig?.name === "string"
         ? schema.pageConfig.name
-        : '移动端页面'
-    document.title = pageTitle
-    // 璁剧疆鑳屾櫙棰滆壊锛堝鏋滄湁鐨勮瘽锛?
-    if (schema.pageConfig?.backgroundColor) {
-      // 鑳屾櫙棰滆壊宸查€氳繃璁＄畻灞炴€у鐞?
-    }
-    
+        : "移动端页面";
+    document.title = pageTitle;
+
+    const marketing = getMarketingParamsFromLocation();
+    await trackEvent({
+      eventType: "page_view",
+      pageId: pageId.value,
+      payload: {
+        source: "crs_page",
+        title: pageTitle,
+      },
+      utm: marketing.utm,
+      channel: marketing.channel,
+    });
   } catch (err: unknown) {
-    error.value = true
-    const errorObj = err as Error
-    errorMessage.value = errorObj.message || '椤甸潰鍔犺浇澶辫触锛岃绋嶅悗閲嶈瘯'
+    error.value = true;
+    const errorObj = err as Error;
+    errorMessage.value = errorObj.message || "页面加载失败，请稍后重试";
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
-// 閲嶈瘯鍔犺浇
 const retryLoad = () => {
-  loadPageData()
-}
+  loadPageData();
+};
 
-// 缁勪欢鎸傝浇鏃跺姞杞芥暟鎹?
 onMounted(() => {
-  loadPageData()
-})
+  loadPageData();
+});
 </script>
 
 <style scoped>

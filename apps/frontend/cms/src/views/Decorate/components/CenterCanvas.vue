@@ -158,6 +158,7 @@ import {
   getOrderedComponents,
   resolveMaterialRuntimeProps,
 } from "@cms/ui";
+import { trackEvent } from "@/utils/tracking";
 
 const VIRTUAL_SCROLL_THRESHOLD = 20;
 
@@ -239,9 +240,23 @@ const onVirtualMeasure = (id: string, _height: number) => {
 const handleSelectComponent = (id: string, event: MouseEvent) => {
   if (event.ctrlKey || event.metaKey) {
     props.pageStore.toggleComponentSelection(id);
+    void trackEvent({
+      eventType: "component_click",
+      componentId: id,
+      payload: {
+        action: "toggle_select",
+      },
+    });
     return;
   }
   props.pageStore.setActiveId(id);
+  void trackEvent({
+    eventType: "component_click",
+    componentId: id,
+    payload: {
+      action: "select",
+    },
+  });
 };
 
 const handleDeleteComponent = (index: number) => {
@@ -254,11 +269,21 @@ const handleDeleteComponentById = (id: string) => {
   );
   if (index >= 0) {
     props.pageStore.deleteComponent({ index });
+    void trackEvent({
+      eventType: "cta_click",
+      componentId: id,
+      ctaText: "delete_component",
+    });
   }
 };
 
 const handleDuplicateComponent = (id: string) => {
   props.pageStore.duplicateComponent({ id });
+  void trackEvent({
+    eventType: "cta_click",
+    componentId: id,
+    ctaText: "duplicate_component",
+  });
 };
 
 const handlePreview = () => {

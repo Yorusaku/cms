@@ -1,12 +1,12 @@
 import { test } from "@playwright/test";
-import { PreviewPage } from "./pages/preview.page";
-import { setupApiMocks } from "./fixtures/api-mocks.setup";
 import { mockToken } from "./fixtures/api-mocks";
+import { setAuthToken, setupApiMocks } from "./fixtures/api-mocks.setup";
+import { PreviewPage } from "./pages/preview.page";
 
 test.describe("Preview", () => {
   test.beforeEach(async ({ page }) => {
     await setupApiMocks(page);
-    await page.evaluate((t) => localStorage.setItem("token", t), mockToken);
+    await setAuthToken(page, mockToken);
   });
 
   test("preview page loads with iframe", async ({ page }) => {
@@ -19,7 +19,6 @@ test.describe("Preview", () => {
     const previewPage = new PreviewPage(page);
     await previewPage.goto(1);
     await previewPage.selectDevice("iPhone SE");
-    // iPhone SE width is 320px
     await previewPage.expectFrameWidth(320);
   });
 

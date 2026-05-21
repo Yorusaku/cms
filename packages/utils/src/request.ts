@@ -149,7 +149,7 @@ class Request {
         const { data, status } = response;
 
         // HTTP 状态码检查
-        if (status !== 200) {
+        if (status < 200 || status >= 300) {
           const error: CustomRequestError = {
             message: "[Fetch]: 网络开了小差",
             code: status,

@@ -1,25 +1,21 @@
-import type { Page } from "@playwright/test";
+import { expect, type Page } from "@playwright/test";
 
 export class DecoratePage {
   constructor(readonly page: Page) {}
 
   async goto(pageId?: number) {
-    const url = pageId ? `/decorate?id=${pageId}` : "/decorate";
+    const url = pageId ? `/cms-manage/decorate?id=${pageId}` : "/cms-manage/decorate";
     await this.page.goto(url);
     await this.page.waitForLoadState("networkidle");
-    await this.page.waitForTimeout(500);
   }
 
   async expectPanelsVisible() {
-    // Left material panel
-    await expect(this.page.locator(".left-material")).toBeVisible();
-    // Center canvas
-    await expect(this.page.locator(".canvas-area")).toBeVisible();
-    // Right config panel
-    await expect(this.page.locator(".right-config")).toBeVisible();
+    await expect(this.page.getByText(/组件列表/i).first()).toBeVisible();
+    await expect(this.page.getByText(/页面画布/i).first()).toBeVisible();
+    await expect(this.page.getByText(/页面配置/i).first()).toBeVisible();
   }
 
-  async expectCanvasHasComponents(count: number) {
+  async expectCanvasHasComponentsAtLeast(count: number) {
     const items = this.page.locator(".canvas-component");
     await expect(items).toHaveCount(count);
   }
@@ -27,7 +23,6 @@ export class DecoratePage {
   async clickComponent(index: number) {
     const items = this.page.locator(".canvas-component");
     await items.nth(index).click();
-    await this.page.waitForTimeout(200);
   }
 
   async expectRightPanelVisible() {
@@ -35,18 +30,32 @@ export class DecoratePage {
   }
 
   async clickSaveDraft() {
-    const header = this.page.locator(".top-header");
-    await header.getByRole("button", { name: /保存|保存草稿/i }).click();
-    await this.page.waitForTimeout(300);
+    await this.page
+      .getByRole("button")
+      .filter({ hasText: /保存草稿|保存|save/i })
+      .first()
+      .click();
   }
 
   async clickPublish() {
-    const header = this.page.locator(".top-header");
-    await header.getByRole("button", { name: /发布/i }).click();
-    await this.page.waitForTimeout(300);
+    await this.page
+      .getByRole("button")
+      .filter({ hasText: /发布|publish/i })
+      .first()
+      .click();
+  }
+
+  async clickPreview() {
+    await this.page
+      .getByRole("button")
+      .filter({ hasText: /预览|preview/i })
+      .first()
+      .click();
   }
 
   async expectSuccessMessage() {
-    await expect(this.page.locator(".el-message--success")).toBeVisible({ timeout: 3000 });
+    await expect(this.page.locator(".el-message--success").first()).toBeVisible({
+      timeout: 3000,
+    });
   }
 }

@@ -2,3 +2,5 @@
 # 仅在无法通过设计令牌或常规样式覆盖时添加
 # 示例：
 # apps/cms/src/views/Decorate/components/TopHeader.vue
+apps/frontend/cms/src/views/Decorate/components/CenterCanvas.vue
+apps/frontend/cms/src/views/Decorate/components/LinkageDebugPanel.vue

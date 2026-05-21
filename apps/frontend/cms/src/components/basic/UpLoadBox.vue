@@ -73,11 +73,11 @@ const headers = computed(() => {
   try {
     const token = localStorage.getItem("token");
     return {
-      "X-token": token || "",
+      Authorization: token ? `Bearer ${token}` : "",
     };
   } catch {
     return {
-      "X-token": "",
+      Authorization: "",
     };
   }
 });

@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="min-h-screen bg-gray-50 p-6">
     <div class="bg-white rounded-lg shadow-sm p-6">
       <div class="mb-6">
@@ -75,7 +75,7 @@
         </el-table-column>
         <el-table-column prop="create_time" label="创建时间" width="180" align="center" />
         <el-table-column prop="update_time" label="更新时间" width="180" align="center" />
-        <el-table-column label="操作" fixed="right" width="520" align="center">
+        <el-table-column label="操作" fixed="right" width="600" align="center">
           <template #default="{ row }">
             <el-button type="primary" size="small" @click="handleEdit(row.id)">装修</el-button>
             <el-button
@@ -93,6 +93,7 @@
             </el-button>
             <el-button type="info" size="small" @click="handlePreview(row.id)">预览</el-button>
             <el-button size="small" @click="openPublishLogs(row.id)">发布记录</el-button>
+            <el-button size="small" @click="openLeadDrawer(row.id)">线索</el-button>
             <el-button size="small" type="warning" @click="handleRollbackLatest(row)">回滚到最新发布</el-button>
             <el-popconfirm title="确定要删除这个页面吗？" @confirm="handleDelete(row.id)">
               <template #reference>
@@ -133,7 +134,7 @@
             placement="top"
           >
             <div class="log-card">
-              <p><strong>{{ item.displayVersion }}</strong> · {{ item.operator || "当前用户" }}</p>
+              <p><strong>{{ item.displayVersion }}</strong> - {{ item.operator || "当前用户" }}</p>
               <p class="text-xs text-gray-500 mt-1">{{ item.note || "发布" }}</p>
               <div class="mt-2 flex gap-2">
                 <el-button size="small" @click="previewVersion(item.versionId)">只读预览</el-button>
@@ -144,6 +145,38 @@
             </div>
           </el-timeline-item>
         </el-timeline>
+      </template>
+    </el-drawer>
+
+    <el-drawer v-model="leadDrawerVisible" title="线索列表" size="680px">
+      <template v-if="leadLoading">
+        <div class="text-sm text-gray-500">加载中...</div>
+      </template>
+      <template v-else>
+        <el-table :data="leadList" border stripe class="w-full">
+          <el-table-column prop="name" label="姓名" min-width="110" />
+          <el-table-column prop="phoneNumber" label="手机号" min-width="140" />
+          <el-table-column prop="remark" label="备注" min-width="160" />
+          <el-table-column label="UTM" min-width="220">
+            <template #default="{ row }">
+              <div class="text-xs text-gray-600">{{ formatMap(row.utm) }}</div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="createdAt" label="提交时间" min-width="160" />
+        </el-table>
+
+        <div class="mt-4 flex justify-end">
+          <el-pagination
+            v-model:current-page="leadPagination.pageNum"
+            v-model:page-size="leadPagination.pageSize"
+            :page-sizes="[10, 20, 50]"
+            :total="leadPagination.total"
+            layout="total, sizes, prev, pager, next"
+            background
+            @size-change="handleLeadPageSizeChange"
+            @current-change="handleLeadPageChange"
+          />
+        </div>
       </template>
     </el-drawer>
 
@@ -158,13 +191,9 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import TemplatePicker from "@/components/TemplatePicker.vue";
-
-const userRole = ref(localStorage.getItem("role") || "editor");
-const showTemplatePicker = ref(false);
-const canPublish = computed(() => userRole.value === "admin");
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Plus, Search, Refresh } from "@element-plus/icons-vue";
+import { Plus, Refresh, Search } from "@element-plus/icons-vue";
 import {
   deletePage,
   getCmsPageById,
@@ -177,7 +206,9 @@ import {
   type PublishLogItem,
   type SavePageParams,
 } from "../api/activity";
+import { getLeadList, type LeadItem } from "@/api/lead";
 import { usePageStore } from "../store/usePageStore";
+import { trackEvent } from "@/utils/tracking";
 import {
   getLocalPublishLogs,
   markPageDraft,
@@ -201,6 +232,10 @@ type ActivityRow = PageItem & {
   loading: boolean;
 };
 
+const userRole = ref(localStorage.getItem("role") || "editor");
+const showTemplatePicker = ref(false);
+const canPublish = computed(() => userRole.value === "admin");
+
 const router = useRouter();
 const route = useRoute();
 const pageStore = usePageStore();
@@ -219,6 +254,16 @@ const publishDrawerVisible = ref(false);
 const publishLogsLoading = ref(false);
 const publishLogs = ref<PublishLogRecord[]>([]);
 const activeLogPageId = ref<number | null>(null);
+
+const leadDrawerVisible = ref(false);
+const leadLoading = ref(false);
+const activeLeadPageId = ref<number | null>(null);
+const leadList = ref<LeadItem[]>([]);
+const leadPagination = reactive({
+  pageNum: 1,
+  pageSize: 20,
+  total: 0,
+});
 
 const pagination = reactive({
   current: 1,
@@ -338,6 +383,13 @@ const handleToggleActivity = async (row: ActivityRow) => {
       throw new Error((response as { message?: string }).message || `${action}失败`);
     }
 
+    await trackEvent({
+      eventType: "cta_click",
+      pageId: row.id,
+      ctaText: targetStatus === 1 ? "online_page" : "offline_page",
+      payload: { action, targetStatus },
+    });
+
     ElMessage.success(`${action}成功`);
     await getTableData();
   } catch (error: unknown) {
@@ -406,9 +458,17 @@ const handleDuplicate = async (id: number) => {
 const handleAdd = () => {
   showTemplatePicker.value = true;
 };
+
 const handleTemplateCreated = (pageId: number) => {
+  void trackEvent({
+    eventType: "cta_click",
+    pageId,
+    ctaText: "create_page_from_template",
+    payload: { source: "template_picker" },
+  });
   router.push({ path: "/decorate", query: { id: pageId } });
 };
+
 const handleSkipTemplate = () => {
   pageStore.setInitPageSchema();
   router.push("/decorate");
@@ -447,11 +507,21 @@ const openPublishLogs = async (pageId: number) => {
     if ((resp.code ?? 10000) !== 10000) {
       throw new Error(resp.message || "获取发布记录失败");
     }
+
     const serverLogs = Array.isArray(resp.data) ? resp.data : [];
     if (serverLogs.length > 0) {
       publishLogs.value = serverLogs
         .map((item) => normalizeLogRecord(pageId, item))
         .sort((a, b) => b.publishedAt - a.publishedAt);
+
+      await trackEvent({
+        eventType: "page_view",
+        pageId,
+        payload: {
+          source: "publish_logs",
+          count: publishLogs.value.length,
+        },
+      });
       return;
     }
 
@@ -463,6 +533,62 @@ const openPublishLogs = async (pageId: number) => {
   } finally {
     publishLogsLoading.value = false;
   }
+};
+
+const openLeadDrawer = async (pageId: number) => {
+  activeLeadPageId.value = pageId;
+  leadPagination.pageNum = 1;
+  leadDrawerVisible.value = true;
+  await loadLeadList();
+};
+
+const loadLeadList = async () => {
+  if (!activeLeadPageId.value) {
+    return;
+  }
+
+  leadLoading.value = true;
+  try {
+    const response = await getLeadList({
+      pageId: activeLeadPageId.value,
+      pageNum: leadPagination.pageNum,
+      pageSize: leadPagination.pageSize,
+    });
+
+    if (response.code !== 10000) {
+      throw new Error(response.message || "获取线索列表失败");
+    }
+
+    leadList.value = response.data?.list ?? [];
+    leadPagination.total = response.data?.total ?? 0;
+
+    await trackEvent({
+      eventType: "page_view",
+      pageId: activeLeadPageId.value,
+      payload: {
+        source: "lead_drawer",
+        total: leadPagination.total,
+      },
+    });
+  } catch (error: unknown) {
+    leadList.value = [];
+    leadPagination.total = 0;
+    const message = error instanceof Error ? error.message : "获取线索列表失败";
+    ElMessage.error(message);
+  } finally {
+    leadLoading.value = false;
+  }
+};
+
+const handleLeadPageChange = async (pageNum: number) => {
+  leadPagination.pageNum = pageNum;
+  await loadLeadList();
+};
+
+const handleLeadPageSizeChange = async (pageSize: number) => {
+  leadPagination.pageSize = pageSize;
+  leadPagination.pageNum = 1;
+  await loadLeadList();
 };
 
 const rollbackVersion = async (versionId: string) => {
@@ -491,6 +617,13 @@ const rollbackVersion = async (versionId: string) => {
     }
 
     markPageDraft(activeLogPageId.value);
+    await trackEvent({
+      eventType: "cta_click",
+      pageId: activeLogPageId.value,
+      ctaText: "rollback_page_version",
+      payload: { versionId },
+    });
+
     ElMessage.success("回滚成功，已标记为草稿待发布");
     await getTableData();
 
@@ -553,6 +686,20 @@ const previewVersion = (versionId: string) => {
 
 const formatTime = (timestamp: number) => {
   return new Date(timestamp).toLocaleString("zh-CN", { hour12: false });
+};
+
+const formatMap = (map: Record<string, string> | null) => {
+  if (!map) {
+    return "-";
+  }
+  const entries = Object.entries(map);
+  if (entries.length === 0) {
+    return "-";
+  }
+  return entries
+    .slice(0, 4)
+    .map(([key, value]) => `${key}=${value}`)
+    .join("; ");
 };
 
 const tryOpenLogsFromQuery = async () => {
