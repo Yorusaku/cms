@@ -1,6 +1,6 @@
 # CMS 营销 H5 可视化低代码平台
 
-> 面向营销活动场景的 H5 低代码搭建平台。支持页面搭建、发布预览、版本回滚、渠道参数透传、埋点与线索收集闭环。
+> 面向营销活动场景的 H5 低代码搭建平台。支持页面搭建、发布预览、版本回滚、渠道参数透传、埋点、线索收集，以及 AI 一句话建页与转化优化建议。
 
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)](https://www.typescriptlang.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.5-green)](https://vuejs.org/)
@@ -14,6 +14,7 @@
 - 运营可独立完成页面搭建与发布
 - 发布链路支持回滚恢复
 - 具备最小营销能力（渠道参数、埋点、线索收集）
+- 具备 AI 辅助建页与转化诊断能力
 - 有自动化测试保障关键链路
 
 ## 核心能力
@@ -32,7 +33,15 @@
 - 轻量埋点事件：`page_view`、`component_click`、`cta_click`、`form_submit`
 - 线索收集闭环：`LeadForm` 组件 + 后端提交接口 + CMS 列表查询
 
-### 3. 安全与一致性
+### 3. AI 一期能力
+
+- CMS 活动页支持「AI 新建」：输入活动目标、优惠信息、商品卖点等，生成电商促销 + 线索收集草稿页
+- 后端支持 OpenAI-compatible provider，通过 `AI_BASE_URL`、`AI_API_KEY`、`AI_MODEL` 等 env 配置；未配置或失败时使用 mock fallback
+- 基础漏斗汇总：按页面/渠道统计 PV、CTA 点击、表单提交、线索数和转化率
+- AI 优化建议：结合页面 Schema 与漏斗数据，输出标题、CTA、表单、商品区、埋点等优化建议
+- AI 结果只保存为草稿，用户人工检查后再发布
+
+### 4. 安全与一致性
 
 - 鉴权统一使用：`Authorization: Bearer <token>`
 - CMS -> CRS 预览通信使用 `postMessage` 白名单来源校验
@@ -44,10 +53,13 @@
 
 - `apps/frontend/cms`：管理端（搭建、发布、回滚、线索查看）
 - `apps/frontend/crs`：渲染端（移动端页面渲染）
-- `apps/backend`：NestJS 后端 API
-- `packages/types`：类型协议（Schema / DTO / Event）
+- `apps/backend`：NestJS 后端 API（`ai` / `auth` / `user` / `page` / `template` / `lead` / `tracking` / `upload`）
+- `packages/types`：类型协议（Schema / DTO / Event，zod 校验）
 - `packages/ui`：共享组件与物料注册
 - `packages/utils`：请求、消息安全、Schema 适配等工具
+- `packages/hooks`：共享 composables
+- `packages/test-utils`：测试工具
+- `packages/eslint-config` / `packages/prettier-config`：共享代码风格配置
 
 ### 关键设计
 
@@ -114,15 +126,23 @@ pnpm dev
 
 ### 单测/集成
 
+前端与 packages 使用 Vitest，后端使用 Jest。
+
 ```bash
 # CMS
 pnpm --filter @cms/cms test -- --run
+
+# CMS AI 交互组件测试
+pnpm --filter @cms/cms test -- --run src/tests/Activity.ai.test.ts
 
 # Utils
 pnpm --filter @cms/utils test -- --run
 
 # UI
 pnpm --filter @cms/ui test -- --run
+
+# Backend（Jest）
+pnpm --filter @cms/backend test
 ```
 
 ### E2E（Playwright）
@@ -144,17 +164,20 @@ pnpm --filter @cms/backend typecheck
 pnpm check:ui-governance
 ```
 
-### 最近一次验证基线（2026-05-21）
+### 最近一次验证基线（2026-08-18）
 
-- CMS 构建耗时：约 `9.17s`
-- CRS 构建耗时：约 `4.25s`
-- 核心 E2E 冒烟：`5/5` 通过，执行耗时约 `11.0s`
+- `pnpm --filter @cms/backend build`：通过
+- `pnpm --filter @cms/backend test -- --runInBand`：通过，3 个测试文件 / 5 条测试
+- `pnpm --filter @cms/cms test -- --run src/tests/api.test.ts src/tests/Activity.ai.test.ts`：通过，2 个测试文件 / 16 条测试
+- `pnpm --filter @cms/cms test:e2e -- tests/e2e/smoke-core.spec.ts`：通过，5 条核心冒烟
+- 完整 `pnpm --filter @cms/cms test:e2e` 当前仍有既有 E2E fixture/page object 失败，详情见 `plan.md`
 
 ## 演示与文档
 
 - 演示脚本：[docs/DEMO_SCRIPT_ZH.md](./docs/DEMO_SCRIPT_ZH.md)
 - 验收清单：[docs/ACCEPTANCE_CHECKLIST_ZH.md](./docs/ACCEPTANCE_CHECKLIST_ZH.md)
 - 简历证据映射：[docs/RESUME_EVIDENCE_ZH.md](./docs/RESUME_EVIDENCE_ZH.md)
+- AI 一期断点续作：[plan.md](./plan.md)
 - AI 检索图谱：[docs/PROJECT_AI_GRAPH.md](./docs/PROJECT_AI_GRAPH.md)
 - AI 检索索引：[docs/PROJECT_AI_INDEX.json](./docs/PROJECT_AI_INDEX.json)
 
@@ -171,4 +194,3 @@ pnpm ci:all
 ## License
 
 MIT
-

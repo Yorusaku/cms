@@ -2,6 +2,7 @@ import { Body, Controller, Get, Post, Query } from "@nestjs/common";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { Public } from "../../common/decorators/public.decorator";
 import { CreateTrackingEventDto } from "./dto/create-tracking-event.dto";
+import { GetPageFunnelSummaryDto } from "./dto/get-page-funnel-summary.dto";
 import { GetTrackingEventsDto } from "./dto/get-tracking-events.dto";
 import { TrackingService } from "./tracking.service";
 
@@ -19,5 +20,11 @@ export class TrackingController {
   @Roles("admin", "editor")
   async getTrackingEvents(@Query() dto: GetTrackingEventsDto) {
     return this.trackingService.getEvents(dto);
+  }
+
+  @Get("getPageFunnelSummary")
+  @Roles("admin", "editor")
+  async getPageFunnelSummary(@Query() dto: GetPageFunnelSummaryDto) {
+    return this.trackingService.getPageFunnelSummary(dto);
   }
 }

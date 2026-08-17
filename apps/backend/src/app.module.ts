@@ -9,6 +9,7 @@ import { UserModule } from "./modules/user/user.module";
 import { TemplateModule } from "./modules/template/template.module";
 import { LeadModule } from "./modules/lead/lead.module";
 import { TrackingModule } from "./modules/tracking/tracking.module";
+import { AiModule } from "./modules/ai/ai.module";
 import { JwtAuthGuard } from "./common/guards/auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 import { resolve } from "path";
@@ -26,6 +27,7 @@ import { resolve } from "path";
     TemplateModule,
     LeadModule,
     TrackingModule,
+    AiModule,
     UploadModule,
   ],
   providers: [

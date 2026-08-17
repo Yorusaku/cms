@@ -52,6 +52,10 @@
             <el-icon><Plus /></el-icon>
             新增页面
           </el-button>
+          <el-button type="success" @click="openAiDialog">
+            <el-icon><Plus /></el-icon>
+            AI 新建
+          </el-button>
         </div>
         <div class="text-sm text-gray-500">共 {{ pagination.total }} 条记录</div>
       </div>
@@ -75,7 +79,7 @@
         </el-table-column>
         <el-table-column prop="create_time" label="创建时间" width="180" align="center" />
         <el-table-column prop="update_time" label="更新时间" width="180" align="center" />
-        <el-table-column label="操作" fixed="right" width="600" align="center">
+        <el-table-column label="操作" fixed="right" width="700" align="center">
           <template #default="{ row }">
             <el-button type="primary" size="small" @click="handleEdit(row.id)">装修</el-button>
             <el-button
@@ -94,6 +98,10 @@
             <el-button type="info" size="small" @click="handlePreview(row.id)">预览</el-button>
             <el-button size="small" @click="openPublishLogs(row.id)">发布记录</el-button>
             <el-button size="small" @click="openLeadDrawer(row.id)">线索</el-button>
+            <el-button size="small" type="warning" @click="openAiDiagnosis(row)">
+              <el-icon><TrendCharts /></el-icon>
+              AI 优化
+            </el-button>
             <el-button size="small" type="warning" @click="handleRollbackLatest(row)">回滚到最新发布</el-button>
             <el-popconfirm title="确定要删除这个页面吗？" @confirm="handleDelete(row.id)">
               <template #reference>
@@ -180,11 +188,159 @@
       </template>
     </el-drawer>
 
+    <el-drawer v-model="aiDiagnoseDrawerVisible" title="AI 优化建议" size="720px">
+      <template v-if="aiDiagnoseLoading">
+        <div class="text-sm text-gray-500">AI 正在分析页面结构与转化漏斗...</div>
+      </template>
+      <template v-else-if="!aiDiagnosis">
+        <el-empty description="暂无优化建议" />
+      </template>
+      <template v-else>
+        <div class="diagnosis-summary">
+          <div class="text-sm text-gray-500">页面</div>
+          <div class="diagnosis-title">{{ aiDiagnosisPageName || `页面 ${aiDiagnosis.pageId}` }}</div>
+          <p class="diagnosis-copy">{{ aiDiagnosis.summary }}</p>
+        </div>
+
+        <div class="diagnosis-list">
+          <div
+            v-for="(item, index) in aiDiagnosis.advice"
+            :key="`${item.category}-${index}`"
+            class="diagnosis-item"
+          >
+            <div class="diagnosis-item__header">
+              <div class="diagnosis-item__meta">
+                <el-tag :type="getAdviceTagType(item.severity)" size="small">
+                  {{ getAdviceSeverityLabel(item.severity) }}
+                </el-tag>
+                <el-tag type="info" size="small" effect="plain">
+                  {{ getAdviceCategoryLabel(item.category) }}
+                </el-tag>
+              </div>
+              <span class="diagnosis-target">
+                关联组件：{{ item.targetComponentId || "页面级" }}
+              </span>
+            </div>
+            <p class="diagnosis-problem">{{ item.problem }}</p>
+            <div class="diagnosis-action">
+              <span class="diagnosis-action__label">建议动作</span>
+              <span>{{ item.suggestion }}</span>
+            </div>
+            <div class="diagnosis-impact">
+              <span class="diagnosis-action__label">预期影响</span>
+              <span>{{ item.expectedImpact }}</span>
+            </div>
+          </div>
+        </div>
+      </template>
+    </el-drawer>
+
     <TemplatePicker
       v-model="showTemplatePicker"
       @created="handleTemplateCreated"
       @skip="handleSkipTemplate"
     />
+
+    <el-dialog
+      v-model="aiDialogVisible"
+      title="AI 新建活动页"
+      width="760px"
+      destroy-on-close
+    >
+      <el-form label-width="96px" class="ai-form">
+        <el-form-item label="页面标题" required>
+          <el-input v-model="aiForm.pageName" placeholder="如：618 爆款限时购" maxlength="80" />
+        </el-form-item>
+        <el-form-item label="活动类型" required>
+          <el-select v-model="aiForm.activityType" class="w-full" placeholder="请选择活动类型">
+            <el-option
+              v-for="item in aiActivityOptions"
+              :key="item"
+              :label="item"
+              :value="item"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="目标人群" required>
+          <el-input v-model="aiForm.audience" placeholder="如：25-35 岁新锐白领" maxlength="120" />
+        </el-form-item>
+        <el-form-item label="优惠信息" required>
+          <el-input
+            v-model="aiForm.promotion"
+            placeholder="如：满 299 减 80，前 100 名加赠礼包"
+            maxlength="160"
+          />
+        </el-form-item>
+        <el-form-item label="按钮文案" required>
+          <el-input v-model="aiForm.ctaText" placeholder="如：立即领取优惠" maxlength="40" />
+        </el-form-item>
+        <el-form-item label="留资目标">
+          <el-input
+            v-model="aiForm.leadGoal"
+            placeholder="如：领取优惠券并预约专属顾问"
+            maxlength="120"
+          />
+        </el-form-item>
+        <el-form-item label="页面风格">
+          <el-select v-model="aiForm.styleTone" class="w-full" placeholder="请选择页面风格">
+            <el-option
+              v-for="item in aiStyleOptions"
+              :key="item"
+              :label="item"
+              :value="item"
+            />
+          </el-select>
+        </el-form-item>
+
+        <el-form-item label="商品信息">
+          <div class="ai-products">
+            <div
+              v-for="(product, index) in aiForm.products"
+              :key="index"
+              class="ai-product-row"
+            >
+              <el-input v-model="product.name" placeholder="商品名" maxlength="80" />
+              <el-input v-model="product.price" placeholder="现价" maxlength="20" />
+              <el-input v-model="product.originalPrice" placeholder="原价" maxlength="20" />
+              <el-input v-model="product.sellingPoint" placeholder="卖点" maxlength="120" />
+              <el-button
+                size="small"
+                type="danger"
+                text
+                @click="removeAiProduct(index)"
+              >
+                删除
+              </el-button>
+            </div>
+            <el-button
+              size="small"
+              :disabled="aiForm.products.length >= 6"
+              @click="addAiProduct"
+            >
+              添加商品
+            </el-button>
+          </div>
+        </el-form-item>
+
+        <el-form-item label="补充描述">
+          <el-input
+            v-model="aiForm.extraPrompt"
+            type="textarea"
+            :rows="3"
+            placeholder="如：突出夏季清爽感，首屏要强调限时福利"
+            maxlength="500"
+            show-word-limit
+          />
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <el-button @click="aiDialogVisible = false">取消</el-button>
+        <el-button type="primary" :loading="aiGenerating" @click="submitAiGenerate">
+          生成草稿
+        </el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -193,7 +349,14 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import TemplatePicker from "@/components/TemplatePicker.vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Plus, Refresh, Search } from "@element-plus/icons-vue";
+import { Plus, Refresh, Search, TrendCharts } from "@element-plus/icons-vue";
+import type {
+  AiAdviceCategory,
+  AiAdviceSeverity,
+  AiDiagnosePageResponse,
+  AiGeneratePageRequest,
+} from "@cms/types";
+import { aiDiagnosePage, aiGeneratePage } from "@/api/ai";
 import {
   deletePage,
   getCmsPageById,
@@ -232,6 +395,13 @@ type ActivityRow = PageItem & {
   loading: boolean;
 };
 
+interface AiProductFormItem {
+  name: string;
+  price: string;
+  originalPrice: string;
+  sellingPoint: string;
+}
+
 const userRole = ref(localStorage.getItem("role") || "editor");
 const showTemplatePicker = ref(false);
 const canPublish = computed(() => userRole.value === "admin");
@@ -249,6 +419,49 @@ const searchForm = reactive({
 const tableData = ref<ActivityRow[]>([]);
 const loading = ref(false);
 const duplicateLoadingId = ref<number | null>(null);
+const aiDialogVisible = ref(false);
+const aiGenerating = ref(false);
+const aiDiagnoseDrawerVisible = ref(false);
+const aiDiagnoseLoading = ref(false);
+const aiDiagnosis = ref<AiDiagnosePageResponse | null>(null);
+const aiDiagnosisPageName = ref("");
+
+const aiActivityOptions = ["电商大促", "新品首发", "限时秒杀", "会员专享"];
+const aiStyleOptions = ["热烈促销", "高级简洁", "年轻活力", "温暖亲和"];
+
+const adviceSeverityLabels: Record<AiAdviceSeverity, string> = {
+  info: "观察",
+  warning: "建议优化",
+  critical: "重点处理",
+};
+
+const adviceCategoryLabels: Record<AiAdviceCategory, string> = {
+  structure: "结构",
+  copywriting: "文案",
+  cta: "行动按钮",
+  form: "表单",
+  product: "商品",
+  tracking: "埋点",
+};
+
+const createAiProduct = (): AiProductFormItem => ({
+  name: "",
+  price: "",
+  originalPrice: "",
+  sellingPoint: "",
+});
+
+const aiForm = reactive({
+  pageName: "",
+  activityType: "电商大促",
+  audience: "",
+  promotion: "",
+  ctaText: "立即领取优惠",
+  leadGoal: "",
+  styleTone: "热烈促销",
+  extraPrompt: "",
+  products: [createAiProduct()],
+});
 
 const publishDrawerVisible = ref(false);
 const publishLogsLoading = ref(false);
@@ -457,6 +670,161 @@ const handleDuplicate = async (id: number) => {
 
 const handleAdd = () => {
   showTemplatePicker.value = true;
+};
+
+const resetAiForm = () => {
+  aiForm.pageName = "";
+  aiForm.activityType = "电商大促";
+  aiForm.audience = "";
+  aiForm.promotion = "";
+  aiForm.ctaText = "立即领取优惠";
+  aiForm.leadGoal = "";
+  aiForm.styleTone = "热烈促销";
+  aiForm.extraPrompt = "";
+  aiForm.products = [createAiProduct()];
+};
+
+const openAiDialog = () => {
+  resetAiForm();
+  aiDialogVisible.value = true;
+};
+
+const addAiProduct = () => {
+  if (aiForm.products.length >= 6) {
+    return;
+  }
+  aiForm.products.push(createAiProduct());
+};
+
+const removeAiProduct = (index: number) => {
+  aiForm.products.splice(index, 1);
+};
+
+const buildAiGeneratePayload = (): AiGeneratePageRequest => {
+  return {
+    pageName: aiForm.pageName.trim(),
+    activityType: aiForm.activityType.trim(),
+    audience: aiForm.audience.trim(),
+    promotion: aiForm.promotion.trim(),
+    ctaText: aiForm.ctaText.trim(),
+    leadGoal: aiForm.leadGoal.trim() || undefined,
+    styleTone: aiForm.styleTone.trim() || undefined,
+    extraPrompt: aiForm.extraPrompt.trim() || undefined,
+    products: aiForm.products
+      .map((product) => ({
+        name: product.name.trim(),
+        price: product.price.trim() || undefined,
+        originalPrice: product.originalPrice.trim() || undefined,
+        sellingPoint: product.sellingPoint.trim() || undefined,
+      }))
+      .filter((product) => product.name),
+  };
+};
+
+const validateAiPayload = (payload: AiGeneratePageRequest) => {
+  if (!payload.pageName) {
+    return "请填写页面标题";
+  }
+  if (!payload.activityType) {
+    return "请选择活动类型";
+  }
+  if (!payload.audience) {
+    return "请填写目标人群";
+  }
+  if (!payload.promotion) {
+    return "请填写优惠信息";
+  }
+  if (!payload.ctaText) {
+    return "请填写按钮文案";
+  }
+  return "";
+};
+
+const submitAiGenerate = async () => {
+  const payload = buildAiGeneratePayload();
+  const validationMessage = validateAiPayload(payload);
+  if (validationMessage) {
+    ElMessage.warning(validationMessage);
+    return;
+  }
+
+  aiGenerating.value = true;
+  try {
+    const response = await aiGeneratePage(payload);
+    if (response.code !== 10000 || !response.data?.pageId) {
+      throw new Error(response.message || "AI 生成页面失败");
+    }
+
+    aiDialogVisible.value = false;
+    const warnings = response.data.warnings ?? [];
+    if (warnings.length > 0) {
+      ElMessage.warning(warnings.slice(0, 2).join("；"));
+    } else {
+      ElMessage.success(response.data.summary || "AI 页面草稿已生成");
+    }
+
+    await trackEvent({
+      eventType: "cta_click",
+      pageId: response.data.pageId,
+      ctaText: "ai_generate_page",
+      payload: {
+        activityType: payload.activityType,
+        productCount: payload.products.length,
+      },
+    });
+
+    router.push({ path: "/decorate", query: { id: response.data.pageId } });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "AI 生成页面失败";
+    ElMessage.error(errorMessage);
+  } finally {
+    aiGenerating.value = false;
+  }
+};
+
+const getAdviceTagType = (severity: AiAdviceSeverity) => {
+  if (severity === "critical") {
+    return "danger";
+  }
+  if (severity === "warning") {
+    return "warning";
+  }
+  return "info";
+};
+
+const getAdviceSeverityLabel = (severity: AiAdviceSeverity) =>
+  adviceSeverityLabels[severity] || severity;
+
+const getAdviceCategoryLabel = (category: AiAdviceCategory) =>
+  adviceCategoryLabels[category] || category;
+
+const openAiDiagnosis = async (row: ActivityRow) => {
+  aiDiagnosisPageName.value = row.name;
+  aiDiagnosis.value = null;
+  aiDiagnoseDrawerVisible.value = true;
+  aiDiagnoseLoading.value = true;
+
+  try {
+    const response = await aiDiagnosePage({ pageId: row.id });
+    if (response.code !== 10000 || !response.data) {
+      throw new Error(response.message || "获取 AI 优化建议失败");
+    }
+
+    aiDiagnosis.value = response.data;
+    await trackEvent({
+      eventType: "page_view",
+      pageId: row.id,
+      payload: {
+        source: "ai_diagnosis_drawer",
+        adviceCount: response.data.advice.length,
+      },
+    });
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : "获取 AI 优化建议失败";
+    ElMessage.error(errorMessage);
+  } finally {
+    aiDiagnoseLoading.value = false;
+  }
 };
 
 const handleTemplateCreated = (pageId: number) => {
@@ -728,5 +1096,109 @@ watch(
   border-radius: 8px;
   padding: 10px 12px;
   background: #fff;
+}
+
+.ai-form {
+  max-height: 64vh;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.ai-products {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-product-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1.4fr) minmax(72px, 0.7fr) minmax(72px, 0.7fr) minmax(140px, 1.5fr) 52px;
+  gap: 8px;
+  align-items: center;
+}
+
+.diagnosis-summary {
+  margin-bottom: 16px;
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: #f8fafc;
+}
+
+.diagnosis-title {
+  margin-top: 4px;
+  color: #111827;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.diagnosis-copy {
+  margin: 8px 0 0;
+  color: #4b5563;
+  line-height: 1.7;
+}
+
+.diagnosis-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.diagnosis-item {
+  border: 1px solid #ebeef5;
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: #fff;
+}
+
+.diagnosis-item__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.diagnosis-item__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.diagnosis-target {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.diagnosis-problem {
+  margin: 10px 0;
+  color: #111827;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.diagnosis-action,
+.diagnosis-impact {
+  display: flex;
+  gap: 8px;
+  color: #4b5563;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.diagnosis-action__label {
+  flex: 0 0 56px;
+  color: #6b7280;
+}
+
+@media (max-width: 760px) {
+  .ai-product-row {
+    grid-template-columns: 1fr;
+  }
+
+  .diagnosis-item__header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 </style>

@@ -9,5 +9,6 @@ import { PublishLog } from "./entities/publish-log.entity";
   imports: [TypeOrmModule.forFeature([Page, PublishLog])],
   controllers: [PageController],
   providers: [PageService],
+  exports: [PageService],
 })
 export class PageModule {}

@@ -19,6 +19,7 @@ import {
   getPagePublishLogs,
   rollbackPageVersion,
 } from "@/api/activity/index";
+import { aiDiagnosePage, aiGeneratePage } from "@/api/ai";
 
 describe("Activity API", () => {
   beforeEach(() => {
@@ -182,6 +183,71 @@ describe("Activity API", () => {
       expect(http.post).toHaveBeenCalledWith(
         "/atlas-cms/rollbackPageVersion",
         { pageId: 1, versionId: "v2" },
+        expect.objectContaining({ showError: true }),
+      );
+    });
+  });
+
+  describe("AI API", () => {
+    it("aiGeneratePage 调用 AI 建页接口", async () => {
+      const mockResponse = {
+        code: 10000,
+        message: "success",
+        data: {
+          pageId: 1,
+          schema: {
+            version: "2.0.0",
+            pageConfig: {},
+            componentMap: {},
+            rootIds: [],
+          },
+          summary: "ok",
+          warnings: [],
+        },
+      };
+      (http.post as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      await aiGeneratePage({
+        pageName: "AI 页面",
+        activityType: "电商大促",
+        audience: "年轻白领",
+        promotion: "满 299 减 80",
+        products: [],
+        ctaText: "立即领取",
+      });
+
+      expect(http.post).toHaveBeenCalledWith(
+        "/atlas-cms/aiGeneratePage",
+        expect.objectContaining({ pageName: "AI 页面" }),
+        expect.objectContaining({ showError: true }),
+      );
+    });
+
+    it("aiDiagnosePage 调用 AI 诊断接口", async () => {
+      const mockResponse = {
+        code: 10000,
+        message: "success",
+        data: {
+          pageId: 1,
+          summary: "当前页面累计 0 次访问。",
+          advice: [
+            {
+              category: "cta",
+              severity: "warning",
+              problem: "CTA 不够明确",
+              suggestion: "改为收益导向文案",
+              expectedImpact: "提升点击率",
+            },
+          ],
+        },
+      };
+      (http.post as ReturnType<typeof vi.fn>).mockResolvedValue(mockResponse);
+
+      await aiDiagnosePage({ pageId: 1 });
+
+      expect(http.post).toHaveBeenCalledWith(
+        "/atlas-cms/aiDiagnosePage",
+        { pageId: 1 },
         expect.objectContaining({ showError: true }),
       );
     });

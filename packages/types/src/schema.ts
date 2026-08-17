@@ -1,4 +1,4 @@
-﻿// ==================== V1 基础类型 ====================
+// ==================== V1 基础类型 ====================
 export interface IComponentSchemaBase {
   id: string;
   type: string;
