@@ -24,10 +24,11 @@
 - Action 15: 已完成，新增真实链路 E2E live 套件（11/11 通过，独立测试库 `cms_platform_resume_e2e`），并输出问题清单 `docs/E2E-FINDINGS.md`（含画布渲染/CRS 路由等断点）。
 - Action 16: 已完成，修复渲染端断点 F1–F5（画布渲染/CRS /page 路由/预览 iframe/CRS 真实列表/seed schema），live 套件升级为正向断言后仍 11/11 全绿，详见 `docs/E2E-FINDINGS.md`。
 - Action 17: 已完成，治理既有 mock 套件 F6：mock 套件由 14 通过/11 失败/1 跳过恢复为 **26/26 全绿**（smoke-core 恢复 5/5），live 套件保持 11/11，后端 Jest 7/7 与三端 typecheck 通过，详见 `docs/E2E-FINDINGS.md` 与下方 Action 17 日志。
+- Action 18: 已完成，治理 mock 套件时序 flaky（F7）：连续 3 次运行均 **26/26 全绿**，live 保持 11/11，详见 `docs/E2E-FINDINGS.md` 与下方 Action 18 日志。
 
 ## 下一步动作
 
-F1–F6 已全部治理：渲染端断点（F1–F5，Action 16）与 mock 套件基线（F6，Action 17）均已修复并验证，mock/live 两套 E2E 全绿。后续如需继续推进，优先在无 mock 依赖的真实三端环境补跑，或按需清理遗留未提交改动（Action 17 已按语义分组提交到本地 `main`，尚未 push）。
+F1–F7 已全部治理：渲染端断点（F1–F5，Action 16）、mock 套件基线（F6，Action 17）、mock 套件时序 flaky（F7，Action 18）均已修复并验证，mock 与 live 两套 E2E 稳定全绿。后续如需继续推进，优先在无 mock 依赖的真实三端环境补跑。
 
 ## 已确认决策
 
@@ -69,6 +70,7 @@ F1–F6 已全部治理：渲染端断点（F1–F5，Action 16）与 mock 套�
 - [x] Action 15: 真实链路 E2E live 套件（11/11）。
 - [x] Action 16: 修复渲染端断点 F1–F5。
 - [x] Action 17: 治理既有 mock 套件 F6 与遗留未提交改动收尾。
+- [x] Action 18: 治理 mock 套件时序 flaky（F7）。
 
 ## Action 0: 创建断点续作文件
 
@@ -382,3 +384,24 @@ Decisions: 一律优先修 mock 侧（fixture/page object/断言计数），不�
 Next: 两套 E2E（mock 26/26、live 11/11）与后端 Jest、三端 typecheck 全绿；遗留改动已按 `feat:`/`test:`/`fix:` 分组提交到本地 `main`，**未 push**（是否推送由用户决定）。
 
 Notes for Claude: mock 套件不起 backend/CRS，`publishPage` 这类新增接口必须同步补拦截，否则会 proxy 到 3300 报 ECONNREFUSED——本次 smoke-core:4 即由此而来；`runPagePreflight` 会在发布/预览前校验图片与链接字段，mock schema 必须「可发布」；`tests/e2e`（mock）与 `tests/e2e-live`（真实链路）共享 `pages/*.page.ts`，改 page object 时需同时确认 live 不回归。
+
+## Action 18: 治理 mock 套件时序 flaky（F7）
+
+Status: done
+
+Goal: 消除 mock 套件（`tests/e2e`）连续运行时「随机某条失败、重跑即过」的不稳定性，让套件可重复全绿。
+
+Scope: `apps/frontend/cms/tests/e2e/pages/login.page.ts`、`apps/frontend/cms/tests/e2e/pages/activity.page.ts`、`apps/frontend/cms/tests/e2e/smoke-core.spec.ts`、`plan.md`、`docs/E2E-FINDINGS.md`。
+
+Changes: 定位到两处测试侧时序问题（均非业务缺陷，未改业务源码）：
+1. **登录态残留**：`permission.ts` 在有 token 时把 `/login` 重定向到 `/home`，`LoginPage.login()` 未先清理；同 context 内前序用例留下的 token 会让「登录 → 跳 `/activity`」等不到目标 URL。改为进登录页前清除 `token/role/username` 并 reload。
+2. **搜索点击被吞**：activity 首屏 `v-loading` 遮罩未消失时点「搜索」无效，断言一直读到未过滤的初始 10 行。`searchByName()` 先等首行渲染再操作。
+3. smoke-core 发布预览用例 `test.setTimeout(60000)`：冷启动需额外编译 Preview 模块，全局 30s 不够。
+
+Verification: `pnpm --filter @cms/cms test:e2e` **连续 3 次均 26 passed**（此前会随机 1 条失败）；`pnpm --filter @cms/cms test:e2e:live` → **11 passed**（不回归）。
+
+Decisions: flaky 只在测试侧修（page object 等待与登录态隔离），不动业务代码；`login.spec.ts` 的「已登录跳过登录」用例不走 `LoginPage.login()`，不受清理逻辑影响；live 套件每 test 独立 context、无残留，改动不破坏它。
+
+Next: F1–F7 全部治理完毕，两套 E2E 稳定全绿；本轮提交已推送 `origin/main`。
+
+Notes for Claude: 排查 E2E flaky 时先用「重复运行 + 观察失败用例是否漂移」区分 flaky 与稳定回归——稳定回归失败用例固定，flaky 每次都不同；`permission.ts` 的登录态重定向是 mock 套件里最容易造成偶发失败的隐藏因素。

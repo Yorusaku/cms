@@ -82,7 +82,16 @@
 - **验证**：`pnpm --filter @cms/cms test:e2e` → **26 passed（17.5s）**；`pnpm --filter @cms/cms test:e2e:live` → **11 passed（32.2s）**（live 不回归）；`pnpm --filter @cms/backend test -- --runInBand` → 7 tests passed；三端 typecheck 通过。
 - **是否改业务源码**：否。全部修复在 `tests/e2e/`（fixture / page object / spec 断言）内完成。
 
-> 状态图例（更新后）：✅ 已修复（Action 16 / Action 17）｜F1–F6 全部已治理，mock 与 live 两套 E2E 均全绿。
+### F7 mock 套件时序 flaky —— ✅ 已治理（Action 18）
+
+- **现象**：F6 修复后套件可全绿，但连续运行会出现「某一条随机失败、重跑即过」，失败用例每次不同（实测遇到过「登录」「搜索过滤」）。
+- **根因（两处，均为测试侧）**：
+  1. **登录态残留**：`permission.ts` 在有 token 时把 `/login` 重定向到 `/home`；`LoginPage.login()` 未先清理，同 context 内前序用例留下的 token 会让「登录 → 跳 `/activity`」等不到目标 URL。
+  2. **搜索点击被吞**：activity 首屏 `v-loading` 遮罩未消失时点「搜索」无效，断言一直读到未过滤的初始 10 行。
+- **修复**：`LoginPage.login()` 进登录页前清 `token/role/username` 并 reload；`searchByName()` 先等首行渲染；smoke-core 发布预览用例 `setTimeout(60000)`（冷启动需额外编译 Preview 模块，全局 30s 不够）。
+- **验证**：`pnpm --filter @cms/cms test:e2e` **连续 3 次均 26 passed**；live 11/11 不回归。
+
+> 状态图例（更新后）：✅ 已修复（Action 16 / 17 / 18）｜F1–F7 全部已治理，mock 与 live 两套 E2E 均稳定全绿。
 
 ## 三、测试策略（修复后已升级为正向断言）
 
