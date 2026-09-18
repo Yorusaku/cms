@@ -18,8 +18,8 @@
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "paths": {
-      "@cms/types": ["../../packages/types/src"],
-      "@cms/types/*": ["../../packages/types/src/*"]
+      "@cms/types": ["../../packages/types/dist"],
+      "@cms/types/*": ["../../packages/types/dist/*"]
     }
   },
   "include": ["src/**/*"],

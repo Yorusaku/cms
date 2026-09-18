@@ -5,6 +5,8 @@ import RenderNode from './RenderNode.vue'
 
 interface Props {
   pageSchema: IPageSchemaV2
+  pageId?: number
+  publishedVersionId?: string
 }
 
 const props = defineProps<Props>()
@@ -50,6 +52,8 @@ const pageBackgroundStyle = computed(() => {
         <RenderNode 
           :node-id="nodeId" 
           :component-map="pageSchema.componentMap" 
+          :page-id="pageId"
+          :published-version-id="publishedVersionId"
         />
       </template>
     </div>

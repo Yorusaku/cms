@@ -55,6 +55,7 @@ describe("LeadFormBlock", () => {
     const wrapper = mount(LeadFormBlock, {
       props: {
         pageId: 1001,
+        publishedVersionId: "1001-v1",
       },
     });
 
@@ -82,6 +83,7 @@ describe("LeadFormBlock", () => {
       phoneNumber: "13800138000",
       remark: "有采购意向",
       pageId: 1001,
+      publishedVersionId: "1001-v1",
       utm: {
         utm_source: "wechat",
         utm_campaign: "launch",
@@ -90,10 +92,13 @@ describe("LeadFormBlock", () => {
         channel_id: "ad100",
       },
     });
+    expect(typeof submitBody.requestId).toBe("string");
+    expect(typeof submitBody.sessionId).toBe("string");
 
     const trackBody = JSON.parse(trackOptions.body as string);
     expect(trackBody.eventType).toBe("form_submit");
     expect(trackBody.pageId).toBe(1001);
+    expect(trackBody.publishedVersionId).toBe("1001-v1");
     expect(typeof trackBody.sessionId).toBe("string");
 
     expect(wrapper.text()).toContain("提交成功");

@@ -21,6 +21,8 @@ const FallbackComponent = defineComponent({
 interface Props {
   nodeId: string;
   componentMap: Record<string, IComponentSchemaV2>;
+  pageId?: number;
+  publishedVersionId?: string;
 }
 
 const props = defineProps<Props>();
@@ -58,6 +60,12 @@ const updateMergedProps = () => {
   mergedProps.value = {
     ...baseProps,
     ...linkageState,
+    ...(currentNode.value.type === "LeadForm"
+      ? {
+          pageId: props.pageId,
+          publishedVersionId: props.publishedVersionId,
+        }
+      : {}),
   };
 };
 

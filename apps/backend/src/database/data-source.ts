@@ -1,8 +1,7 @@
 import { DataSource } from "typeorm";
 import * as dotenv from "dotenv";
-import { resolve } from "path";
 
-dotenv.config({ path: resolve(__dirname, "..", "..", ".env") });
+dotenv.config({ path: "./.env" });
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -10,7 +9,7 @@ export const AppDataSource = new DataSource({
   port: parseInt(process.env.DB_PORT || "5432", 10),
   username: process.env.DB_USERNAME || "postgres",
   password: process.env.DB_PASSWORD || "postgres",
-  database: process.env.DB_DATABASE || "cms_platform",
+  database: process.env.DB_DATABASE || "cms_platform_resume",
   entities: [__dirname + "/../**/*.entity{.ts,.js}"],
   migrations: [__dirname + "/migrations/*{.ts,.js}"],
   synchronize: false,

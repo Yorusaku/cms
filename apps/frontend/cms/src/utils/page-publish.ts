@@ -14,6 +14,8 @@ export interface PublishLogRecord {
   operator: string;
   note: string;
   publishedAt: number;
+  action?: "publish" | "rollback";
+  isCurrent?: boolean;
   schema?: IPageSchemaV2;
 }
 

@@ -38,17 +38,21 @@
 import { computed, reactive, ref } from "vue";
 
 interface SubmitLeadPayload {
+  requestId: string;
   name: string;
   phoneNumber: string;
   remark?: string;
-  pageId?: number;
+  pageId: number;
+  publishedVersionId: string;
+  sessionId: string;
   utm?: Record<string, string>;
   channel?: Record<string, string>;
 }
 
 interface TrackingPayload {
   eventType: "form_submit";
-  pageId?: number;
+  pageId: number;
+  publishedVersionId: string;
   payload?: Record<string, unknown>;
   utm?: Record<string, string>;
   channel?: Record<string, string>;
@@ -65,6 +69,7 @@ interface Props {
   phonePlaceholder?: string;
   remarkPlaceholder?: string;
   pageId?: number;
+  publishedVersionId?: string;
   endpoint?: string;
   trackingEndpoint?: string;
   trackingEnabled?: boolean;
@@ -82,6 +87,7 @@ const props = withDefaults(defineProps<Props>(), {
   phonePlaceholder: "请输入手机号",
   remarkPlaceholder: "备注（选填）",
   pageId: 0,
+  publishedVersionId: "",
   endpoint: "/atlas-cms/submitLead",
   trackingEndpoint: "/atlas-cms/trackEvent",
   trackingEnabled: true,
@@ -110,7 +116,7 @@ const getBaseApiUrl = () => {
 };
 
 const getSessionId = () => {
-  const key = "__lead_form_session__";
+  const key = "__crs_tracking_session__";
   const current = sessionStorage.getItem(key);
   if (current) {
     return current;
@@ -199,6 +205,18 @@ const trackSubmit = async (payload: TrackingPayload) => {
 };
 
 const phoneReg = /^1[3-9]\d{9}$/;
+let pendingRequestId: string | null = null;
+
+const createRequestId = () => {
+  if (globalThis.crypto?.randomUUID) {
+    return globalThis.crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
+    const random = Math.floor(Math.random() * 16);
+    const value = char === "x" ? random : (random & 0x3) | 0x8;
+    return value.toString(16);
+  });
+};
 
 const handleSubmit = async () => {
   message.value = "";
@@ -215,22 +233,34 @@ const handleSubmit = async () => {
     return;
   }
 
+  if (!props.pageId || !props.publishedVersionId) {
+    messageType.value = "error";
+    message.value = "页面版本无效，请刷新后重试";
+    return;
+  }
+
   submitting.value = true;
   try {
     const marketing = getMarketingParams();
+    pendingRequestId ??= createRequestId();
+    const sessionId = getSessionId();
 
     await submitLead({
+      requestId: pendingRequestId,
       name: form.name,
       phoneNumber: form.phoneNumber,
       remark: form.remark || undefined,
-      pageId: props.pageId > 0 ? props.pageId : undefined,
+      pageId: props.pageId,
+      publishedVersionId: props.publishedVersionId,
+      sessionId,
       utm: marketing.utm,
       channel: marketing.channel,
     });
 
     await trackSubmit({
       eventType: "form_submit",
-      pageId: props.pageId > 0 ? props.pageId : undefined,
+      pageId: props.pageId,
+      publishedVersionId: props.publishedVersionId,
       payload: { formType: "lead_form" },
       utm: marketing.utm,
       channel: marketing.channel,
@@ -241,6 +271,7 @@ const handleSubmit = async () => {
     form.name = "";
     form.phoneNumber = "";
     form.remark = "";
+    pendingRequestId = null;
   } catch {
     messageType.value = "error";
     message.value = props.errorText;

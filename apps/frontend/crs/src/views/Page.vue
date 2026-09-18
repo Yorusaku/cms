@@ -25,7 +25,11 @@
     </div>
 
     <div v-else class="page-content" :style="{ backgroundColor: pageBackgroundColor }">
-      <SchemaRenderer :page-schema="pageStore.pageSchema" />
+      <SchemaRenderer
+        :page-schema="pageStore.pageSchema"
+        :page-id="pageId ?? undefined"
+        :published-version-id="publishedVersionId"
+      />
     </div>
   </div>
 </template>
@@ -36,7 +40,7 @@ import { useRoute } from "vue-router";
 import { Loading, Empty, Button } from "vant";
 import { migrateSchema } from "@cms/utils";
 import { normalizePageSchemaMaterials } from "@cms/ui";
-import { getPageDataById, parsePageSchema } from "@/api/page";
+import { getPageDataById, parsePageSchema, type PageSchema } from "@/api/page";
 import SchemaRenderer from "@/components/SchemaRenderer.vue";
 import { usePageStore } from "@/store/usePageStore";
 import { getMarketingParamsFromLocation, trackEvent } from "@/utils/tracking";
@@ -51,6 +55,7 @@ const pageStore = usePageStore();
 const loading = ref(true);
 const error = ref(false);
 const errorMessage = ref("");
+const publishedVersionId = ref("");
 
 const pageId = computed(() => {
   const id = route.query.id;
@@ -86,11 +91,13 @@ const loadPageData = async () => {
     }
 
     const pageData = response.data as unknown as {
-      schema: string;
+      schema: string | Record<string, unknown>;
+      publishedVersionId: string;
       [key: string]: unknown;
     };
-    const rawSchema = pageData.schema ? parsePageSchema(pageData.schema) : pageData;
+    const rawSchema = pageData.schema ? parsePageSchema(pageData.schema as string | PageSchema) : pageData;
     const schema = normalizePageSchemaMaterials(migrateSchema(rawSchema));
+    publishedVersionId.value = pageData.publishedVersionId;
 
     pageStore.importPageSchema(schema);
 
@@ -104,6 +111,7 @@ const loadPageData = async () => {
     await trackEvent({
       eventType: "page_view",
       pageId: pageId.value,
+      publishedVersionId: publishedVersionId.value,
       payload: {
         source: "crs_page",
         title: pageTitle,

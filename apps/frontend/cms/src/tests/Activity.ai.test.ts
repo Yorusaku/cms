@@ -21,6 +21,10 @@ const mocks = vi.hoisted(() => ({
   messageInfo: vi.fn(),
   messageBoxConfirm: vi.fn(),
   setInitPageSchema: vi.fn(),
+  updateLeadStatus: vi.fn(),
+  messageBoxPrompt: vi.fn(),
+  getPagePublishLogs: vi.fn(),
+  rollbackPageVersion: vi.fn(),
 }));
 
 vi.mock("vue-router", () => ({
@@ -42,6 +46,7 @@ vi.mock("element-plus", () => ({
   },
   ElMessageBox: {
     confirm: mocks.messageBoxConfirm,
+    prompt: mocks.messageBoxPrompt,
   },
 }));
 
@@ -55,8 +60,8 @@ vi.mock("@/components/TemplatePicker.vue", () => ({
 vi.mock("../api/activity", () => ({
   getCmsPageList: mocks.getCmsPageList,
   getCmsPageById: vi.fn(),
-  getPagePublishLogs: vi.fn(),
-  rollbackPageVersion: vi.fn(),
+  getPagePublishLogs: mocks.getPagePublishLogs,
+  rollbackPageVersion: mocks.rollbackPageVersion,
   saveCmsPage: vi.fn(),
   updateStatus: vi.fn(),
   deletePage: vi.fn(),
@@ -69,6 +74,7 @@ vi.mock("@/api/ai", () => ({
 
 vi.mock("@/api/lead", () => ({
   getLeadList: mocks.getLeadList,
+  updateLeadStatus: mocks.updateLeadStatus,
 }));
 
 vi.mock("@/utils/tracking", () => ({
@@ -150,15 +156,18 @@ const ElSelectStub = defineComponent({
     },
     placeholder: String,
   },
-  emits: ["update:modelValue"],
+  emits: ["update:modelValue", "change"],
   setup(props, { emit, slots }) {
     return () =>
       h(
         "select",
         {
           value: props.modelValue,
-          onChange: (event: Event) =>
-            emit("update:modelValue", (event.target as HTMLSelectElement).value),
+          onChange: (event: Event) => {
+            const value = (event.target as HTMLSelectElement).value;
+            emit("update:modelValue", value);
+            emit("change", value);
+          },
         },
         slots.default?.(),
       );
@@ -454,5 +463,187 @@ describe("Activity AI 交互", () => {
 
     expect(mocks.messageError).toHaveBeenCalledWith("诊断失败");
     expect(wrapper.text()).toContain("暂无优化建议");
+  });
+});
+
+describe("Activity 线索跟进与发布记录", () => {
+  beforeEach(() => {
+    localStorage.setItem("role", "admin");
+
+    mocks.getCmsPageList.mockResolvedValue({
+      code: 10000,
+      message: "success",
+      data: {
+        list: [
+          {
+            id: 7,
+            name: "夏季促销页",
+            isAbled: 0,
+            create_time: "2026-08-18 00:00:00",
+            update_time: "2026-08-18 00:00:00",
+          },
+        ],
+        total: 1,
+        pageNum: 1,
+        pageSize: 10,
+      },
+    });
+    mocks.getLeadList.mockResolvedValue({
+      code: 10000,
+      message: "success",
+      data: {
+        list: [
+          {
+            id: 1,
+            name: "张三",
+            phoneNumber: "13800138000",
+            remark: "想了解套餐",
+            pageId: 7,
+            publishedVersionId: "7-v1",
+            sessionId: "s1",
+            status: "new",
+            followUpRemark: null,
+            followedBy: null,
+            followedAt: null,
+            utm: { utm_source: "wechat" },
+            channel: { ch: "qr" },
+            createdAt: "2026-09-18 10:00:00",
+            updatedAt: "2026-09-18 10:00:00",
+          },
+        ],
+        total: 1,
+        pageNum: 1,
+        pageSize: 20,
+      },
+    });
+    mocks.trackEvent.mockResolvedValue(undefined);
+    mocks.messageBoxConfirm.mockResolvedValue(undefined);
+    mocks.messageBoxPrompt.mockResolvedValue({ value: "已电话联系，待确认预算" });
+  });
+
+  const settle = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  };
+
+  it("发布记录抽屉展示当前线上与回滚版本标签", async () => {
+    mocks.getPagePublishLogs.mockResolvedValue({
+      code: 10000,
+      data: [
+        {
+          versionId: "7-v2",
+          displayVersion: "v2",
+          operator: "admin",
+          note: "发布 v2",
+          publishedAt: 1700000000000,
+          action: "publish",
+          isCurrent: true,
+        },
+        {
+          versionId: "7-v1",
+          displayVersion: "v1",
+          operator: "editor",
+          note: "回滚到 v1",
+          publishedAt: 1600000000000,
+          action: "rollback",
+          isCurrent: false,
+        },
+      ],
+    });
+    const wrapper = await mountActivity();
+
+    await clickButtonByText(wrapper, "发布记录");
+    await settle();
+
+    expect(mocks.getPagePublishLogs).toHaveBeenCalledWith(7);
+    expect(wrapper.text()).toContain("v2");
+    expect(wrapper.text()).toContain("v1");
+    expect(wrapper.text()).toContain("当前线上");
+    expect(wrapper.text()).toContain("回滚版本");
+  });
+
+  it("回滚使用服务端接口且不覆盖草稿语义", async () => {
+    mocks.getPagePublishLogs.mockResolvedValue({
+      code: 10000,
+      data: [
+        {
+          versionId: "7-v1",
+          displayVersion: "v1",
+          operator: "admin",
+          note: "发布 v1",
+          publishedAt: 1700000000000,
+          action: "publish",
+          isCurrent: true,
+        },
+      ],
+    });
+    mocks.rollbackPageVersion.mockResolvedValue({ code: 10000, message: "success", data: null });
+    const wrapper = await mountActivity();
+
+    await clickButtonByText(wrapper, "发布记录");
+    await clickButtonByText(wrapper, "回滚到此版本");
+    await settle();
+
+    expect(mocks.messageBoxConfirm).toHaveBeenCalledWith(
+      "回滚会立即恢复线上页面到该历史版本，当前编辑草稿不会被覆盖，是否继续？",
+      "确认回滚",
+      expect.anything(),
+    );
+    expect(mocks.rollbackPageVersion).toHaveBeenCalledWith({ pageId: 7, versionId: "7-v1" });
+    expect(mocks.messageSuccess).toHaveBeenCalledWith("线上页面已回滚，当前草稿未受影响");
+    expect(mocks.trackEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        eventType: "cta_click",
+        ctaText: "rollback_page_version",
+        payload: { versionId: "7-v1" },
+      }),
+    );
+  });
+
+  it("线索抽屉按页面加载并展示版本与渠道信息", async () => {
+    const wrapper = await mountActivity();
+
+    await clickButtonByText(wrapper, "线索");
+    await settle();
+
+    expect(mocks.getLeadList).toHaveBeenCalledWith(
+      expect.objectContaining({ pageId: 7, pageNum: 1, pageSize: 20, status: undefined, channel: undefined }),
+    );
+    expect(wrapper.text()).toContain("线索列表");
+    expect(wrapper.text()).toContain("ch=qr");
+    expect(wrapper.text()).toContain("utm_source=wechat");
+    expect(wrapper.text()).toContain("添加备注");
+  });
+
+  it("修改线索跟进状态调用 updateLeadStatus", async () => {
+    mocks.updateLeadStatus.mockResolvedValue({ code: 10000, message: "success", data: null });
+    const wrapper = await mountActivity();
+
+    await clickButtonByText(wrapper, "线索");
+    await settle();
+
+    const statusSelect = wrapper.findAll("select").find((el) => el.element.value === "new");
+    expect(statusSelect, "应找到行内跟进状态下拉").toBeTruthy();
+    await statusSelect!.setValue("contacted");
+    await settle();
+
+    expect(mocks.updateLeadStatus).toHaveBeenCalledWith({ id: 1, status: "contacted", followUpRemark: undefined });
+    expect(mocks.messageSuccess).toHaveBeenCalledWith("线索状态已更新");
+  });
+
+  it("填写跟进备注并保存", async () => {
+    mocks.updateLeadStatus.mockResolvedValue({ code: 10000, message: "success", data: null });
+    const wrapper = await mountActivity();
+
+    await clickButtonByText(wrapper, "线索");
+    await clickButtonByText(wrapper, "添加备注");
+    await settle();
+
+    expect(mocks.messageBoxPrompt).toHaveBeenCalledWith("填写本次跟进备注", "线索跟进", expect.anything());
+    expect(mocks.updateLeadStatus).toHaveBeenCalledWith({
+      id: 1,
+      status: "new",
+      followUpRemark: "已电话联系，待确认预算",
+    });
+    expect(mocks.messageSuccess).toHaveBeenCalledWith("跟进备注已保存");
   });
 });

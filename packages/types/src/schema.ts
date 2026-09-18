@@ -84,6 +84,7 @@ export type MarketingTrackEventType =
 export interface MarketingTrackEvent {
   eventType: MarketingTrackEventType;
   pageId?: number;
+  publishedVersionId?: string;
   componentId?: string;
   componentType?: string;
   ctaText?: string;

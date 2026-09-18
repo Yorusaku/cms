@@ -1,5 +1,6 @@
 import {
   IsInt,
+  IsUUID,
   IsObject,
   IsOptional,
   IsString,
@@ -9,6 +10,9 @@ import {
 } from "class-validator";
 
 export class CreateLeadDto {
+  @IsUUID()
+  requestId: string;
+
   @IsString()
   @MaxLength(60)
   name: string;
@@ -22,10 +26,17 @@ export class CreateLeadDto {
   @MaxLength(500)
   remark?: string;
 
-  @IsOptional()
   @IsInt()
   @Min(1)
-  pageId?: number;
+  pageId: number;
+
+  @IsString()
+  @MaxLength(60)
+  publishedVersionId: string;
+
+  @IsString()
+  @MaxLength(120)
+  sessionId: string;
 
   @IsOptional()
   @IsObject()

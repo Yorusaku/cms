@@ -35,7 +35,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import { RefreshLeft, RefreshRight } from "@element-plus/icons-vue";
 import { useEventListener } from "@vueuse/core";
 import { usePageStore } from "@/store/usePageStore";
-import { saveCmsPage, type SavePageParams } from "@/api/activity";
+import { publishCmsPage, saveCmsPage, type SavePageParams } from "@/api/activity";
 import { migrateSchemaToV1 } from "@cms/utils";
 import { runPagePreflight, type PreflightIssue } from "@/utils/page-preflight";
 import { clearPageDraft } from "@/utils/page-draft";
@@ -124,9 +124,10 @@ const saveAndPreview = async () => {
       return;
     }
 
-    const response = (await savePage({ online: 1 })) as SavePageResponse;
+    const response = (await savePage()) as SavePageResponse;
     const pageId = getCurrentPageId(response);
     if (pageId) {
+      await publishCmsPage({ pageId, note: "发布并预览" });
       markPagePublished({
         pageId,
         schema: pageStore.exportPageSchema(),
@@ -156,9 +157,10 @@ const publishPage = async () => {
       return;
     }
 
-    const response = (await savePage({ online: 1 })) as SavePageResponse;
+    const response = (await savePage()) as SavePageResponse;
     const pageId = getCurrentPageId(response);
     if (pageId) {
+      await publishCmsPage({ pageId, note: "发布" });
       markPagePublished({
         pageId,
         schema: pageStore.exportPageSchema(),
@@ -230,7 +232,7 @@ const backToList = () => {
   }
 };
 
-const savePage = async (params?: Record<string, unknown>) => {
+const savePage = async () => {
   const pageSchema = pageStore.exportPageSchema();
   const legacyComponentList = migrateSchemaToV1(pageSchema).components.map((component, index) => ({
     id: component.id,
@@ -247,7 +249,6 @@ const savePage = async (params?: Record<string, unknown>) => {
     schema: pageSchema,
     ...(pageSchema.pageConfig as Record<string, unknown>),
     componentList: legacyComponentList,
-    ...params,
   };
 
   if (route.query.id) {

@@ -27,6 +27,11 @@ export class CreateTrackingEventDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(60)
+  publishedVersionId?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(120)
   componentId?: string;
 

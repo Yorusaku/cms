@@ -1,8 +1,9 @@
-import { Injectable } from "@nestjs/common";
+import { ConflictException, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ObjectLiteral, Repository, SelectQueryBuilder } from "typeorm";
 import type { FunnelMetrics, PageFunnelSummary } from "@cms/types";
 import { Lead } from "../lead/entities/lead.entity";
+import { PublishLog } from "../page/entities/publish-log.entity";
 import { TrackingEvent } from "./entities/tracking-event.entity";
 import { CreateTrackingEventDto } from "./dto/create-tracking-event.dto";
 import { GetTrackingEventsDto } from "./dto/get-tracking-events.dto";
@@ -15,12 +16,21 @@ export class TrackingService {
     private readonly trackingRepo: Repository<TrackingEvent>,
     @InjectRepository(Lead)
     private readonly leadRepo: Repository<Lead>,
+    @InjectRepository(PublishLog)
+    private readonly publishLogRepo: Repository<PublishLog>,
   ) {}
 
   async createEvent(dto: CreateTrackingEventDto): Promise<{ id: number }> {
+    if (dto.publishedVersionId) {
+      const version = await this.publishLogRepo.findOne({
+        where: { versionId: dto.publishedVersionId, ...(dto.pageId ? { pageId: dto.pageId } : {}) },
+      });
+      if (!version) throw new ConflictException("页面发布版本无效");
+    }
     const entity = this.trackingRepo.create({
       eventType: dto.eventType,
       pageId: dto.pageId ?? null,
+      publishedVersionId: dto.publishedVersionId ?? null,
       componentId: dto.componentId ?? null,
       componentType: dto.componentType ?? null,
       ctaText: dto.ctaText ?? null,

@@ -16,6 +16,9 @@ export class TrackingEvent {
   @Column({ type: "integer", name: "page_id", nullable: true })
   pageId: number | null;
 
+  @Column({ type: "varchar", length: 60, nullable: true, name: "published_version_id" })
+  publishedVersionId: string | null;
+
   @Column({ type: "varchar", length: 120, name: "component_id", nullable: true })
   componentId: string | null;
 
