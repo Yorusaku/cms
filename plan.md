@@ -20,10 +20,14 @@
 - Action 11: 已完成，已运行 Playwright 冒烟并验证真实 Backend/CMS/CRS 启动环境。
 - Action 12: 已完成，已排查活动管理动态导入失败，当前判断为 dev server 断开/未运行导致。
 - Action 13: 已完成，已同步更新 `AGENTS.md`、`CLAUDE.md` 和 `README.md`。
+- Action 14: 已完成，真实数据库与业务闭环（Docker PostgreSQL + 发布/回滚/线索/埋点），详见 `resume-database-progress.md`。
+- Action 15: 已完成，新增真实链路 E2E live 套件（11/11 通过，独立测试库 `cms_platform_resume_e2e`），并输出问题清单 `docs/E2E-FINDINGS.md`（含画布渲染/CRS 路由等断点）。
+- Action 16: 已完成，修复渲染端断点 F1–F5（画布渲染/CRS /page 路由/预览 iframe/CRS 真实列表/seed schema），live 套件升级为正向断言后仍 11/11 全绿，详见 `docs/E2E-FINDINGS.md`。
+- Action 17: 已完成，治理既有 mock 套件 F6：mock 套件由 14 通过/11 失败/1 跳过恢复为 **26/26 全绿**（smoke-core 恢复 5/5），live 套件保持 11/11，后端 Jest 7/7 与三端 typecheck 通过，详见 `docs/E2E-FINDINGS.md` 与下方 Action 17 日志。
 
 ## 下一步动作
 
-文档已同步完成；若继续排查活动管理页面问题，先重新启动 CMS dev server，再按 `plan.md` 中的判断继续定位。
+F1–F6 已全部治理：渲染端断点（F1–F5，Action 16）与 mock 套件基线（F6，Action 17）均已修复并验证，mock/live 两套 E2E 全绿。后续如需继续推进，优先在无 mock 依赖的真实三端环境补跑，或按需清理遗留未提交改动（Action 17 已按语义分组提交到本地 `main`，尚未 push）。
 
 ## 已确认决策
 
@@ -39,7 +43,9 @@
 - AI 输出必须经过 Schema 校验和物料归一化，避免生成无法渲染的组件类型。
 - 富文本内容需要做基础安全清洗，避免危险 HTML 进入渲染端。
 - `pnpm --filter @cms/cms test -- --run` 当前仍有非本轮 AI 改动引入的既有失败，集中在 condition/data-binding/linkage/page-publish/generate-material 与 e2e spec 被 Vitest 收集等测试。
-- `pnpm --filter @cms/cms test:e2e` 完整套件当前 26 条中 16 条通过、10 条失败；失败集中在 E2E fixture/page object 与当前页面行为不一致，核心 `smoke-core` 已通过。
+- `pnpm --filter @cms/cms test:e2e` 完整 mock 套件已在 Action 17 治理为 **26/26 全绿**（smoke-core 5/5）；此前基线为 26 条中 16 通过、10 失败。失败根因是 mock fixture/page object 与 Action 14–16 后的真实行为不一致（非业务回归）。
+- 渲染端断点 F1–F5 已在 Action 16 修复并验证（`docs/E2E-FINDINGS.md`）：F1 画布渲染（VueDraggable 改默认插槽+v-for）、F2 CRS `/page` 路由、F3 预览 iframe base/env、F4 CRS 真实 published 列表、F5 seed 演示页真实 schema（seed.ts 与 seed.service.ts 已同步）；live 套件断言已升级为正向断言，11/11 全绿。
+- F6 既有 mock 套件基线已在 Action 17 治理（`docs/E2E-FINDINGS.md`）：核心是补齐 `publishPage` 拦截（smoke-core:4 根因）、让 mock schema 可通过 `runPagePreflight`、修正过时断言（回滚语义/模板弹窗/设备选择器/选择器类名）。
 - 点击「活动管理」出现 `Failed to fetch dynamically imported module ... Activity.vue` 且伴随 Vite WebSocket 失败时，优先检查 3011 dev server 是否仍在运行。
 - `AGENTS.md` / `CLAUDE.md` / `README.md` 已同步 AI 一期、`plan.md` 规则和最新验证状态。
 
@@ -59,6 +65,10 @@
 - [x] Action 11: E2E 环境验证。
 - [x] Action 12: 排查活动管理动态导入失败。
 - [x] Action 13: 同步更新文档。
+- [x] Action 14: 真实数据库与业务闭环（详见 `resume-database-progress.md`）。
+- [x] Action 15: 真实链路 E2E live 套件（11/11）。
+- [x] Action 16: 修复渲染端断点 F1–F5。
+- [x] Action 17: 治理既有 mock 套件 F6 与遗留未提交改动收尾。
 
 ## Action 0: 创建断点续作文件
 
@@ -293,3 +303,82 @@ Decisions: 先让用户重新启动 CMS dev server 并强制刷新页面；不�
 Next: 如果重启后仍复现，需要抓 Vite 终端里的红色编译错误，或直接请求 `http://127.0.0.1:3011/cms-manage/src/views/Activity.vue` 查看是否返回 500。
 
 Notes for Claude: Action 11 真实三端验证后曾清理 3300/3011/3010 端口；如果用户原本依赖同一 3011 dev server，可能被清理流程停掉了。后续清理端口前应区分自己启动的进程和用户已有进程。
+
+## Action 14: 真实数据库与业务闭环
+
+Status: done
+
+Goal: 在 Docker 上完成并验证真实业务路径：`编辑草稿 -> 发布线上版本 -> 访客访问 -> 提交线索 -> 后台跟进 -> 版本回滚`，使用新库 `cms_platform_resume`，不触碰已有数据库。
+
+Scope: `apps/backend`（page/lead/tracking 模块、首份基线 migration、可重复 seed、tsconfig paths 修复）、`apps/frontend/crs`（公开渲染/版本化埋点/幂等留资）、`apps/frontend/cms`（线索跟进、发布记录、回滚语义、显式发布）、`packages/types`（版本化埋点/线索契约）、根文档。
+
+Changes: 新增首份基线 migration 与可重复 seed；页面草稿（schema）与线上快照（published_schema）隔离，显式 publishPage 与线上回滚事务；线索以 requestId 幂等并关联页面/线上版本/会话；CRS 接 getPublishedPage、埋点带 publishedVersionId；CMS 线索跟进状态/备注、发布记录「当前线上/回滚」标签、回滚不覆盖草稿；TopHeader 保存草稿 + 显式发布。
+
+Verification: 真实链路冒烟 `%TEMP%\cms-resume-verify.mjs` 16/16 PASS（独立运行两次）；后端 Jest 4/4；@cms/backend、@cms/cms、@cms/crs typecheck 通过；@cms/cms Activity.ai.test.ts 9/9（含新增线索/发布记录/回滚交互）、api.test.ts 12/12、tracking-utils.test.ts 4/4、usePageStore.test.ts 58/58；@cms/ui LeadFormBlock 2/2。完整证据见 `resume-database-progress.md`。
+
+Decisions: 新库 `cms_platform_resume` 走 5433 端口（本机 5432 被原生 postgres 占用）；`synchronize: false`，migration 是唯一 schema 来源；回滚创建新 publish_log 记录，不覆盖草稿；`ApiCode.SUCCESS = 10000`。
+
+Next: 后续如需全量 CMS Vitest/E2E 治理，先看本文件既有失败清单再决定；收尾时停掉后端进程并按需 `docker stop cms-vue3-resume-postgres`。
+
+Notes for Claude: 后端 `dev` 脚本仍存在 dist 路径问题（tsc 编译到 dist/apps/backend/src 但找 dist/main），真实启动用 `pnpm --filter @cms/backend build` + `node dist/main`；`@cms/backend lint` 的 vue 插件报错为根目录 eslint.config.js 既有问题，非本轮引入。
+## Action 15: 真实链路 E2E live 套件（独立测试库）
+
+Status: done
+
+Goal: 用真实 backend(3300) + Docker PostgreSQL(5433) + 独立测试库 `cms_platform_resume_e2e` 覆盖核心全流程（登录 -> 模板建页 -> 编辑 -> 发布 -> 访客留资 -> 后台线索 -> 发布记录 -> 回滚）与 AI 一句话建页（本地 mock），输出问题/失败清单，不修改业务源码、不治理既有 mock 套件。
+
+Scope: `apps/frontend/cms/tests/e2e-live/`（`full-flow.spec.ts`、`ai-build.spec.ts`、`crs-render.spec.ts`、`global-setup.cjs`）、`apps/frontend/cms/playwright.live.config.ts`、`apps/frontend/cms/package.json`、根 `package.json`、`docs/E2E-FINDINGS.md`。
+
+Changes: 新增独立 e2e-live 目录与 `playwright.live.config.ts`（三端 webServer：backend 注入 `DB_DATABASE=cms_platform_resume_e2e`/`AI_MOCK_ENABLED=true`，CRS 3010，CMS 3011）；globalSetup 每次重建测试库并 migration/seed；复用既有 login/activity/decorate page object，不引入 mock fixture；spec 对 F1 画布渲染断点采用原生 DnD 事件 + 物料计数断言规避，对 CRS/预览断点（F2/F3/F4）做记录现状探针；新增 `test:e2e:live` 脚本。
+
+Verification: `pnpm --filter @cms/cms test:e2e:live` -> **11/11 passed（末次完整运行 42.1s）**，主链路（登录->建页->编辑->保存草稿->发布->getPublishedPage+submitLead 留资->后台线索含渠道 UTM->发布记录->回滚）与 AI 建页（mock）均跑通；测试库每次重建 seed，业务库零污染。问题清单见 `docs/E2E-FINDINGS.md`（F1-F6）。
+
+Decisions: 独立测试库避免污染业务库；backend 不复用旧进程（env 需指向测试库）；回滚断言成功提示 + 「回滚至」日志，不跳转装修页；画布断点不改源码，以 store 数据断言规避。
+
+Next: 若需修复渲染端断点，按 `docs/E2E-FINDINGS.md` 建议：F1 将 VueDraggable 的 `#item` 改为 `#default` 并升级画布 DOM 断言；F2 注册 CRS `/page` 路由；F3 修正预览 iframe base；F4 接真实页面列表。修复后可把 crs-render 探针改为正向断言。
+
+Notes for Claude: `vue-draggable-plus@0.6.1` 的 `VueDraggable` 组件只渲染默认插槽（`#item` 是 `vDraggable` 指令用法），这是 F1 根因；`Preview.vue` 的 `buildPreviewUrl()` 未拼 `/crs/` base 是 F3 根因；CRS router 仅 `/` 与 `/pagePreview` 两条路由，`Page.vue` 未注册是 F2 根因。
+
+## Action 16: 修复渲染端断点 F1–F5
+
+Status: done
+
+Goal: 修复 `docs/E2E-FINDINGS.md` 中 5 个渲染端断点（F1–F5），让「装修画布可视化、CRS 访客直连已发布页、CMS 预览 iframe、CRS 首页真实列表、seed 演示页内容」全部跑通；把 live 套件中对应「记录现状」断言升级为正向断言作为验收。F6（既有 mock 套件 16/26 基线）不纳入本次。
+
+Scope: `apps/frontend/cms/src/views/Decorate/components/CenterCanvas.vue`（F1）、`apps/frontend/crs/src/router/index.ts`（F2）、`apps/frontend/cms/src/views/Preview.vue` + `apps/frontend/cms/.env` + `apps/frontend/cms/src/env.d.ts`（F3）、`apps/backend/src/modules/page/page.controller.ts` + `page.service.ts` + `apps/frontend/crs/src/api/page.ts` + `apps/frontend/crs/src/views/Home.vue`（F4）、`apps/backend/src/database/seeds/demo-page-schemas.ts` + `seed.ts` + `seed.service.ts`（F5）、`apps/backend/test/page.service.spec.ts`、`apps/frontend/cms/tests/e2e-live/*`（断言升级）。
+
+Changes: F1 将两处 `VueDraggable` 由 `#item` 具名插槽改为默认插槽 + `v-for` 渲染 `.canvas-component`（并修正两处标签配对）；F2 注册 CRS `/page` 路由指向 `Page.vue`；F3 `buildPreviewUrl()` 改用 env `VITE_CRS_PREVIEW_URL`（fallback `http://127.0.0.1:3010/crs/#/pagePreview`），`.env` 中该值改为 `127.0.0.1` 并加引号（含 `#` 否则被 Vite 当注释截断），`env.d.ts` 补类型；F4 后端新增 `@Public() GET /atlas-cms/getPublishedPageList`（仅 published/isAbled/未删除），CRS 首页改请求该接口并跳 `/page?id=`；F5 新建 `demo-page-schemas.ts` 为 8 个演示页生成含真实组件的 schema（published 4 个），`seed.ts` 与 `seed.service.ts` 同步引用（原 `seed.ts` 不调用 seed.service 且返回空 schema，是隐藏坑）。
+
+Verification: `pnpm --filter @cms/cms test:e2e:live` -> **11/11 passed（末次 31.8s，正向断言）**，覆盖画布 `.canvas-component` 渲染、AI 草稿画布组件、CRS 访客直连 `/page?id=` 渲染 `.page-content`、预览 iframe 200 + `.page-preview-container`、CRS 首页真实列表；`pnpm --filter @cms/backend test -- --runInBand` -> 7 用例通过（含 `page.service.spec.ts` 3 用例：published/isAbled 过滤与分页）；`@cms/backend` / `@cms/cms` / `@cms/crs` typecheck 与 backend build 通过。
+
+Decisions: 修复范围严格限 F1–F5，不改 `packages/*` 源码；F4 采用新增公开列表接口（避免 `getPageList` 加 `@Public` 暴露草稿）；F5 为演示页填充代表性简单 schema（非完整复杂模板）；VITE_CRS_PREVIEW_URL 因含 `#` 需加引号否则被 Vite 截断；`seed.ts` 与 `seed.service.ts` 必须保持同步。
+
+Next: 若继续治理既有 mock 套件 `tests/e2e`（F6 基线 16/26），先看本文件既有失败清单；本次未涉及 `packages/*` 与 mock 套件。
+
+Notes for Claude: 工作区存在大量上一任务遗留的未提交改动（lead/tracking/types/ui 等，非本轮），提交前需区分本轮文件与既有改动；本轮文件集中在 `apps/frontend/cms/tests/e2e-live/*`、`apps/frontend/cms/playwright.live.config.ts`、`apps/frontend/crs/*`、`apps/backend/src/modules/page/*`、`apps/backend/src/database/*`、`apps/backend/test/page.service.spec.ts`、`apps/frontend/cms/src/views/Decorate/components/CenterCanvas.vue`、`apps/frontend/cms/src/views/Preview.vue`、`apps/frontend/cms/.env`、`apps/frontend/cms/src/env.d.ts`、`docs/E2E-FINDINGS.md`、`plan.md`。
+
+## Action 17: 治理既有 mock 套件 F6 与遗留未提交改动收尾
+
+Status: done
+
+Goal: 治理 `apps/frontend/cms/tests/e2e`（mock 套件）的 11 条失败（F6），恢复 smoke-core 5/5 并让套件接近全绿；同时把 Action 14–16 的遗留未提交改动按语义分组提交到本地 `main`。不改业务源码迁就 mock，除非确认是真实回归。
+
+Scope: `apps/frontend/cms/tests/e2e/*`（spec、`pages/*.page.ts`、`fixtures/api-mocks.ts`、`fixtures/api-mocks.setup.ts`）、`plan.md`、`docs/E2E-FINDINGS.md`；其余 Action 14–16 遗留文件仅做提交分组，不改内容。
+
+Changes: 逐条定位根因后修复（均为 mock 侧问题，**无业务回归**）：
+1. `smoke-core:4 发布并预览`——`api-mocks.setup.ts` 缺 `/atlas-cms/publishPage` 拦截，`TopHeader.saveAndPreview` 的显式发布请求被 proxy 到 3300 导致 ECONNREFUSED，发布失败不打开预览页。补 `publishPage` handler 返回 `{versionId, versionNo}`。**根因非 F1–F5 引入**：`publishPage` 调用是 Action 14 新增，mock fixture 自 `24fd264` 后未同步。
+2. `activity:12 行数 10 vs 12`——mock `getPageList` 不按 `pageSize` 分页，返回全部 12 条；真实后端会按页截断。改为按 `pageNum/pageSize` 切片。
+3. `activity:25 建页跳转`——`Activity.vue` 的「新增页面」现在先开 `TemplatePicker` 弹窗（Action 14 起），需点「跳过，创建空白页」才进装修页。新增 `ActivityPage.skipTemplatePicker()` / `createBlankPageAndWait()`，spec 与 page object 同步。
+4. 画布 6 条（condition-rendering×2、data-binding、linkage、page-builder×2）——mock detail schema 只有 1 个组件（断言要求 ≥5）；`expectCanvasHasComponentsAtLeast` 实际用 `toHaveCount`（精确等于，与命名矛盾）；`.right-config` 类名已变为 `.page-right`。mock detail 扩为 5 个真实 registry 类型组件（Carousel/ImageNav/RichText/Notice/Product），断言改为 `expect.poll(...).toBeGreaterThanOrEqual`，选择器改 `.page-right`、画布收紧为 `.canvas-dropzone .canvas-component`。
+5. `preview:18 设备选择器`——`selectDevice` 用 `getByText().click()` 命不中 el-select 选项。改为先点 `.toolbar-select` 展开下拉，再点 `.el-select-dropdown__item`。
+6. `publish-rollback:27 回滚跳装修页`——Action 14 已把回滚语义改为「只切换线上版本、不覆盖草稿、不跳转装修页」。断言改为等待「线上页面已回滚」成功提示并停留在 `/activity`。
+7. 附带修 `smoke-core:5 回滚恢复`：同为旧回滚语义，因 `describe.serial` 前置失败被跳过而未暴露，一并改为新语义。
+8. mock detail schema 需可通过 `runPagePreflight`（发布/预览先跑发布前校验）：图片字段由空串改为内联 SVG data URI、`link` 由 `{clickType:0,data:null}` 改为 `{clickType:1,data:{url:...}}`，否则会被判「缺少图片/缺少有效链接」而拦截发布。
+
+Verification: `pnpm --filter @cms/cms test:e2e` -> **26 passed（17.5s）**，此前为 14 passed / 11 failed / 1 did not run；`pnpm --filter @cms/cms test:e2e:live` -> **11 passed（32.2s）**，live 不回归；`pnpm --filter @cms/backend test -- --runInBand` -> 3 suites / **7 tests passed**；`@cms/backend`、`@cms/cms`、`@cms/crs` typecheck 均通过。
+
+Decisions: 一律优先修 mock 侧（fixture/page object/断言计数），不改业务源码；确认 `smoke-core:4` 为 mock 不完整而非 F1–F5 回归；mock detail schema 扩充组件时只用 `materialRegistry` 真实类型，避免 FallbackComponent；回滚断言按 Action 14 新语义更新并如实记录；`.env.example` 不提交（`VITE_CRS_PREVIEW_URL` 属本地生效改动）；`packages/ui/tsconfig.tsbuildinfo` 为误跟踪构建产物，恢复其变更不提交内容；`视频总结.md`（用户个人文件，未跟踪）不提交。
+
+Next: 两套 E2E（mock 26/26、live 11/11）与后端 Jest、三端 typecheck 全绿；遗留改动已按 `feat:`/`test:`/`fix:` 分组提交到本地 `main`，**未 push**（是否推送由用户决定）。
+
+Notes for Claude: mock 套件不起 backend/CRS，`publishPage` 这类新增接口必须同步补拦截，否则会 proxy 到 3300 报 ECONNREFUSED——本次 smoke-core:4 即由此而来；`runPagePreflight` 会在发布/预览前校验图片与链接字段，mock schema 必须「可发布」；`tests/e2e`（mock）与 `tests/e2e-live`（真实链路）共享 `pages/*.page.ts`，改 page object 时需同时确认 live 不回归。
