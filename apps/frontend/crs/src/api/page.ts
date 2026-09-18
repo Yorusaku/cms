@@ -1,4 +1,4 @@
-﻿import http from '@/utils/http'
+import http from '@/utils/http'
 import type { IPageSchemaV2 } from '@cms/types'
 import { safeParsePageSchema } from '@cms/types'
 
@@ -8,10 +8,9 @@ export interface PageDetailResponse {
   data: {
     id: number
     name: string
-    schema: string // JSON 字符串
-    isAbled: number
-    create_time: string
-    update_time: string
+    schema: string | IPageSchemaV2
+    publishedVersionId: string
+    publishedAt: string | null
     [key: string]: unknown
   }
 }
@@ -24,9 +23,35 @@ export type PageSchema = IPageSchemaV2
  * @returns 页面详情响应
  */
 export function getPageDataById(pageId: number) {
-  return http.get<PageDetailResponse>('/atlas-cms/getPageJson', {
+  return http.get<PageDetailResponse>('/atlas-cms/getPublishedPage', {
     params: { id: pageId }
   })
+}
+
+export interface PageListItem {
+  id: number
+  name: string
+  isAbled: number
+  status: string
+  create_time: string
+  update_time: string
+  [key: string]: unknown
+}
+
+export interface PageListResponse {
+  list: PageListItem[]
+  total: number
+  pageNum: number
+  pageSize: number
+}
+
+/**
+ * 获取已发布页面列表（访客首页展示用，仅返回上线中的 published 页面）
+ * @param params 分页参数
+ * @returns 页面列表响应
+ */
+export function getPublishedPageList(params: { pageNum: number; pageSize: number; name?: string }) {
+  return http.get<PageListResponse>('/atlas-cms/getPublishedPageList', { params })
 }
 
 /**

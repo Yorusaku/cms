@@ -1,5 +1,5 @@
 import { Type } from "class-transformer";
-import { IsInt, Min, IsString, IsNotEmpty } from "class-validator";
+import { IsInt, Min, IsOptional, IsString, IsNotEmpty, MaxLength } from "class-validator";
 
 export class GetPublishLogsDto {
   @Type(() => Number)
@@ -17,4 +17,16 @@ export class RollbackVersionDto {
   @IsString()
   @IsNotEmpty()
   versionId: string;
+}
+
+export class PublishPageDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  pageId: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
 }

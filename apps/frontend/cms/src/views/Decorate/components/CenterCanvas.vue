@@ -25,7 +25,11 @@
           <template v-else-if="useVirtualScroll">
             <div class="virtual-scroll-banner">
               <el-icon><InfoFilled /></el-icon>
-              <span>组件超过{{ VIRTUAL_SCROLL_THRESHOLD }}个，已启用虚拟滚动优化。拖拽排序已禁用，请使用 Alt+↑/↓ 或按钮移动组件。</span>
+              <span
+                >组件超过{{
+                  VIRTUAL_SCROLL_THRESHOLD
+                }}个，已启用虚拟滚动优化。拖拽排序已禁用，请使用 Alt+↑/↓ 或按钮移动组件。</span
+              >
             </div>
             <VirtualScroll
               :items="sortableComponents"
@@ -46,44 +50,44 @@
                   chosen-class="sortable-chosen"
                   class="sortable-list"
                 >
-                  <template #item="{ element: component }">
-                    <div
-                      class="canvas-component"
-                      :class="{
-                        active: pageStore.activeComponentId === component.id,
-                        selected: pageStore.selectedComponentIds.includes(component.id),
-                      }"
-                      :data-component-id="component.id"
-                      @click="handleSelectComponent(component.id, $event)"
-                    >
-                      <div class="component-drag-handle">拖</div>
-                      <div class="component-content">
-                        <component
-                          :is="resolveCachedComponent(component.type)"
-                          v-bind="resolveCachedRuntimeProps(component.type, component.props)"
-                          :style="component.styles"
-                        />
-                      </div>
-                      <div class="component-actions">
-                        <el-button size="small" @click.stop="moveComponentUp(component.id)">
-                          ↑
-                        </el-button>
-                        <el-button size="small" @click.stop="moveComponentDown(component.id)">
-                          ↓
-                        </el-button>
-                        <el-button size="small" @click.stop="handleDuplicateComponent(component.id)">
-                          复制
-                        </el-button>
-                        <el-button
-                          size="small"
-                          type="danger"
-                          @click.stop="handleDeleteComponentById(component.id)"
-                        >
-                          删除
-                        </el-button>
-                      </div>
+                  <div
+                    v-for="component in visibleItems"
+                    :key="component.id"
+                    class="canvas-component"
+                    :class="{
+                      active: pageStore.activeComponentId === component.id,
+                      selected: pageStore.selectedComponentIds.includes(component.id)
+                    }"
+                    :data-component-id="component.id"
+                    @click="handleSelectComponent(component.id, $event)"
+                  >
+                    <div class="component-drag-handle">拖</div>
+                    <div class="component-content">
+                      <component
+                        :is="resolveCachedComponent(component.type)"
+                        v-bind="resolveCachedRuntimeProps(component.type, component.props)"
+                        :style="component.styles"
+                      />
                     </div>
-                  </template>
+                    <div class="component-actions">
+                      <el-button size="small" @click.stop="moveComponentUp(component.id)">
+                        ↑
+                      </el-button>
+                      <el-button size="small" @click.stop="moveComponentDown(component.id)">
+                        ↓
+                      </el-button>
+                      <el-button size="small" @click.stop="handleDuplicateComponent(component.id)">
+                        复制
+                      </el-button>
+                      <el-button
+                        size="small"
+                        type="danger"
+                        @click.stop="handleDeleteComponentById(component.id)"
+                      >
+                        删除
+                      </el-button>
+                    </div>
+                  </div>
                 </VueDraggable>
               </template>
             </VirtualScroll>
@@ -100,37 +104,33 @@
             chosen-class="sortable-chosen"
             class="sortable-list"
           >
-            <template #item="{ element: component, index }">
-              <div
-                class="canvas-component"
-                :class="{
-                  active: pageStore.activeComponentId === component.id,
-                  selected: pageStore.selectedComponentIds.includes(component.id),
-                }"
-                @click="handleSelectComponent(component.id, $event)"
-              >
-                <div class="component-drag-handle">拖</div>
-                <div class="component-content">
-                  <component
-                    :is="resolveComponent(component.type)"
-                    v-bind="resolveRuntimeProps(component.type, component.props)"
-                    :style="component.styles"
-                  />
-                </div>
-                <div class="component-actions">
-                  <el-button size="small" @click.stop="handleDuplicateComponent(component.id)">
-                    复制
-                  </el-button>
-                  <el-button
-                    size="small"
-                    type="danger"
-                    @click.stop="handleDeleteComponent(index)"
-                  >
-                    删除
-                  </el-button>
-                </div>
+            <div
+              v-for="(component, index) in sortableComponents"
+              :key="component.id"
+              class="canvas-component"
+              :class="{
+                active: pageStore.activeComponentId === component.id,
+                selected: pageStore.selectedComponentIds.includes(component.id)
+              }"
+              @click="handleSelectComponent(component.id, $event)"
+            >
+              <div class="component-drag-handle">拖</div>
+              <div class="component-content">
+                <component
+                  :is="resolveComponent(component.type)"
+                  v-bind="resolveRuntimeProps(component.type, component.props)"
+                  :style="component.styles"
+                />
               </div>
-            </template>
+              <div class="component-actions">
+                <el-button size="small" @click.stop="handleDuplicateComponent(component.id)">
+                  复制
+                </el-button>
+                <el-button size="small" type="danger" @click.stop="handleDeleteComponent(index)">
+                  删除
+                </el-button>
+              </div>
+            </div>
           </VueDraggable>
 
           <div v-if="pageStore.activeComponentId" class="keyboard-hint">
@@ -143,243 +143,219 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, watch } from "vue";
-import { useEventListener } from "@vueuse/core";
-import { ElMessage } from "element-plus";
-import { InfoFilled } from "@element-plus/icons-vue";
-import { VueDraggable } from "vue-draggable-plus";
-import VirtualScroll from "../../../components/VirtualScroll.vue";
-import { usePageStore } from "../../../store/usePageStore";
-import { useDragDrop } from "../hooks/useDragDrop";
-import { useVirtualScrollMeasurement } from "../hooks/useVirtualScrollMeasurement";
-import { ComponentRenderCache } from "../../../utils/editor-optimization";
+import { computed, defineAsyncComponent, watch } from 'vue'
+import { useEventListener } from '@vueuse/core'
+import { ElMessage } from 'element-plus'
+import { InfoFilled } from '@element-plus/icons-vue'
+import { VueDraggable } from 'vue-draggable-plus'
+import VirtualScroll from '../../../components/VirtualScroll.vue'
+import { usePageStore } from '../../../store/usePageStore'
+import { useDragDrop } from '../hooks/useDragDrop'
+import { useVirtualScrollMeasurement } from '../hooks/useVirtualScrollMeasurement'
+import { ComponentRenderCache } from '../../../utils/editor-optimization'
 import {
   getMaterialAsyncComponent,
   getOrderedComponents,
-  resolveMaterialRuntimeProps,
-} from "@cms/ui";
-import { trackEvent } from "@/utils/tracking";
+  resolveMaterialRuntimeProps
+} from '@cms/ui'
+import { trackEvent } from '@/utils/tracking'
 
-const VIRTUAL_SCROLL_THRESHOLD = 20;
+const VIRTUAL_SCROLL_THRESHOLD = 20
 
 interface Props {
-  pageStore: ReturnType<typeof usePageStore>;
+  pageStore: ReturnType<typeof usePageStore>
 }
 
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 
-const dragDrop = useDragDrop();
-const measurement = useVirtualScrollMeasurement();
+const dragDrop = useDragDrop()
+const measurement = useVirtualScrollMeasurement()
 
-const orderedComponents = computed(() =>
-  getOrderedComponents(props.pageStore.pageSchema),
-);
+const orderedComponents = computed(() => getOrderedComponents(props.pageStore.pageSchema))
 
 const sortableComponents = computed({
   get: () => orderedComponents.value,
-  set: (components) => {
-    props.pageStore.reorderRootIds(components.map((component) => component.id));
-  },
-});
+  set: components => {
+    props.pageStore.reorderRootIds(components.map(component => component.id))
+  }
+})
 
-const useVirtualScroll = computed(
-  () => sortableComponents.value.length > VIRTUAL_SCROLL_THRESHOLD,
-);
+const useVirtualScroll = computed(() => sortableComponents.value.length > VIRTUAL_SCROLL_THRESHOLD)
 
 // ── Component resolution with caching ──
-const componentCache = new ComponentRenderCache(100);
-const propsCache = new ComponentRenderCache(100);
+const componentCache = new ComponentRenderCache(100)
+const propsCache = new ComponentRenderCache(100)
 
 const FallbackComponent = defineAsyncComponent(
-  () => import("../../../components/FallbackComponent.vue"),
-);
+  () => import('../../../components/FallbackComponent.vue')
+)
 
 const resolveComponent = (type: string) => {
-  return getMaterialAsyncComponent(type) || FallbackComponent;
-};
+  return getMaterialAsyncComponent(type) || FallbackComponent
+}
 
 const resolveCachedComponent = (type: string) => {
-  const cached = componentCache.get(type);
-  if (cached) return cached;
-  const resolved = resolveComponent(type);
-  componentCache.set(type, resolved);
-  return resolved;
-};
+  const cached = componentCache.get(type)
+  if (cached) return cached
+  const resolved = resolveComponent(type)
+  componentCache.set(type, resolved)
+  return resolved
+}
 
-const resolveRuntimeProps = (
-  type: string,
-  componentProps: Record<string, unknown>,
-) => {
-  return resolveMaterialRuntimeProps(type, componentProps);
-};
+const resolveRuntimeProps = (type: string, componentProps: Record<string, unknown>) => {
+  return resolveMaterialRuntimeProps(type, componentProps)
+}
 
-const resolveCachedRuntimeProps = (
-  type: string,
-  componentProps: Record<string, unknown>,
-) => {
-  const key = type;
-  const cached = propsCache.get(key);
+const resolveCachedRuntimeProps = (type: string, componentProps: Record<string, unknown>) => {
+  const key = type
+  const cached = propsCache.get(key)
   // Only use cache if no componentProps (most components)
-  if (cached && Object.keys(componentProps).length === 0) return cached;
-  const resolved = resolveRuntimeProps(type, componentProps);
+  if (cached && Object.keys(componentProps).length === 0) return cached
+  const resolved = resolveRuntimeProps(type, componentProps)
   if (Object.keys(componentProps).length === 0) {
-    propsCache.set(key, resolved);
+    propsCache.set(key, resolved)
   }
-  return resolved;
-};
+  return resolved
+}
 
 // ── Virtual scroll measurement callback ──
 const onVirtualMeasure = (id: string, _height: number) => {
-  const el = document.querySelector(`[data-component-id="${id}"]`) as HTMLElement | null;
+  const el = document.querySelector(`[data-component-id="${id}"]`) as HTMLElement | null
   if (el) {
-    measurement.recordHeight(id, el);
+    measurement.recordHeight(id, el)
   }
-};
+}
 
 // ── Event handlers ──
 const handleSelectComponent = (id: string, event: MouseEvent) => {
   if (event.ctrlKey || event.metaKey) {
-    props.pageStore.toggleComponentSelection(id);
+    props.pageStore.toggleComponentSelection(id)
     void trackEvent({
-      eventType: "component_click",
+      eventType: 'component_click',
       componentId: id,
       payload: {
-        action: "toggle_select",
-      },
-    });
-    return;
+        action: 'toggle_select'
+      }
+    })
+    return
   }
-  props.pageStore.setActiveId(id);
+  props.pageStore.setActiveId(id)
   void trackEvent({
-    eventType: "component_click",
+    eventType: 'component_click',
     componentId: id,
     payload: {
-      action: "select",
-    },
-  });
-};
+      action: 'select'
+    }
+  })
+}
 
 const handleDeleteComponent = (index: number) => {
-  props.pageStore.deleteComponent({ index });
-};
+  props.pageStore.deleteComponent({ index })
+}
 
 const handleDeleteComponentById = (id: string) => {
-  const index = props.pageStore.pageSchema.rootIds.findIndex(
-    (rootId) => rootId === id,
-  );
+  const index = props.pageStore.pageSchema.rootIds.findIndex(rootId => rootId === id)
   if (index >= 0) {
-    props.pageStore.deleteComponent({ index });
+    props.pageStore.deleteComponent({ index })
     void trackEvent({
-      eventType: "cta_click",
+      eventType: 'cta_click',
       componentId: id,
-      ctaText: "delete_component",
-    });
+      ctaText: 'delete_component'
+    })
   }
-};
+}
 
 const handleDuplicateComponent = (id: string) => {
-  props.pageStore.duplicateComponent({ id });
+  props.pageStore.duplicateComponent({ id })
   void trackEvent({
-    eventType: "cta_click",
+    eventType: 'cta_click',
     componentId: id,
-    ctaText: "duplicate_component",
-  });
-};
+    ctaText: 'duplicate_component'
+  })
+}
 
 const handlePreview = () => {
-  ElMessage.success("请使用顶部操作栏预览页面");
-};
+  ElMessage.success('请使用顶部操作栏预览页面')
+}
 
 const isInputLikeTarget = (target: EventTarget | null) => {
-  if (!(target instanceof HTMLElement)) return false;
-  const tag = target.tagName.toLowerCase();
-  return (
-    tag === "input" ||
-    tag === "textarea" ||
-    tag === "select" ||
-    target.isContentEditable
-  );
-};
+  if (!(target instanceof HTMLElement)) return false
+  const tag = target.tagName.toLowerCase()
+  return tag === 'input' || tag === 'textarea' || tag === 'select' || target.isContentEditable
+}
 
 const moveComponentUp = (id: string) => {
-  const index = props.pageStore.pageSchema.rootIds.findIndex(
-    (rootId) => rootId === id,
-  );
+  const index = props.pageStore.pageSchema.rootIds.findIndex(rootId => rootId === id)
   if (index > 0) {
-    props.pageStore.moveComponent({ from: index, to: index - 1 });
+    props.pageStore.moveComponent({ from: index, to: index - 1 })
   }
-};
+}
 
 const moveComponentDown = (id: string) => {
-  const index = props.pageStore.pageSchema.rootIds.findIndex(
-    (rootId) => rootId === id,
-  );
+  const index = props.pageStore.pageSchema.rootIds.findIndex(rootId => rootId === id)
   if (index >= 0 && index < props.pageStore.pageSchema.rootIds.length - 1) {
-    props.pageStore.moveComponent({ from: index, to: index + 1 });
+    props.pageStore.moveComponent({ from: index, to: index + 1 })
   }
-};
+}
 
-const moveSelectedComponent = (direction: "up" | "down") => {
-  const currentId = props.pageStore.activeComponentId;
-  if (!currentId) return;
-  const currentIndex = props.pageStore.pageSchema.rootIds.findIndex(
-    (id) => id === currentId,
-  );
-  if (currentIndex < 0) return;
-  const targetIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
-  props.pageStore.moveComponent({ from: currentIndex, to: targetIndex });
-};
+const moveSelectedComponent = (direction: 'up' | 'down') => {
+  const currentId = props.pageStore.activeComponentId
+  if (!currentId) return
+  const currentIndex = props.pageStore.pageSchema.rootIds.findIndex(id => id === currentId)
+  if (currentIndex < 0) return
+  const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1
+  props.pageStore.moveComponent({ from: currentIndex, to: targetIndex })
+}
 
-useEventListener(window, "keydown", (event: KeyboardEvent) => {
-  if (isInputLikeTarget(event.target)) return;
-  const activeId = props.pageStore.activeComponentId;
-  const withMeta = event.ctrlKey || event.metaKey;
+useEventListener(window, 'keydown', (event: KeyboardEvent) => {
+  if (isInputLikeTarget(event.target)) return
+  const activeId = props.pageStore.activeComponentId
+  const withMeta = event.ctrlKey || event.metaKey
 
-  if ((event.key === "Delete" || event.key === "Backspace") && activeId) {
-    event.preventDefault();
-    props.pageStore.deleteActiveComponent();
-    return;
+  if ((event.key === 'Delete' || event.key === 'Backspace') && activeId) {
+    event.preventDefault()
+    props.pageStore.deleteActiveComponent()
+    return
   }
-  if (withMeta && event.key.toLowerCase() === "c" && activeId) {
-    event.preventDefault();
-    props.pageStore.duplicateComponent({ id: activeId });
-    return;
+  if (withMeta && event.key.toLowerCase() === 'c' && activeId) {
+    event.preventDefault()
+    props.pageStore.duplicateComponent({ id: activeId })
+    return
   }
-  if (withMeta && event.key.toLowerCase() === "z" && !event.shiftKey) {
-    event.preventDefault();
-    if (props.pageStore.canUndo) props.pageStore.undo();
-    return;
+  if (withMeta && event.key.toLowerCase() === 'z' && !event.shiftKey) {
+    event.preventDefault()
+    if (props.pageStore.canUndo) props.pageStore.undo()
+    return
   }
   if (
     withMeta &&
-    ((event.key.toLowerCase() === "z" && event.shiftKey) ||
-      event.key.toLowerCase() === "y")
+    ((event.key.toLowerCase() === 'z' && event.shiftKey) || event.key.toLowerCase() === 'y')
   ) {
-    event.preventDefault();
-    if (props.pageStore.canRedo) props.pageStore.redo();
-    return;
+    event.preventDefault()
+    if (props.pageStore.canRedo) props.pageStore.redo()
+    return
   }
-  if (event.altKey && event.key === "ArrowUp") {
-    event.preventDefault();
-    moveSelectedComponent("up");
-    return;
+  if (event.altKey && event.key === 'ArrowUp') {
+    event.preventDefault()
+    moveSelectedComponent('up')
+    return
   }
-  if (event.altKey && event.key === "ArrowDown") {
-    event.preventDefault();
-    moveSelectedComponent("down");
+  if (event.altKey && event.key === 'ArrowDown') {
+    event.preventDefault()
+    moveSelectedComponent('down')
   }
-});
+})
 
 // Invalidate caches on schema change
 watch(
   () => props.pageStore.pageSchema,
   () => {
-    componentCache.clear();
-    propsCache.clear();
-    measurement.clear();
+    componentCache.clear()
+    propsCache.clear()
+    measurement.clear()
   },
-  { deep: true },
-);
+  { deep: true }
+)
 </script>
 
 <style scoped>

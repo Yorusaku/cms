@@ -142,7 +142,12 @@
             placement="top"
           >
             <div class="log-card">
-              <p><strong>{{ item.displayVersion }}</strong> - {{ item.operator || "当前用户" }}</p>
+              <p>
+                <strong>{{ item.displayVersion }}</strong>
+                <el-tag v-if="item.isCurrent" type="success" size="small" class="ml-2">当前线上</el-tag>
+                <el-tag v-else-if="item.action === 'rollback'" type="warning" size="small" class="ml-2">回滚版本</el-tag>
+                - {{ item.operator || "当前用户" }}
+              </p>
               <p class="text-xs text-gray-500 mt-1">{{ item.note || "发布" }}</p>
               <div class="mt-2 flex gap-2">
                 <el-button size="small" @click="previewVersion(item.versionId)">只读预览</el-button>
@@ -156,7 +161,17 @@
       </template>
     </el-drawer>
 
-    <el-drawer v-model="leadDrawerVisible" title="线索列表" size="680px">
+    <el-drawer v-model="leadDrawerVisible" title="线索列表" size="820px">
+      <div class="mb-4 flex gap-3">
+        <el-select v-model="leadFilters.status" clearable placeholder="全部跟进状态" class="w-36" @change="reloadLeadList">
+          <el-option label="待跟进" value="new" />
+          <el-option label="已联系" value="contacted" />
+          <el-option label="已转化" value="converted" />
+          <el-option label="无效线索" value="invalid" />
+        </el-select>
+        <el-input v-model="leadFilters.channel" clearable placeholder="按渠道或 UTM 搜索" class="w-56" @keyup.enter="reloadLeadList" />
+        <el-button @click="reloadLeadList">筛选</el-button>
+      </div>
       <template v-if="leadLoading">
         <div class="text-sm text-gray-500">加载中...</div>
       </template>
@@ -165,12 +180,35 @@
           <el-table-column prop="name" label="姓名" min-width="110" />
           <el-table-column prop="phoneNumber" label="手机号" min-width="140" />
           <el-table-column prop="remark" label="备注" min-width="160" />
+          <el-table-column prop="publishedVersionId" label="来源版本" min-width="130" />
+          <el-table-column label="渠道" min-width="180">
+            <template #default="{ row }">
+              <div class="text-xs text-gray-600">{{ formatMap(row.channel) }}</div>
+            </template>
+          </el-table-column>
           <el-table-column label="UTM" min-width="220">
             <template #default="{ row }">
               <div class="text-xs text-gray-600">{{ formatMap(row.utm) }}</div>
             </template>
           </el-table-column>
           <el-table-column prop="createdAt" label="提交时间" min-width="160" />
+          <el-table-column label="跟进状态" min-width="130">
+            <template #default="{ row }">
+              <el-select :model-value="row.status" size="small" @change="handleLeadStatusChange(row, $event)">
+                <el-option label="待跟进" value="new" />
+                <el-option label="已联系" value="contacted" />
+                <el-option label="已转化" value="converted" />
+                <el-option label="无效" value="invalid" />
+              </el-select>
+            </template>
+          </el-table-column>
+          <el-table-column label="跟进备注" min-width="150">
+            <template #default="{ row }">
+              <el-button size="small" @click="editLeadRemark(row)">
+                {{ row.followUpRemark ? "修改备注" : "添加备注" }}
+              </el-button>
+            </template>
+          </el-table-column>
         </el-table>
 
         <div class="mt-4 flex justify-end">
@@ -369,17 +407,10 @@ import {
   type PublishLogItem,
   type SavePageParams,
 } from "../api/activity";
-import { getLeadList, type LeadItem } from "@/api/lead";
+import { getLeadList, updateLeadStatus, type LeadItem } from "@/api/lead";
 import { usePageStore } from "../store/usePageStore";
 import { trackEvent } from "@/utils/tracking";
-import {
-  getLocalPublishLogs,
-  markPageDraft,
-  resolvePageContentStatus,
-  rollbackLocalPublishVersion,
-  type PageContentStatus,
-  type PublishLogRecord,
-} from "@/utils/page-publish";
+import { type PageContentStatus, type PublishLogRecord } from "@/utils/page-publish";
 
 interface PageDetailResponse {
   code: number;
@@ -477,6 +508,10 @@ const leadPagination = reactive({
   pageSize: 20,
   total: 0,
 });
+const leadFilters = reactive({
+  status: undefined as LeadItem["status"] | undefined,
+  channel: "",
+});
 
 const pagination = reactive({
   current: 1,
@@ -497,10 +532,8 @@ const normalizeSchemaValue = (value: unknown) => {
 };
 
 const toActivityRow = (item: PageItem): ActivityRow => {
-  const pageId = Number(item.id || 0);
   const onlineStatus = Number(item.isAbled || 0);
-  const contentStatus =
-    pageId > 0 ? resolvePageContentStatus(onlineStatus, "draft") : ("draft" as const);
+  const contentStatus = item.status === "published" ? "published" : ("draft" as const);
 
   return {
     ...item,
@@ -859,6 +892,8 @@ const normalizeLogRecord = (pageId: number, item: PublishLogItem): PublishLogRec
     operator: String(item.operator || "当前用户"),
     note: String(item.note || "发布"),
     publishedAt: Number.isFinite(timestamp) ? timestamp : Date.now(),
+    action: item.action,
+    isCurrent: item.isCurrent,
   };
 };
 
@@ -906,6 +941,8 @@ const openPublishLogs = async (pageId: number) => {
 const openLeadDrawer = async (pageId: number) => {
   activeLeadPageId.value = pageId;
   leadPagination.pageNum = 1;
+  leadFilters.status = undefined;
+  leadFilters.channel = "";
   leadDrawerVisible.value = true;
   await loadLeadList();
 };
@@ -921,6 +958,8 @@ const loadLeadList = async () => {
       pageId: activeLeadPageId.value,
       pageNum: leadPagination.pageNum,
       pageSize: leadPagination.pageSize,
+      status: leadFilters.status,
+      channel: leadFilters.channel.trim() || undefined,
     });
 
     if (response.code !== 10000) {
@@ -959,13 +998,46 @@ const handleLeadPageSizeChange = async (pageSize: number) => {
   await loadLeadList();
 };
 
+const reloadLeadList = async () => {
+  leadPagination.pageNum = 1;
+  await loadLeadList();
+};
+
+const handleLeadStatusChange = async (row: LeadItem, status: LeadItem["status"]) => {
+  try {
+    const response = await updateLeadStatus({ id: row.id, status, followUpRemark: row.followUpRemark || undefined });
+    if (response.code !== 10000) throw new Error(response.message || "更新线索状态失败");
+    row.status = status;
+    ElMessage.success("线索状态已更新");
+  } catch (error: unknown) {
+    ElMessage.error(error instanceof Error ? error.message : "更新线索状态失败");
+    await loadLeadList();
+  }
+};
+
+const editLeadRemark = async (row: LeadItem) => {
+  try {
+    const { value } = await ElMessageBox.prompt("填写本次跟进备注", "线索跟进", {
+      inputValue: row.followUpRemark || "",
+      inputPlaceholder: "例如：已电话联系，待确认预算",
+      inputValidator: (input) => input.length <= 500 || "备注不能超过 500 个字符",
+    });
+    const response = await updateLeadStatus({ id: row.id, status: row.status, followUpRemark: value || undefined });
+    if (response.code !== 10000) throw new Error(response.message || "更新跟进备注失败");
+    row.followUpRemark = value || null;
+    ElMessage.success("跟进备注已保存");
+  } catch (error: unknown) {
+    if (error !== "cancel") ElMessage.error(error instanceof Error ? error.message : "更新跟进备注失败");
+  }
+};
+
 const rollbackVersion = async (versionId: string) => {
   if (!activeLogPageId.value) {
     return;
   }
 
   await ElMessageBox.confirm(
-    "回滚会覆盖当前编辑内容并将页面置为草稿待发布，是否继续？",
+    "回滚会立即恢复线上页面到该历史版本，当前编辑草稿不会被覆盖，是否继续？",
     "确认回滚",
     {
       confirmButtonText: "确认回滚",
@@ -984,7 +1056,6 @@ const rollbackVersion = async (versionId: string) => {
       throw new Error(response.message || "回滚失败");
     }
 
-    markPageDraft(activeLogPageId.value);
     await trackEvent({
       eventType: "cta_click",
       pageId: activeLogPageId.value,
@@ -992,50 +1063,23 @@ const rollbackVersion = async (versionId: string) => {
       payload: { versionId },
     });
 
-    ElMessage.success("回滚成功，已标记为草稿待发布");
+    ElMessage.success("线上页面已回滚，当前草稿未受影响");
     await getTableData();
-
-    const decorateUrl = router.resolve({
-      path: "/decorate",
-      query: {
-        id: activeLogPageId.value,
-        rollbackVersionId: versionId,
-      },
-    });
-    window.open(decorateUrl.href, "_blank");
   } catch (error: unknown) {
-    const localHit = await rollbackLocalPublishVersion({
-      pageId: activeLogPageId.value,
-      versionId,
-    });
-
-    if (!localHit) {
-      const errorMessage = error instanceof Error ? error.message : "回滚失败";
-      ElMessage.error(errorMessage);
-      return;
-    }
-
-    ElMessage.warning("已使用服务端回滚");
-    await getTableData();
-    const decorateUrl = router.resolve({
-      path: "/decorate",
-      query: {
-        id: activeLogPageId.value,
-        rollbackVersionId: versionId,
-      },
-    });
-    window.open(decorateUrl.href, "_blank");
+    const errorMessage = error instanceof Error ? error.message : "回滚失败";
+    ElMessage.error(errorMessage);
   }
 };
 
 const handleRollbackLatest = async (row: ActivityRow) => {
-  const logs = await getLocalPublishLogs(row.id);
+  const response = await getPagePublishLogs(row.id);
+  const logs = response.data ?? [];
   if (logs.length === 0) {
     ElMessage.info("暂无可回滚的发布记录");
     return;
   }
   activeLogPageId.value = row.id;
-  await rollbackVersion(logs[0].versionId);
+  await rollbackVersion(String(logs[0].versionId));
 };
 
 const previewVersion = (versionId: string) => {

@@ -18,6 +18,15 @@ export class Page {
   @Column({ type: "jsonb", nullable: true })
   schema: IPageSchemaV2;
 
+  @Column({ type: "jsonb", nullable: true, name: "published_schema" })
+  publishedSchema: IPageSchemaV2 | null;
+
+  @Column({ type: "varchar", length: 60, nullable: true, name: "published_version_id" })
+  publishedVersionId: string | null;
+
+  @Column({ type: "timestamptz", nullable: true, name: "published_at" })
+  publishedAt: Date | null;
+
   @Column({ type: "jsonb", nullable: true, name: "component_list" })
   componentList: IComponentSchemaV1[];
 

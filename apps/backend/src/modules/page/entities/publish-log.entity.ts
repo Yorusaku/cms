@@ -20,6 +20,18 @@ export class PublishLog {
   @Column({ type: "varchar", length: 50, name: "display_version" })
   displayVersion: string;
 
+  @Column({ type: "integer", name: "version_no" })
+  versionNo: number;
+
+  @Column({ type: "varchar", length: 20, default: "publish" })
+  action: "publish" | "rollback";
+
+  @Column({ type: "uuid", nullable: true, name: "operator_user_id" })
+  operatorUserId: string | null;
+
+  @Column({ type: "varchar", length: 60, nullable: true, name: "source_version_id" })
+  sourceVersionId: string | null;
+
   @Column({ type: "varchar", length: 100, nullable: true })
   operator: string;
 

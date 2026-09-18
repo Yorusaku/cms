@@ -20,6 +20,9 @@ export interface PageItem {
   id: number;
   name: string;
   isAbled: number;
+  status: "draft" | "published" | "offline";
+  publishedVersionId: string | null;
+  publishedAt: string | null;
   create_time: string;
   update_time: string;
   [key: string]: unknown;
@@ -38,6 +41,8 @@ export interface PublishLogItem {
   operator?: string;
   note?: string;
   publishedAt?: number | string;
+  action?: "publish" | "rollback";
+  isCurrent?: boolean;
 }
 
 /** 写操作默认配置：自动显示错误提示 */
@@ -67,6 +72,10 @@ export function saveCmsPage(
     return http.post("/atlas-cms/updateCmsJson", data, writeConfig);
   }
   return http.post("/atlas-cms/addPageJson", data, writeConfig);
+}
+
+export function publishCmsPage(data: { pageId: number; note?: string }): Promise<ResponseData<{ versionId: string; versionNo: number }>> {
+  return http.post("/atlas-cms/publishPage", data, writeConfig);
 }
 
 export function delCmsPageById(

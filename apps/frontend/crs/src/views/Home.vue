@@ -1,7 +1,7 @@
 <template>
   <div class="home-container min-h-screen bg-gray-100">
     <van-nav-bar title="活动列表" />
-    
+
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-list
         v-model:loading="loading"
@@ -32,6 +32,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { showToast } from 'vant'
+import { getPublishedPageList, type PageListItem } from '@/api/page'
 
 defineOptions({
   name: 'CrsHomeView'
@@ -39,11 +40,7 @@ defineOptions({
 
 const router = useRouter()
 
-interface ActivityItem {
-  id: number
-  name: string
-  isAbled: number
-  create_time: string
+interface ActivityItem extends PageListItem {
   [key: string]: unknown
 }
 
@@ -51,46 +48,45 @@ const activityList = ref<ActivityItem[]>([])
 const loading = ref(false)
 const finished = ref(false)
 const refreshing = ref(false)
+const pageNum = ref(1)
+const pageSize = 10
 
-const mockData = [
-  {
-    id: 1,
-    name: '双十一活动页',
-    isAbled: 1,
-    create_time: '2024-01-01 10:00:00'
-  },
-  {
-    id: 2,
-    name: '新年特惠活动',
-    isAbled: 0,
-    create_time: '2024-01-20 09:00:00'
-  }
-]
+const onLoad = async () => {
+  try {
+    const res = await getPublishedPageList({ pageNum: pageNum.value, pageSize })
+    if (res.code !== 10000) {
+      throw new Error(res.message || '加载失败')
+    }
+    const { list = [], total = 0 } = res.data ?? {}
 
-const onLoad = () => {
-  setTimeout(() => {
     if (refreshing.value) {
       activityList.value = []
       refreshing.value = false
     }
-    
-    activityList.value.push(...mockData)
+
+    activityList.value.push(...list)
     loading.value = false
-    
-    if (activityList.value.length >= 20) {
+    pageNum.value += 1
+
+    if (activityList.value.length >= total) {
       finished.value = true
     }
-  }, 500)
+  } catch (error) {
+    console.error('加载活动列表失败:', error)
+    loading.value = false
+    finished.value = true
+    showToast('加载失败，请稍后重试')
+  }
 }
 
 const onRefresh = () => {
   finished.value = false
+  pageNum.value = 1
   onLoad()
 }
 
 const goToPreview = (id: number) => {
-  showToast(`正在跳转到活动 ${id}`)
-  router.push({ path: '/pagePreview', query: { id } })
+  router.push({ path: '/page', query: { id } })
 }
 
 onMounted(() => {

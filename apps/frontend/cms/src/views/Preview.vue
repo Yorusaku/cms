@@ -65,61 +65,61 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { useRoute } from "vue-router";
-import { Loading, Picture } from "@element-plus/icons-vue";
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { Loading, Picture } from '@element-plus/icons-vue'
 
-const route = useRoute();
+const route = useRoute()
 
 const deviceOptions = [
-  { key: "iphone-se", label: "iPhone SE", width: 320, height: 568 },
-  { key: "iphone-12", label: "iPhone 12", width: 390, height: 844 },
-  { key: "iphone-14-pro-max", label: "iPhone 14 Pro Max", width: 430, height: 932 },
-];
+  { key: 'iphone-se', label: 'iPhone SE', width: 320, height: 568 },
+  { key: 'iphone-12', label: 'iPhone 12', width: 390, height: 844 },
+  { key: 'iphone-14-pro-max', label: 'iPhone 14 Pro Max', width: 430, height: 932 }
+]
 
-const deviceKey = ref(deviceOptions[1].key);
-const loading = ref(true);
-const loadError = ref(false);
-const iframeKey = ref(0);
-const lastLoadedAt = ref("");
-const previewSrc = ref("");
+const deviceKey = ref(deviceOptions[1].key)
+const loading = ref(true)
+const loadError = ref(false)
+const iframeKey = ref(0)
+const lastLoadedAt = ref('')
+const previewSrc = ref('')
 
 const activeDevice = computed(
-  () => deviceOptions.find((device) => device.key === deviceKey.value) ?? deviceOptions[1],
-);
+  () => deviceOptions.find(device => device.key === deviceKey.value) ?? deviceOptions[1]
+)
 
 const frameStyle = computed(() => ({
   width: `${activeDevice.value.width}px`,
-  height: `${Math.min(activeDevice.value.height, 800)}px`,
-}));
+  height: `${Math.min(activeDevice.value.height, 800)}px`
+}))
 
 const buildPreviewUrl = () => {
-  const id = route.query.id;
-  const previewOrigin =
-    import.meta.env.VITE_CRS_PREVIEW_ORIGIN || "http://127.0.0.1:3010";
-  return `${previewOrigin}/#/pagePreview?id=${id ?? ""}`;
-};
+  const id = route.query.id
+  const previewUrl =
+    import.meta.env.VITE_CRS_PREVIEW_URL || 'http://127.0.0.1:3010/crs/#/pagePreview'
+  return `${previewUrl}?id=${id ?? ''}`
+}
 
 const handleLoad = () => {
-  loading.value = false;
-  loadError.value = false;
-  lastLoadedAt.value = new Date().toLocaleString("zh-CN", { hour12: false });
-};
+  loading.value = false
+  loadError.value = false
+  lastLoadedAt.value = new Date().toLocaleString('zh-CN', { hour12: false })
+}
 
 const handleError = () => {
-  loading.value = false;
-  loadError.value = true;
-};
+  loading.value = false
+  loadError.value = true
+}
 
 const reloadPreview = () => {
-  loading.value = true;
-  loadError.value = false;
-  iframeKey.value += 1;
-};
+  loading.value = true
+  loadError.value = false
+  iframeKey.value += 1
+}
 
 onMounted(() => {
-  previewSrc.value = buildPreviewUrl();
-});
+  previewSrc.value = buildPreviewUrl()
+})
 </script>
 
 <style scoped>
@@ -175,7 +175,7 @@ onMounted(() => {
 }
 
 .preview-header:before {
-  content: "";
+  content: '';
   position: absolute;
   left: 50%;
   top: 50%;
@@ -188,7 +188,7 @@ onMounted(() => {
 }
 
 .preview-header:after {
-  content: "";
+  content: '';
   position: absolute;
   left: 50%;
   top: 50%;
@@ -233,7 +233,7 @@ onMounted(() => {
 }
 
 .preview-bottom:after {
-  content: "";
+  content: '';
   position: absolute;
   left: 50%;
   top: 50%;

@@ -17,6 +17,14 @@ const routes: Array<RouteRecordRaw> = [
       title: '预览页'
     }
   },
+  {
+    path: '/page',
+    name: 'Page',
+    component: () => import('../views/Page.vue'),
+    meta: {
+      title: '活动页'
+    }
+  }
 ]
 
 const router = createRouter({
