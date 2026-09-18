@@ -32,7 +32,8 @@
     "security:secrets": "pnpm dlx gitleaks detect --source . --no-banner --redact --config .gitleaks.toml",
     "security:sast": "pnpm dlx semgrep scan --config .semgrep/rules.yml --error --exclude node_modules --exclude dist .",
     "security:scan": "pnpm run security:audit && pnpm run security:secrets && pnpm run security:sast",
-    "ci:all": "pnpm run ci:quality && pnpm run security:scan"
+    "ci:all": "pnpm run ci:quality && pnpm run security:scan",
+    "test:e2e:live": "pnpm --filter @cms/cms test:e2e:live"
   },
   "devDependencies": {
     "@cms/eslint-config": "workspace:*",
