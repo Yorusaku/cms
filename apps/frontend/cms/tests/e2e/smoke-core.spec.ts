@@ -41,6 +41,10 @@ test.describe.serial("Core Smoke", () => {
   });
 
   test("4) 发布并预览", async ({ page }) => {
+    // 冷启动（Vite deps 缓存为空）时本用例需要额外编译 Preview 模块，
+    // 全局 30s 不够用，这里单独放宽到 60s。
+    test.setTimeout(60000);
+
     await setupApiMocks(page);
     await setAuthToken(page, mockToken);
 

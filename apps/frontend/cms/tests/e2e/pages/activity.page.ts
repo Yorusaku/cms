@@ -11,6 +11,9 @@ export class ActivityPage {
   async searchByName(name: string) {
     const searchInput = this.page.locator(".el-form input").first();
     await expect(searchInput).toBeVisible({ timeout: 5000 });
+    // 先等首屏表格渲染完成（v-loading 遮罩消失）再操作，
+    // 否则首屏请求未完时点击「搜索」会被遮罩吞掉，断言一直读到未过滤的初始行。
+    await expect(this.getTableRows().first()).toBeVisible({ timeout: 10000 });
     await searchInput.fill(name);
     await this.page
       .getByRole("button")
