@@ -47,23 +47,21 @@ test.describe.serial("Core Smoke", () => {
     const decoratePage = new DecoratePage(page);
     await decoratePage.goto(1);
 
-    const popupPromise = page.context().waitForEvent("page", { timeout: 8000 }).catch(() => null);
+    // 预览经 window.open 在新标签页打开（TopHeader.openPreview），当前页不会跳转，
+    // 因此只等待 popup 事件即可；不要回退到对当前页 waitForURL（那条路径不可能命中，
+    // 反而会在冷启动/并发负载下把「popup 来得慢」误判为失败）。
+    // 冷启动时发布链路（预检 + 多个 mock 接口 + Vite 编译 Preview 模块）可能超过 8s，
+    // 这里放宽到 20s，给后续断言留足余量。
+    const popupPromise = page.context().waitForEvent("page", { timeout: 20000 });
     await decoratePage.clickPreview();
 
     const previewPageRaw = await popupPromise;
-    if (previewPageRaw) {
-      await previewPageRaw.waitForLoadState("domcontentloaded");
-      await expect(previewPageRaw).toHaveURL(/\/preview\?id=1/);
+    await previewPageRaw.waitForLoadState("domcontentloaded");
+    await expect(previewPageRaw).toHaveURL(/\/preview\?id=1/);
 
-      const previewPage = new PreviewPage(previewPageRaw);
-      await previewPage.expectIframeVisible();
-      await previewPageRaw.close();
-      return;
-    }
-
-    await page.waitForURL(/\/preview\?id=1/, { timeout: 8000 });
-    const previewPage = new PreviewPage(page);
+    const previewPage = new PreviewPage(previewPageRaw);
     await previewPage.expectIframeVisible();
+    await previewPageRaw.close();
   });
 
   test("5) 回滚恢复", async ({ page }) => {
