@@ -107,8 +107,115 @@ export function mockPageListResponse(): MockPage[] {
   }));
 }
 
+/**
+ * 页面详情区组件数量：需 ≥ 5，与装修页画布断言（expectCanvasHasComponentsAtLeast(5)）对齐。
+ * type 必须是 packages/ui materialRegistry 中的真实类型，否则画布只能渲染 FallbackComponent。
+ * 另外 detail schema 必须「可通过 runPagePreflight」：发布/预览会先跑发布前校验，
+ * 因此图片字段需为有效 URL、link 需为有效链接（空串会被判为「缺少图片/缺少有效链接」）。
+ */
+export const mockPageDetailComponentCount = 5;
+
+/** 内联占位图（与后端 mock 生成器做法一致，避免依赖外网） */
+export const mockPlaceholderImage =
+  "data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='80'%3E%3Crect width='120' height='80' fill='%23e5e7eb'/%3E%3C/svg%3E";
+
+const mockLink = () => ({ clickType: 1, data: { url: "https://example.com/e2e" } });
+
 export function mockPageDetailResponse(pageId: number) {
   const pageName = pageId === 1 ? "首页活动页" : `测试页面${pageId}`;
+
+  const components: Array<{ id: string; type: string; props: Record<string, unknown> }> = [
+    {
+      id: "carousel-1",
+      type: "Carousel",
+      props: {
+        imageList: [
+          { imageUrl: mockPlaceholderImage, text: pageName, link: mockLink() },
+        ],
+        autoplay: 3000,
+        showIndicators: true,
+        showArrows: true,
+        height: "200px",
+        backgroundColor: "#f5f7fa",
+        imageFit: "cover",
+        loop: true,
+      },
+    },
+    {
+      id: "imagenav-1",
+      type: "ImageNav",
+      props: {
+        list: [
+          { imageUrl: mockPlaceholderImage, text: "快捷入口", link: mockLink() },
+          { imageUrl: mockPlaceholderImage, text: "活动专区", link: mockLink() },
+        ],
+        columnPadding: 20,
+        rowPadding: 20,
+        backgroundColor: "#FFFFFF",
+        textColor: "#323233",
+        borderRadius: 0,
+        defaultImage: mockPlaceholderImage,
+      },
+    },
+    {
+      id: "richtext-1",
+      type: "RichText",
+      props: {
+        content: "<p>这是 E2E 发布预览内容</p>",
+        backgroundColor: "#ffffff",
+        padding: "10px 10px 0",
+      },
+    },
+    {
+      id: "notice-1",
+      type: "Notice",
+      props: {
+        noticeList: [{ text: "E2E 公告内容", link: mockLink() }],
+        iconUrl: mockPlaceholderImage,
+        imageUrl: mockPlaceholderImage,
+        backgroundColor: "#FFF8E9",
+        textColor: "#666666",
+        speed: 20,
+      },
+    },
+    {
+      id: "product-1",
+      type: "Product",
+      props: {
+        list: [
+          {
+            id: "product-e2e",
+            imageUrl: mockPlaceholderImage,
+            imgUrl: mockPlaceholderImage,
+            brand: "E2E 商品",
+            categoryNames: "测试分类",
+            price: 99,
+            link: mockLink(),
+          },
+        ],
+        layoutType: "grid",
+        listStyle: "grid",
+        showPurchase: false,
+        purchase: 0,
+        priceColor: "#DD1A21",
+        markingPrice: 0,
+      },
+    },
+  ];
+
+  const componentMap = Object.fromEntries(
+    components.map((component) => [
+      component.id,
+      {
+        id: component.id,
+        type: component.type,
+        parentId: null,
+        props: component.props,
+        styles: {},
+        children: [],
+      },
+    ]),
+  );
 
   return {
     id: pageId,
@@ -123,20 +230,8 @@ export function mockPageDetailResponse(pageId: number) {
         backgroundImage: "",
         backgroundPosition: "top",
       },
-      componentMap: {
-        "richtext-1": {
-          id: "richtext-1",
-          type: "RichText",
-          props: {
-            content: "<p>这是 E2E 发布预览内容</p>",
-            backgroundColor: "#ffffff",
-            padding: "10px 10px 0",
-          },
-          styles: {},
-          children: [],
-        },
-      },
-      rootIds: ["richtext-1"],
+      componentMap,
+      rootIds: components.map((component) => component.id),
     },
     componentList: [],
     isAbled: 1,

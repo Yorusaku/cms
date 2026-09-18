@@ -24,17 +24,19 @@ test.describe("Publish & Rollback", () => {
     await activityPage.expectDrawerVisible();
   });
 
-  test("rolling back from activity page opens decorate tab", async ({ page }) => {
+  test("rolling back from activity page stays on page and shows success", async ({ page }) => {
     const activityPage = new ActivityPage(page);
     await activityPage.goto();
     await activityPage.clickPublishLogs(0);
     await activityPage.expectDrawerVisible();
 
-    const newTab = page.context().waitForEvent("page");
+    // Action 14 起：回滚只切换线上版本，不覆盖草稿、不跳转装修页
     await activityPage.clickRollbackInDrawer();
-    const decoratePage = await newTab;
-    await decoratePage.waitForLoadState("domcontentloaded");
-    await expect(decoratePage).toHaveURL(/\/decorate/);
-    await decoratePage.close();
+    await activityPage.confirmRollbackIfNeeded();
+
+    await expect(
+      page.locator(".el-message--success").filter({ hasText: /线上页面已回滚/ }),
+    ).toBeVisible({ timeout: 8000 });
+    await expect(page).toHaveURL(/\/activity/);
   });
 });

@@ -25,8 +25,8 @@ test.describe("Activity List", () => {
   test("create page navigates to decorate view", async ({ page }) => {
     const activityPage = new ActivityPage(page);
     await activityPage.goto();
-    await activityPage.clickCreatePage();
-    await page.waitForURL("**/decorate**", { timeout: 5000 });
+    // 新增页面先弹出「选择模板」，跳过模板后进入装修页
+    await activityPage.createBlankPageAndWait();
     await expect(page).toHaveURL(/\/decorate/);
   });
 });

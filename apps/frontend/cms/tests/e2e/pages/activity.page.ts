@@ -35,6 +35,26 @@ export class ActivityPage {
       .click();
   }
 
+  /**
+   * 新增页面会先打开「选择模板」弹窗（Action 14 起），
+   * 点「跳过，创建空白页」才进入装修页。
+   */
+  async skipTemplatePicker() {
+    const skipButton = this.page
+      .locator(".el-dialog__footer .el-button")
+      .filter({ hasText: /跳过，创建空白页/ })
+      .first();
+    await expect(skipButton).toBeVisible({ timeout: 5000 });
+    await skipButton.click();
+  }
+
+  /** 新增页面并跳过模板，等待进入装修页 */
+  async createBlankPageAndWait() {
+    await this.clickCreatePage();
+    await this.skipTemplatePicker();
+    await this.page.waitForURL("**/decorate**", { timeout: 8000 });
+  }
+
   async clickEditPage(rowIndex: number) {
     const rows = this.getTableRows();
     await rows

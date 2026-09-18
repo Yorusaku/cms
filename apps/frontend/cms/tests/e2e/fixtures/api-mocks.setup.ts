@@ -74,15 +74,22 @@ export async function setupApiMocks(page: Page) {
       handler: async (route) => {
         const url = new URL(route.request().url());
         const keyword = (url.searchParams.get("name") || "").trim();
-        const all = mockPageListResponse();
-        const list = keyword ? all.filter((item) => item.name.includes(keyword)) : all;
+        const pageNum = Number(url.searchParams.get("pageNum") || 1);
+        const pageSize = Number(url.searchParams.get("pageSize") || 10);
+
+        const matched = mockPageListResponse().filter((item) =>
+          keyword ? item.name.includes(keyword) : true,
+        );
+        // 与真实后端一致：先按 pageSize 截断，再返回当前页数据
+        const start = (pageNum - 1) * pageSize;
+        const list = matched.slice(start, start + pageSize);
 
         await route.fulfill({
           json: successResponse({
             list,
-            total: list.length,
-            pageNum: Number(url.searchParams.get("pageNum") || 1),
-            pageSize: Number(url.searchParams.get("pageSize") || 10),
+            total: matched.length,
+            pageNum,
+            pageSize,
           }),
         });
       },
@@ -117,6 +124,19 @@ export async function setupApiMocks(page: Page) {
       pattern: /\/api\/atlas-cms\/updatePageStatus$/,
       handler: async (route) => {
         await route.fulfill({ json: successResponse(null) });
+      },
+    },
+    {
+      pattern: /\/api\/atlas-cms\/publishPage$/,
+      handler: async (route) => {
+        const body = await readJsonBody(route);
+        const pageId = Number(body.pageId || 1);
+        await route.fulfill({
+          json: successResponse({
+            versionId: `${pageId}-${Date.now()}`,
+            versionNo: 1,
+          }),
+        });
       },
     },
     {

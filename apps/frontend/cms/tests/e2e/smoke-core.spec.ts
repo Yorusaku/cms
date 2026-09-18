@@ -75,19 +75,13 @@ test.describe.serial("Core Smoke", () => {
     await activityPage.clickPublishLogs(0);
     await activityPage.expectDrawerVisible();
 
-    const decoratePopupPromise = page.context().waitForEvent("page", { timeout: 8000 }).catch(() => null);
+    // Action 14 起：回滚只切换线上版本，不覆盖草稿、不跳转装修页
     await activityPage.clickRollbackInDrawer();
     await activityPage.confirmRollbackIfNeeded();
 
-    const decoratePageRaw = await decoratePopupPromise;
-    if (decoratePageRaw) {
-      await decoratePageRaw.waitForLoadState("domcontentloaded");
-      await expect(decoratePageRaw).toHaveURL(/\/decorate/);
-      await decoratePageRaw.close();
-      return;
-    }
-
-    await page.waitForURL(/\/decorate/, { timeout: 8000 });
-    await expect(page).toHaveURL(/\/decorate/);
+    await expect(
+      page.locator(".el-message--success").filter({ hasText: /线上页面已回滚/ }),
+    ).toBeVisible({ timeout: 8000 });
+    await expect(page).toHaveURL(/\/activity/);
   });
 });

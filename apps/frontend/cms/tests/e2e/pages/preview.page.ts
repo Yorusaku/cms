@@ -12,8 +12,17 @@ export class PreviewPage {
     await expect(this.page.locator("iframe")).toBeVisible({ timeout: 5000 });
   }
 
+  /**
+   * 设备在 el-select 中，需先展开下拉再点选项，直接 getByText().click() 命不中。
+   */
   async selectDevice(deviceLabel: string) {
-    await this.page.getByText(deviceLabel).first().click();
+    await this.page.locator(".toolbar-select").first().click();
+    const option = this.page
+      .locator(".el-select-dropdown__item")
+      .filter({ hasText: deviceLabel })
+      .first();
+    await expect(option).toBeVisible({ timeout: 5000 });
+    await option.click();
   }
 
   async expectFrameWidth(expectedWidth: number) {

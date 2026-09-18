@@ -16,17 +16,19 @@ export class DecoratePage {
   }
 
   async expectCanvasHasComponentsAtLeast(count: number) {
-    const items = this.page.locator(".canvas-component");
-    await expect(items).toHaveCount(count);
+    const items = this.page.locator(".canvas-dropzone .canvas-component");
+    await expect
+      .poll(async () => items.count(), { timeout: 10000 })
+      .toBeGreaterThanOrEqual(count);
   }
 
   async clickComponent(index: number) {
-    const items = this.page.locator(".canvas-component");
+    const items = this.page.locator(".canvas-dropzone .canvas-component");
     await items.nth(index).click();
   }
 
   async expectRightPanelVisible() {
-    await expect(this.page.locator(".right-config")).toBeVisible();
+    await expect(this.page.locator(".page-right").first()).toBeVisible();
   }
 
   async clickSaveDraft() {
