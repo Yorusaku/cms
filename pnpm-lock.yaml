@@ -222,8 +222,8 @@ importers:
         specifier: ^10.0.0
         version: 10.0.0
       zod:
-        specifier: ^4.4.3
-        version: 4.4.3
+        specifier: 'catalog:'
+        version: 3.24.0
     devDependencies:
       '@nestjs/cli':
         specifier: ^10.4.0
@@ -6235,9 +6235,6 @@ packages:
 
   zod@3.24.0:
     resolution: {integrity: sha512-Hz+wiY8yD0VLA2k/+nsg2Abez674dDGTai33SwNvMPuf9uIrBC9eFgIMQxBBbHFxVXi8W+5nX9DcAh9YNSQm/w==}
-
-  zod@4.4.3:
-    resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
 
 snapshots:
 
@@ -12478,5 +12475,3 @@ snapshots:
   yocto-queue@0.1.0: {}
 
   zod@3.24.0: {}
-
-  zod@4.4.3: {}
