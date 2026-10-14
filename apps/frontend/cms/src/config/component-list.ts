@@ -1,3 +1,11 @@
+/**
+ * 页面可选组件列表（历史遗留）
+ *
+ * @deprecated 已无生产代码引用。物料唯一注册源是
+ * `packages/ui/src/materials/definitions.ts`，CMS 左栏通过 `getMaterialGroups()` 读取、
+ * 拖拽默认值通过 `getMaterialDefaults()` 获取。
+ * 禁止新增物料到此文件；保留仅为避免历史导入或外部脚本失效。
+ */
 /*
  * 页面可选组件列表
  */

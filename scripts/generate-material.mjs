@@ -199,7 +199,10 @@ function run() {
   ensure(withRuntimeProps !== undefined, "缺少参数: --withRuntimeProps");
 
   ensure(/^[A-Z][A-Za-z0-9]*$/.test(name), "--name 必须是 PascalCase，例如 FooBar");
-  ensure(group === "basic" || group === "marketing", "--group 仅支持 basic 或 marketing");
+  ensure(
+    group === "basic" || group === "marketing" || group === "business",
+    "--group 仅支持 basic / marketing / business",
+  );
   ensure(Number.isInteger(maxCount) && maxCount > 0, "--maxCount 必须是正整数");
   ensure(
     withRuntimeProps === "true" || withRuntimeProps === "false",
