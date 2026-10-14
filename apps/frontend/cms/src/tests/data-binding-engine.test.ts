@@ -283,7 +283,7 @@ describe("DataBindingEngine", () => {
 
       try {
         await engine.fetchData("source-1");
-      } catch (e) {
+      } catch {
         // Expected error
       }
 

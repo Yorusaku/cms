@@ -45,7 +45,7 @@ class PerformanceMonitor {
         });
         lcpObserver.observe({ entryTypes: ["largest-contentful-paint"] });
         this.observers.set("lcp", lcpObserver);
-      } catch (e) {
+      } catch {
         console.warn("LCP observer not supported");
       }
 
@@ -60,7 +60,7 @@ class PerformanceMonitor {
         });
         fidObserver.observe({ entryTypes: ["first-input"] });
         this.observers.set("fid", fidObserver);
-      } catch (e) {
+      } catch {
         console.warn("FID observer not supported");
       }
 
@@ -78,7 +78,7 @@ class PerformanceMonitor {
         });
         clsObserver.observe({ entryTypes: ["layout-shift"] });
         this.observers.set("cls", clsObserver);
-      } catch (e) {
+      } catch {
         console.warn("CLS observer not supported");
       }
 
@@ -88,7 +88,7 @@ class PerformanceMonitor {
         if (navigationTiming) {
           this.vitals.ttfb = navigationTiming.responseStart - navigationTiming.fetchStart;
         }
-      } catch (e) {
+      } catch {
         console.warn("TTFB not available");
       }
     }
@@ -107,7 +107,7 @@ class PerformanceMonitor {
   markStart(name: string): void {
     try {
       performance.mark(`${name}-start`);
-    } catch (e) {
+    } catch {
       console.warn(`Failed to mark start for ${name}`);
     }
   }
@@ -128,7 +128,7 @@ class PerformanceMonitor {
       }
 
       return duration;
-    } catch (e) {
+    } catch {
       console.warn(`Failed to measure ${name}`);
       return 0;
     }

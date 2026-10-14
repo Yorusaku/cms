@@ -122,9 +122,10 @@ describe("Performance Benchmarks", () => {
 
   describe("Debounce Performance", () => {
     it("should debounce rapid calls efficiently", () => {
-      let callCount = 0;
+      // 计数仅用于模拟调用负载，不参与断言，按约定用下划线前缀标记
+      let _callCount = 0;
       const handler = () => {
-        callCount++;
+        _callCount++;
       };
 
       const debounced = createDebounce(handler, { wait: 100 });
@@ -146,9 +147,10 @@ describe("Performance Benchmarks", () => {
 
   describe("Throttle Performance", () => {
     it("should throttle scroll events efficiently", () => {
-      let callCount = 0;
+      // 计数仅用于模拟调用负载，不参与断言，按约定用下划线前缀标记
+      let _callCount = 0;
       const handler = () => {
-        callCount++;
+        _callCount++;
       };
 
       const throttled = createThrottle(handler, { wait: 16 });
@@ -172,10 +174,10 @@ describe("Performance Benchmarks", () => {
     it("should collect and report metrics accurately", () => {
       metrics.mark("operation-start");
 
-      // Simulate some work
-      let sum = 0;
+      // Simulate some work（累加仅制造计算负载，不参与断言）
+      let _sum = 0;
       for (let i = 0; i < 1000; i++) {
-        sum += i;
+        _sum += i;
       }
 
       metrics.mark("operation-end");
@@ -191,10 +193,10 @@ describe("Performance Benchmarks", () => {
     it("should track multiple measurements", () => {
       for (let i = 0; i < 5; i++) {
         metrics.mark(`test-${i}-start`);
-        // Simulate work
-        let sum = 0;
+        // Simulate work（累加仅制造计算负载，不参与断言）
+        let _sum = 0;
         for (let j = 0; j < 100; j++) {
-          sum += j;
+          _sum += j;
         }
         metrics.mark(`test-${i}-end`);
         metrics.measure(`test-${i}`, `test-${i}-start`, `test-${i}-end`);

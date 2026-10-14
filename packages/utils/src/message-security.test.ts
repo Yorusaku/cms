@@ -55,7 +55,8 @@ describe('Message Security Utilities', () => {
       const message = 'test message';
       const secret = 'test-secret';
 
-      const signature = await signMessage(message, secret);
+      // 先生成一次合法签名（确保 secret 已初始化），再验无效签名被拒
+      await signMessage(message, secret);
       const isValid = await verifySignature(message, 'invalid-signature', secret);
 
       expect(isValid).toBe(false);
@@ -315,8 +316,8 @@ describe('Message Security Utilities', () => {
       // Make message old (6 minutes ago)
       message.timestamp = Date.now() - 6 * 60 * 1000;
 
-      // Re-sign with old timestamp
-      const { signature, ...basePayload } = message;
+      // Re-sign with old timestamp（解构只为排除 signature 字段）
+      const { signature: _signature, ...basePayload } = message;
       const secret = sessionStorage.getItem('__cms_message_secret__') || '';
       const messageStr = JSON.stringify(basePayload);
       message.signature = await signMessage(messageStr, secret);

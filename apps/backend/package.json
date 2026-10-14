@@ -8,7 +8,7 @@
     "build": "nest build",
     "start": "node dist/main",
     "start:prod": "node dist/main",
-    "lint": "eslint \"{src,test}/**/*.ts\"",
+    "lint": "eslint src test",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/database/data-source.ts",
