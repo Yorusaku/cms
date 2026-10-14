@@ -9,6 +9,14 @@ import { CreateTrackingEventDto } from "./dto/create-tracking-event.dto";
 import { GetTrackingEventsDto } from "./dto/get-tracking-events.dto";
 import { GetPageFunnelSummaryDto } from "./dto/get-page-funnel-summary.dto";
 
+/** 分组桶：渠道维度和日期维度共用，sessions 用于计算独立访客 */
+interface FunnelBucket {
+  channelKey: string;
+  channelValue: string;
+  metrics: FunnelMetrics;
+  sessions: Set<string>;
+}
+
 @Injectable()
 export class TrackingService {
   constructor(
@@ -29,6 +37,7 @@ export class TrackingService {
     }
     const entity = this.trackingRepo.create({
       eventType: dto.eventType,
+      source: dto.source ?? "crs",
       pageId: dto.pageId ?? null,
       publishedVersionId: dto.publishedVersionId ?? null,
       componentId: dto.componentId ?? null,
@@ -63,17 +72,25 @@ export class TrackingService {
   async getPageFunnelSummary(
     dto: GetPageFunnelSummaryDto,
   ): Promise<PageFunnelSummary> {
+    const source = dto.source ?? "crs";
     const eventsQb = this.trackingRepo
       .createQueryBuilder("event")
       .where("event.page_id = :pageId", { pageId: dto.pageId })
       .orderBy("event.created_at", "DESC");
     this.applyDateRange(eventsQb, "event", dto);
+    if (source !== "all") {
+      eventsQb.andWhere("event.source = :source", { source });
+    }
 
     const leadsQb = this.leadRepo
       .createQueryBuilder("lead")
       .where("lead.page_id = :pageId", { pageId: dto.pageId })
       .orderBy("lead.created_at", "DESC");
     this.applyDateRange(leadsQb, "lead", dto);
+    if (dto.publishedVersionId) {
+      eventsQb.andWhere("event.published_version_id = :publishedVersionId", { publishedVersionId: dto.publishedVersionId });
+      leadsQb.andWhere("lead.published_version_id = :publishedVersionId", { publishedVersionId: dto.publishedVersionId });
+    }
 
     const [events, leads] = await Promise.all([
       eventsQb.getMany(),
@@ -81,42 +98,43 @@ export class TrackingService {
     ]);
 
     const metrics = this.createEmptyMetrics();
-    const channelBuckets = new Map<
-      string,
-      { channelKey: string; channelValue: string; metrics: FunnelMetrics }
-    >();
+    const overallSessions = new Set<string>();
+    const channelBuckets = new Map<string, FunnelBucket>();
+    const dayBuckets = new Map<string, FunnelBucket>();
 
     events.forEach((event) => {
       if (!this.matchesChannelFilter(event.channel, event.utm, dto.channel)) {
         return;
       }
       this.applyEventMetric(metrics, event.eventType);
-      const bucket = this.getChannelBucket(
-        channelBuckets,
-        event.channel,
-        event.utm,
-      );
+      this.collectSession(overallSessions, event.sessionId, event.eventType);
+
+      const bucket = this.getChannelBucket(channelBuckets, event.channel, event.utm);
       this.applyEventMetric(bucket.metrics, event.eventType);
+      this.collectSession(bucket.sessions, event.sessionId, event.eventType);
+
+      const dayBucket = this.getDayBucket(dayBuckets, event.createdAt);
+      this.applyEventMetric(dayBucket.metrics, event.eventType);
+      this.collectSession(dayBucket.sessions, event.sessionId, event.eventType);
     });
 
     leads.forEach((lead) => {
       if (!this.matchesChannelFilter(lead.channel, lead.utm, dto.channel)) {
         return;
       }
+      // 线索只计入 leads，不参与独立访客口径（留资会话可能来自另一个 session）
       metrics.leads += 1;
-      const bucket = this.getChannelBucket(
-        channelBuckets,
-        lead.channel,
-        lead.utm,
-      );
+      const bucket = this.getChannelBucket(channelBuckets, lead.channel, lead.utm);
       bucket.metrics.leads += 1;
+      const dayBucket = this.getDayBucket(dayBuckets, lead.createdAt);
+      dayBucket.metrics.leads += 1;
     });
 
-    this.finalizeRates(metrics);
+    this.finalizeRates(metrics, overallSessions);
     const channels = Array.from(channelBuckets.values())
       .map((bucket) => {
-        this.finalizeRates(bucket.metrics);
-        return bucket;
+        this.finalizeRates(bucket.metrics, bucket.sessions);
+        return { channelKey: bucket.channelKey, channelValue: bucket.channelValue, metrics: bucket.metrics };
       })
       .sort(
         (left, right) =>
@@ -125,11 +143,55 @@ export class TrackingService {
       )
       .slice(0, 20);
 
+    const dailyTrend = Array.from(dayBuckets.entries())
+      .map(([date, bucket]) => {
+        this.finalizeRates(bucket.metrics, bucket.sessions);
+        return { date, metrics: bucket.metrics };
+      })
+      .sort((left, right) => right.date.localeCompare(left.date));
+
     return {
       pageId: dto.pageId,
       metrics,
       channels,
+      dailyTrend,
     };
+  }
+
+  /** 看板数据导出：概览 + 渠道 + 按天趋势，供运营离线复盘 */
+  async exportPageFunnelCsv(dto: GetPageFunnelSummaryDto): Promise<string> {
+    const summary = await this.getPageFunnelSummary(dto);
+    const escape = (value: unknown) => `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const metricsColumns = (metrics: FunnelMetrics) => [
+      metrics.pageViews,
+      metrics.uniqueVisitors,
+      metrics.ctaClicks,
+      metrics.formSubmits,
+      metrics.leads,
+      metrics.ctaClickRate,
+      metrics.leadConversionRate,
+    ];
+
+    const header = ["维度", "渠道字段", "渠道值", "日期", "访问量", "独立访客", "CTA 点击", "表单提交", "线索", "CTA 点击率", "线索转化率"];
+    const rows: unknown[][] = [
+      ["概览", "", "", "", ...metricsColumns(summary.metrics)],
+      ...summary.channels.map((channel) => [
+        "渠道",
+        channel.channelKey,
+        channel.channelValue,
+        "",
+        ...metricsColumns(channel.metrics),
+      ]),
+      ...summary.dailyTrend.map((point) => [
+        "趋势",
+        "",
+        "",
+        point.date,
+        ...metricsColumns(point.metrics),
+      ]),
+    ];
+
+    return [header.map(escape).join(","), ...rows.map((row) => row.map(escape).join(","))].join("\r\n");
   }
 
   private applyDateRange<T extends ObjectLiteral>(
@@ -137,8 +199,8 @@ export class TrackingService {
     alias: string,
     dto: GetPageFunnelSummaryDto,
   ) {
-    const startDate = this.parseDate(dto.startTime);
-    const endDate = this.parseDate(dto.endTime);
+    const startDate = this.parseDate(dto.startTime, "start");
+    const endDate = this.parseDate(dto.endTime, "end");
 
     if (startDate) {
       qb.andWhere(`${alias}.created_at >= :startDate`, { startDate });
@@ -148,10 +210,23 @@ export class TrackingService {
     }
   }
 
-  private parseDate(value?: string): Date | null {
+  /**
+   * 解析时间参数。
+   * 纯日期（YYYY-MM-DD）需要补齐边界：开始日补 00:00:00.000，结束日补 23:59:59.999，
+   * 否则 `<= 2026-09-30` 实际只到当天零点，会漏算结束日当天的全部数据。
+   */
+  private parseDate(value: string | undefined, boundary: "start" | "end"): Date | null {
     if (!value) {
       return null;
     }
+
+    const isDateOnly = /^\d{4}-\d{2}-\d{2}$/.test(value.trim());
+    if (isDateOnly) {
+      const suffix = boundary === "start" ? "T00:00:00.000" : "T23:59:59.999";
+      const timestamp = Date.parse(`${value.trim()}${suffix}`);
+      return Number.isFinite(timestamp) ? new Date(timestamp) : null;
+    }
+
     const timestamp = Date.parse(value);
     return Number.isFinite(timestamp) ? new Date(timestamp) : null;
   }
@@ -159,12 +234,52 @@ export class TrackingService {
   private createEmptyMetrics(): FunnelMetrics {
     return {
       pageViews: 0,
+      uniqueVisitors: 0,
       ctaClicks: 0,
       formSubmits: 0,
       leads: 0,
       ctaClickRate: 0,
       leadConversionRate: 0,
     };
+  }
+
+  /**
+   * 独立访客口径：只统计 `page_view` 事件的 sessionId。
+   * 线索的会话可能来自另一次访问（例如短信回流），计入会让独立访客大于访问量，
+   * 因此 leads 只影响线索数，不影响访客去重。
+   */
+  private collectSession(
+    sessions: Set<string>,
+    sessionId: string | null,
+    eventType: string,
+  ) {
+    if (eventType === "page_view" && sessionId) {
+      sessions.add(sessionId);
+    }
+  }
+
+  /** 按天分桶的 key（服务器本地时区 YYYY-MM-DD） */
+  private toDayKey(date: Date): string {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  private getDayBucket(buckets: Map<string, FunnelBucket>, createdAt: Date): FunnelBucket {
+    const key = this.toDayKey(createdAt);
+    const existing = buckets.get(key);
+    if (existing) {
+      return existing;
+    }
+    const bucket: FunnelBucket = {
+      channelKey: "",
+      channelValue: "",
+      metrics: this.createEmptyMetrics(),
+      sessions: new Set<string>(),
+    };
+    buckets.set(key, bucket);
+    return bucket;
   }
 
   private applyEventMetric(metrics: FunnelMetrics, eventType: string) {
@@ -179,7 +294,8 @@ export class TrackingService {
     }
   }
 
-  private finalizeRates(metrics: FunnelMetrics) {
+  private finalizeRates(metrics: FunnelMetrics, sessions: Set<string>) {
+    metrics.uniqueVisitors = sessions.size;
     metrics.ctaClickRate =
       metrics.pageViews > 0 ? this.roundRate(metrics.ctaClicks / metrics.pageViews) : 0;
     metrics.leadConversionRate =
@@ -191,13 +307,10 @@ export class TrackingService {
   }
 
   private getChannelBucket(
-    buckets: Map<
-      string,
-      { channelKey: string; channelValue: string; metrics: FunnelMetrics }
-    >,
+    buckets: Map<string, FunnelBucket>,
     channel: Record<string, string> | null,
     utm: Record<string, string> | null,
-  ) {
+  ): FunnelBucket {
     const source = this.resolveChannelSource(channel, utm);
     const bucketKey = `${source.channelKey}:${source.channelValue}`;
     const existingBucket = buckets.get(bucketKey);
@@ -205,10 +318,11 @@ export class TrackingService {
       return existingBucket;
     }
 
-    const bucket = {
+    const bucket: FunnelBucket = {
       channelKey: source.channelKey,
       channelValue: source.channelValue,
       metrics: this.createEmptyMetrics(),
+      sessions: new Set<string>(),
     };
     buckets.set(bucketKey, bucket);
     return bucket;

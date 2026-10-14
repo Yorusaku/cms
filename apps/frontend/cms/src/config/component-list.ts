@@ -217,6 +217,53 @@ const componentlist = [
       },
     ],
   },
+  {
+    title: "业务组件",
+    components: [
+      {
+        name: "信息采集表单",
+        iconClass: "cms-icon-form",
+        maxNumForAdd: 10,
+        data: {
+          component: "BusinessForm",
+          title: "信息登记",
+          subtitle: "请填写以下信息",
+          submitText: "提交信息",
+        },
+      },
+      {
+        name: "业务数据列表",
+        iconClass: "cms-icon-list",
+        maxNumForAdd: 10,
+        data: {
+          component: "BusinessList",
+          title: "业务数据",
+          columns: [
+            { key: "name", label: "名称" },
+            { key: "status", label: "状态" },
+          ],
+          rows: [
+            { id: 1, name: "示例记录", status: "待处理" },
+            { id: 2, name: "第二条记录", status: "已完成" },
+          ],
+          pageSize: 5,
+        },
+      },
+      {
+        name: "统计卡片",
+        iconClass: "cms-icon-stat",
+        maxNumForAdd: 20,
+        data: {
+          component: "StatCard",
+          title: "待处理事项",
+          value: 12,
+          description: "较昨日 +8%",
+          icon: "数",
+          accentColor: "#2563eb",
+        },
+      },
+    ],
+  },
 ];
 
 export default componentlist;

@@ -148,6 +148,43 @@ export const componentDefaults: Record<string, ComponentDefaultConfig> = {
     markingPrice: 0,
     purchase: 0,
   },
+
+  BusinessForm: {
+    component: "BusinessForm",
+    validTime: [],
+    title: "信息登记",
+    subtitle: "请填写以下信息",
+    submitText: "提交信息",
+    fields: [
+      { key: "name", label: "姓名", type: "text", required: true },
+      { key: "phone", label: "联系电话", type: "text", required: true },
+    ],
+  },
+
+  BusinessList: {
+    component: "BusinessList",
+    validTime: [],
+    title: "业务数据",
+    columns: [
+      { key: "name", label: "名称" },
+      { key: "status", label: "状态" },
+    ],
+    rows: [
+      { id: 1, name: "示例记录", status: "待处理" },
+      { id: 2, name: "第二条记录", status: "已完成" },
+    ],
+    pageSize: 5,
+  },
+
+  StatCard: {
+    component: "StatCard",
+    validTime: [],
+    title: "待处理事项",
+    value: 12,
+    description: "较昨日 +8%",
+    icon: "数",
+    accentColor: "#2563eb",
+  },
 };
 
 export const getComponentDefault = (type: string): ComponentDefaultConfig => {
@@ -174,6 +211,9 @@ export const maxNumConfig: Record<string, number> = {
   Slider: DEF_MAX_NUM,
   Dialog: 1,
   product: DEF_MAX_NUM,
+  BusinessForm: 10,
+  BusinessList: 10,
+  StatCard: 20,
 };
 
 export const getComponentMaxNum = (type: string): number => {

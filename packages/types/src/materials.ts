@@ -1,4 +1,4 @@
-export type MaterialGroupKey = "basic" | "marketing";
+export type MaterialGroupKey = "basic" | "marketing" | "business";
 
 export interface MaterialVisibilityRule {
   field: string;

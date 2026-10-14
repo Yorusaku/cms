@@ -30,3 +30,31 @@ export class PublishPageDto {
   @MaxLength(500)
   note?: string;
 }
+
+export class SubmitReviewDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  pageId: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
+}
+
+export class ReviewPageDto {
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  pageId: number;
+
+  @IsString()
+  @IsNotEmpty()
+  decision: "approved" | "rejected";
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string;
+}

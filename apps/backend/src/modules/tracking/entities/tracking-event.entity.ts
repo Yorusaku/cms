@@ -13,6 +13,9 @@ export class TrackingEvent {
   @Column({ type: "varchar", length: 50, name: "event_type" })
   eventType: string;
 
+  @Column({ type: "varchar", length: 10, default: "crs" })
+  source: "crs" | "cms";
+
   @Column({ type: "integer", name: "page_id", nullable: true })
   pageId: number | null;
 

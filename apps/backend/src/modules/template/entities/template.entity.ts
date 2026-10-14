@@ -6,7 +6,7 @@
 } from "typeorm";
 import type { IPageSchemaV2 } from "@cms/types";
 
-export type TemplateCategory = 'marketing' | 'ecommerce' | 'brand' | 'general';
+export type TemplateCategory = 'marketing' | 'ecommerce' | 'brand' | 'general' | 'business';
 
 @Entity("templates")
 export class Template {

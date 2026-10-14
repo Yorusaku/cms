@@ -39,7 +39,8 @@ export const authFailedResponse = () => ({
 });
 
 export function mockLoginResponse() {
-  return successResponse({ token: mockToken });
+  // 与真实后端一致：登录返回 { token, role }；mock 侧用 admin 保证写操作入口可见
+  return successResponse({ token: mockToken, role: "admin" as const });
 }
 
 export function mockTemplateListResponse() {
@@ -84,11 +85,20 @@ export function mockLeadListResponse(pageId = 1) {
 }
 
 export function mockPageListResponse(): MockPage[] {
+  // 状态覆盖审核发布流：published(0-5) / pending_review(6) / approved(7) / draft(8-11)，
+  // 便于验证 admin 的「通过审核 / 发布」入口与 editor 的缺失。
+  const resolveStatus = (index: number): string => {
+    if (index < 6) return "published";
+    if (index === 6) return "pending_review";
+    if (index === 7) return "approved";
+    return "draft";
+  };
+
   return Array.from({ length: 12 }, (_, i) => ({
     id: i + 1,
     name: i === 0 ? "首页活动页" : i === 1 ? "618大促专场" : `测试页面${i + 1}`,
     isAbled: i < 6 ? 1 : 0,
-    status: i < 6 ? "published" : "draft",
+    status: resolveStatus(i),
     shareDesc: `分享描述-${i + 1}`,
     shareImage: "",
     backgroundColor: "#ffffff",
@@ -253,6 +263,8 @@ export function mockPublishLogsResponse(pageId: number): MockPublishLog[] {
       pageId,
       displayVersion: "v20260507-1500",
       operator: "admin",
+      reviewerName: "admin",
+      publisherName: "admin",
       note: "第三次发布",
       publishedAt: "2026-05-07T07:00:00.000Z",
     },
@@ -261,6 +273,8 @@ export function mockPublishLogsResponse(pageId: number): MockPublishLog[] {
       pageId,
       displayVersion: "v20260506-1200",
       operator: "admin",
+      reviewerName: "admin",
+      publisherName: "admin",
       note: "修复样式",
       publishedAt: "2026-05-06T04:00:00.000Z",
     },
@@ -269,6 +283,8 @@ export function mockPublishLogsResponse(pageId: number): MockPublishLog[] {
       pageId,
       displayVersion: "v20260505-0900",
       operator: "admin",
+      reviewerName: "admin",
+      publisherName: "admin",
       note: "首次发布",
       publishedAt: "2026-05-05T01:00:00.000Z",
     },

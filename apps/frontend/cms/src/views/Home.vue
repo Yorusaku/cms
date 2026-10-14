@@ -15,6 +15,7 @@
           </div>
         </div>
         <div class="flex gap-2">
+          <el-button @click="router.push('/performance')">效果看板</el-button>
           <el-button v-if="isAdmin" @click="goToUsers">
             <el-icon><Setting /></el-icon>
             用户管理
@@ -39,7 +40,7 @@
         <el-button type="primary" size="large" @click="goToActivity"
           >活动管理</el-button
         >
-        <el-button type="success" size="large" @click="openTemplatePicker"
+        <el-button v-if="canEdit" type="success" size="large" @click="openTemplatePicker"
           >新建页面</el-button
         >
       </div>
@@ -61,14 +62,17 @@ import { usePageStore } from "../store/usePageStore";
 import { ElMessageBox } from "element-plus";
 import { Setting } from "@element-plus/icons-vue";
 import TemplatePicker from "../components/TemplatePicker.vue";
+import { getEffectiveRole, type UserRole } from "@/utils/auth";
 
 const router = useRouter();
 const pageStore = usePageStore();
 const username = ref("");
-const userRole = ref("");
+const userRole = ref<UserRole>(getEffectiveRole());
 const templatePickerVisible = ref(false);
 
 const isAdmin = computed(() => userRole.value === "admin");
+/** 建页入口：管理员与编辑员可见，观察员只读 */
+const canEdit = computed(() => ["admin", "editor"].includes(userRole.value));
 
 const roleLabel = computed(() => {
   const map: Record<string, string> = { admin: "管理员", editor: "编辑员", viewer: "观察员" };
@@ -118,6 +122,6 @@ const handleLogout = () => {
 
 onMounted(() => {
   username.value = localStorage.getItem("username") || "管理员";
-  userRole.value = localStorage.getItem("role") || "editor";
+  userRole.value = getEffectiveRole();
 });
 </script>

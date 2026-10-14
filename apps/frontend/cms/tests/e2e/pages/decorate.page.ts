@@ -39,10 +39,14 @@ export class DecoratePage {
       .click();
   }
 
-  async clickPublish() {
+  /**
+   * 装修页「提交审核」。
+   * Action 20 起装修页不再直接发布（原「发布」按钮已改为「提交审核」），
+   * 发布必须由管理员在活动页执行，因此这里用精确名称匹配，避免误点到「发布记录」。
+   */
+  async clickSubmitReview() {
     await this.page
-      .getByRole("button")
-      .filter({ hasText: /发布|publish/i })
+      .getByRole("button", { name: "提交审核", exact: true })
       .first()
       .click();
   }

@@ -30,6 +30,8 @@ export const AiGeneratePageResponseSchema = z.object({
 
 export const FunnelMetricsSchema = z.object({
   pageViews: z.number(),
+  /** 去重会话数：同一 sessionId 多次访问只计一次 */
+  uniqueVisitors: z.number(),
   ctaClicks: z.number(),
   formSubmits: z.number(),
   leads: z.number(),
@@ -43,10 +45,18 @@ export const FunnelChannelSummarySchema = z.object({
   metrics: FunnelMetricsSchema,
 });
 
+/** 按天聚合的趋势点（date 为 YYYY-MM-DD） */
+export const FunnelTrendPointSchema = z.object({
+  date: z.string(),
+  metrics: FunnelMetricsSchema,
+});
+
 export const PageFunnelSummarySchema = z.object({
   pageId: z.number(),
   metrics: FunnelMetricsSchema,
   channels: z.array(FunnelChannelSummarySchema),
+  /** 按天倒序的趋势序列（无数据区间不补零） */
+  dailyTrend: z.array(FunnelTrendPointSchema),
 });
 
 export const AiDiagnosePageRequestSchema = z.object({
@@ -83,6 +93,7 @@ export type AiGeneratePageRequest = z.infer<typeof AiGeneratePageRequestSchema>;
 export type AiGeneratePageResponse = z.infer<typeof AiGeneratePageResponseSchema>;
 export type FunnelMetrics = z.infer<typeof FunnelMetricsSchema>;
 export type FunnelChannelSummary = z.infer<typeof FunnelChannelSummarySchema>;
+export type FunnelTrendPoint = z.infer<typeof FunnelTrendPointSchema>;
 export type PageFunnelSummary = z.infer<typeof PageFunnelSummarySchema>;
 export type AiDiagnosePageRequest = z.infer<typeof AiDiagnosePageRequestSchema>;
 export type AiAdviceSeverity = z.infer<typeof AiAdviceSeveritySchema>;

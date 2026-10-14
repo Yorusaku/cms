@@ -5,6 +5,7 @@ import { ConfigService } from "@nestjs/config";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 import { User, UserRole } from "../entities/user.entity";
+import { resolveJwtSecret } from "../../../common/config/env-validation";
 
 export interface JwtPayload {
   sub: string;
@@ -30,7 +31,8 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         ExtractJwt.fromAuthHeaderAsBearerToken(),
       ]),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>("JWT_SECRET", "dev-secret"),
+      // 与 JwtModule 使用同一份解析逻辑：生产缺密钥直接抛错，不回退 dev-secret
+      secretOrKey: resolveJwtSecret(configService),
     });
   }
 

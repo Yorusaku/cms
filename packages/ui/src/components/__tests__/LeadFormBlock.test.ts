@@ -62,6 +62,8 @@ describe("LeadFormBlock", () => {
     await wrapper.find('input[type="text"]').setValue("张三");
     await wrapper.find('input[type="tel"]').setValue("13800138000");
     await wrapper.find("textarea").setValue("有采购意向");
+    // Action 21 起线索表单要求显式同意隐私政策，未勾选会被前端拦截、不会发起请求
+    await wrapper.find('input[type="checkbox"]').setValue(true);
     await wrapper.find("form").trigger("submit.prevent");
     await flushPromises();
     await flushPromises();
@@ -84,6 +86,7 @@ describe("LeadFormBlock", () => {
       remark: "有采购意向",
       pageId: 1001,
       publishedVersionId: "1001-v1",
+      consentAccepted: true,
       utm: {
         utm_source: "wechat",
         utm_campaign: "launch",
@@ -102,5 +105,22 @@ describe("LeadFormBlock", () => {
     expect(typeof trackBody.sessionId).toBe("string");
 
     expect(wrapper.text()).toContain("提交成功");
+  });
+
+  it("未同意隐私政策时阻止提交", async () => {
+    const wrapper = mount(LeadFormBlock, {
+      props: {
+        pageId: 1001,
+        publishedVersionId: "1001-v1",
+      },
+    });
+
+    await wrapper.find('input[type="text"]').setValue("张三");
+    await wrapper.find('input[type="tel"]').setValue("13800138000");
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("请先同意隐私政策");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

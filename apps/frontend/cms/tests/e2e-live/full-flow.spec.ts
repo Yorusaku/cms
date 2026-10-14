@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 import { randomUUID } from 'node:crypto'
+import { readFile } from 'node:fs/promises'
 import { ActivityPage } from '../e2e/pages/activity.page'
 import { DecoratePage } from '../e2e/pages/decorate.page'
 import { LoginPage } from '../e2e/pages/login.page'
@@ -104,14 +105,34 @@ test.describe.serial('真实链路全流程（登录→建页→编辑→发布�
     expect(pageId).not.toBeNull()
   })
 
-  test('4) 发布页面', async ({ page }) => {
+  test('4) 提交审核 → 管理员审核通过 → 发布', async ({ page }) => {
     expect(pageId).not.toBeNull()
     await loginAsAdmin(page)
     const decorate = new DecoratePage(page)
     await decorate.goto(pageId!)
     await decorate.expectPanelsVisible()
 
-    await decorate.clickPublish()
+    // Action 20 起装修页只提交审核；发布由管理员在活动页执行
+    await decorate.clickSubmitReview()
+    await expect(page.locator('.el-message--success').filter({ hasText: /已提交审核/ })).toBeVisible({
+      timeout: 10000
+    })
+
+    const activity = new ActivityPage(page)
+    await activity.goto()
+    await activity.searchByName(pageName)
+
+    const reviewIndex = await activity.findRowIndexByName(pageName)
+    expect(reviewIndex, '活动列表应能定位到刚提交审核的页面').toBeGreaterThanOrEqual(0)
+    await activity.approveRow(reviewIndex)
+    await expect(page.locator('.el-message--success').filter({ hasText: /审核通过/ })).toBeVisible({
+      timeout: 10000
+    })
+
+    // 审核后表格刷新，行序可能变化，重新定位
+    const publishIndex = await activity.findRowIndexByName(pageName)
+    expect(publishIndex, '审核通过后应仍能定位到该页面').toBeGreaterThanOrEqual(0)
+    await activity.publishRow(publishIndex)
     await expect(page.locator('.el-message--success').filter({ hasText: /发布成功/ })).toBeVisible({
       timeout: 10000
     })
@@ -136,7 +157,9 @@ test.describe.serial('真实链路全流程（登录→建页→编辑→发布�
         publishedVersionId,
         sessionId: `e2e-${Date.now()}`,
         utm: { source: 'e2e', medium: 'test' },
-        channel: { source: 'e2e' }
+        channel: { source: 'e2e' },
+        // Action 21 起留资必须显式同意隐私政策，未同意后端返回 409
+        consentAccepted: true
       }
     })
     const leadBody = await lead.json()
@@ -158,6 +181,24 @@ test.describe.serial('真实链路全流程（登录→建页→编辑→发布�
     await expect(drawer).toContainText('E2E留资', { timeout: 10000 })
     await expect(drawer).toContainText('13812345678')
     await expect(drawer).toContainText('source=e2e')
+
+    // Action 21：保留策略对 admin 可见
+    await expect(drawer).toContainText('数据保留策略', { timeout: 10000 })
+
+    // Action 21：验证 Blob 导出链路（前端 http.download → 文件落地 → 内容正确）
+    const downloadPromise = page.waitForEvent('download')
+    await drawer
+      .getByRole('button')
+      .filter({ hasText: /导出 CSV/ })
+      .first()
+      .click()
+    const download = await downloadPromise
+    expect(download.suggestedFilename()).toMatch(/\.csv$/)
+    const downloadPath = await download.path()
+    expect(downloadPath, '导出应产生本地文件').toBeTruthy()
+    const csvContent = await readFile(downloadPath as string, 'utf-8')
+    expect(csvContent).toContain('姓名')
+    expect(csvContent).toContain('E2E留资')
   })
 
   test('7) 发布记录 → 回滚 → 成功提示 + 出现回滚日志', async ({ page }) => {
@@ -209,7 +250,8 @@ test.describe.serial('真实链路全流程（登录→建页→编辑→发布�
   test('8) CRS 访客直连已发布页（正向断言渲染真实内容）', async ({ page }) => {
     expect(pageId).not.toBeNull()
     // F2 修复后：/page 路由已注册，直接打开 hash 路由访问已发布页
-    const url = `${CRS_ORIGIN}/crs/#/page?id=${pageId}`
+    // Action 22：带上 utm_source，用于验证营销上下文透传与渠道分桶
+    const url = `${CRS_ORIGIN}/crs/#/page?id=${pageId}&utm_source=e2e_live`
     const response = await page.goto(url, { waitUntil: 'domcontentloaded' })
     expect(response?.status()).toBe(200)
 
@@ -222,5 +264,46 @@ test.describe.serial('真实链路全流程（登录→建页→编辑→发布�
     await expect(page.locator('.page-content .page-components > *').first()).not.toContainText(
       '页面内容为空'
     )
+  })
+
+  test('9) 看板统计到 CRS 访客事件（埋点 → 漏斗端到端）', async ({ page }) => {
+    expect(pageId).not.toBeNull()
+    await loginAsAdmin(page)
+    const token = await page.evaluate(() => localStorage.getItem('token'))
+    expect(token, '需要登录态才能读看板').toBeTruthy()
+
+    const query = `pageId=${pageId}&source=crs`
+    const resp = await page.request.get(`${BACKEND}/atlas-cms/getPageFunnelSummary?${query}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+    expect(resp.ok()).toBeTruthy()
+    const body = await resp.json()
+    expect(body.code).toBe(10000)
+
+    // 用例 8 的访客访问应被计入访客漏斗
+    expect(body.data.metrics.pageViews).toBeGreaterThan(0)
+    expect(body.data.metrics.uniqueVisitors).toBeGreaterThan(0)
+    expect(body.data.metrics.uniqueVisitors).toBeLessThanOrEqual(body.data.metrics.pageViews)
+    expect(Array.isArray(body.data.dailyTrend)).toBe(true)
+    expect(body.data.dailyTrend.length).toBeGreaterThan(0)
+
+    // 渠道分桶：URL 上的 utm_source 应落到渠道表（透传自页面级营销上下文）
+    const channelValues = (body.data.channels as Array<{ channelValue: string }>).map(
+      (channel) => channel.channelValue
+    )
+    expect(channelValues).toContain('e2e_live')
+
+    // 来源隔离：cms 口径只统计后台操作（CMS 打开线索/发布记录抽屉会写 source=cms 的 page_view），
+    // 后台事件不带营销参数，因此渠道表里不应出现 crs 访客的 utm_source。
+    const cmsResp = await page.request.get(
+      `${BACKEND}/atlas-cms/getPageFunnelSummary?pageId=${pageId}&source=cms`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    )
+    const cmsBody = await cmsResp.json()
+    expect(cmsBody.code).toBe(10000)
+    const cmsChannelValues = (cmsBody.data.channels as Array<{ channelValue: string }>).map(
+      (channel) => channel.channelValue
+    )
+    expect(cmsChannelValues).not.toContain('e2e_live')
   })
 })

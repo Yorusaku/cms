@@ -50,7 +50,9 @@ export interface IComponentLinkage {
 
 export interface IPageSchemaV2 {
   version: "2.0.0";
-  pageConfig: Record<string, unknown>;
+  pageConfig: Record<string, unknown> & {
+    scene?: BusinessPageScene;
+  };
   state?: Record<string, unknown>;
   componentMap: Record<string, IComponentSchemaV2>;
   rootIds: string[];
@@ -60,6 +62,8 @@ export interface IPageSchemaV2 {
     context?: Record<string, unknown>;
   };
 }
+
+export type BusinessPageScene = "content" | "form" | "list";
 
 export type IComponentSchema = IComponentSchemaV2;
 export type IPageSchema = IPageSchemaV2;
@@ -83,6 +87,7 @@ export type MarketingTrackEventType =
 
 export interface MarketingTrackEvent {
   eventType: MarketingTrackEventType;
+  source?: "crs" | "cms";
   pageId?: number;
   publishedVersionId?: string;
   componentId?: string;

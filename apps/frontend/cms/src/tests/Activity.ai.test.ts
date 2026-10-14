@@ -25,6 +25,9 @@ const mocks = vi.hoisted(() => ({
   messageBoxPrompt: vi.fn(),
   getPagePublishLogs: vi.fn(),
   rollbackPageVersion: vi.fn(),
+  exportLeadCsv: vi.fn(),
+  getLeadRetentionPolicy: vi.fn(),
+  purgeExpiredLeads: vi.fn(),
 }));
 
 vi.mock("vue-router", () => ({
@@ -75,6 +78,9 @@ vi.mock("@/api/ai", () => ({
 vi.mock("@/api/lead", () => ({
   getLeadList: mocks.getLeadList,
   updateLeadStatus: mocks.updateLeadStatus,
+  exportLeadCsv: mocks.exportLeadCsv,
+  getLeadRetentionPolicy: mocks.getLeadRetentionPolicy,
+  purgeExpiredLeads: mocks.purgeExpiredLeads,
 }));
 
 vi.mock("@/utils/tracking", () => ({
@@ -264,6 +270,27 @@ const mountActivity = async () => {
         ElFormItem: simpleWrap(),
         ElIcon: simpleWrap("span"),
         ElTag: simpleWrap("span"),
+        ElAlert: defineComponent({
+          props: {
+            title: String,
+            type: String,
+            closable: Boolean,
+          },
+          setup(props) {
+            return () => h("div", { "data-test": "alert" }, props.title);
+          },
+        }),
+        ElTooltip: defineComponent({
+          props: {
+            content: String,
+            placement: String,
+          },
+          setup(props, { slots }) {
+            // 把 content 落到 title 上，便于断言 tooltip 文案确实渲染
+            return () =>
+              h("span", { "data-test": "tooltip", title: props.content }, slots.default?.());
+          },
+        }),
         ElPagination: simpleWrap(),
         ElEmpty: defineComponent({
           props: {
@@ -369,32 +396,21 @@ describe("Activity AI 交互", () => {
     const wrapper = await mountActivity();
 
     await clickButtonByText(wrapper, "AI 新建");
-    await wrapper.find('input[placeholder="如：618 爆款限时购"]').setValue("618 爆款限时购");
-    await wrapper.find('input[placeholder="如：25-35 岁新锐白领"]').setValue("年轻白领");
+    await wrapper.find('input[placeholder="如：员工服务办理中心"]').setValue("员工服务办理中心");
+    await wrapper.find('input[placeholder="如：企业员工或客户"]').setValue("企业员工");
     await wrapper
-      .find('input[placeholder="如：满 299 减 80，前 100 名加赠礼包"]')
-      .setValue("满 299 减 80");
-    await wrapper.find('input[placeholder="商品名"]').setValue("夏季套装");
-    await wrapper.find('input[placeholder="现价"]').setValue("199");
-    await wrapper.find('input[placeholder="原价"]').setValue("299");
-    await wrapper.find('input[placeholder="卖点"]').setValue("清爽舒适");
+      .find('input[placeholder="如：展示服务介绍、办理须知和常见问题"]')
+      .setValue("展示办理须知和常见问题");
     await clickButtonByText(wrapper, "生成草稿");
 
     expect(mocks.aiGeneratePage).toHaveBeenCalledWith(
       expect.objectContaining({
-        pageName: "618 爆款限时购",
-        activityType: "电商大促",
-        audience: "年轻白领",
-        promotion: "满 299 减 80",
-        ctaText: "立即领取优惠",
-        products: [
-          {
-            name: "夏季套装",
-            price: "199",
-            originalPrice: "299",
-            sellingPoint: "清爽舒适",
-          },
-        ],
+        pageName: "员工服务办理中心",
+        activityType: "内容展示",
+        audience: "企业员工",
+        promotion: "展示办理须知和常见问题",
+        ctaText: "提交申请",
+        products: [],
       }),
     );
     expect(mocks.messageSuccess).toHaveBeenCalledWith("AI 页面草稿已生成");
@@ -468,6 +484,8 @@ describe("Activity AI 交互", () => {
 
 describe("Activity 线索跟进与发布记录", () => {
   beforeEach(() => {
+    // 清掉上一条用例的调用记录：本组有用例断言调用次数，否则会跨用例累积
+    vi.clearAllMocks();
     localStorage.setItem("role", "admin");
 
     mocks.getCmsPageList.mockResolvedValue({
@@ -519,6 +537,20 @@ describe("Activity 线索跟进与发布记录", () => {
     mocks.trackEvent.mockResolvedValue(undefined);
     mocks.messageBoxConfirm.mockResolvedValue(undefined);
     mocks.messageBoxPrompt.mockResolvedValue({ value: "已电话联系，待确认预算" });
+    mocks.getLeadRetentionPolicy.mockResolvedValue({
+      code: 10000,
+      message: "success",
+      data: { retentionDays: 180, cutoffAt: "2025-04-04T00:00:00.000Z" },
+    });
+    mocks.exportLeadCsv.mockResolvedValue({
+      blob: new Blob(["id,name\r\n"], { type: "text/csv" }),
+      filename: "线索导出-20260930-2119.csv",
+    });
+    mocks.purgeExpiredLeads.mockResolvedValue({
+      code: 10000,
+      message: "success",
+      data: { retentionDays: 180, cutoffAt: "2025-04-04T00:00:00.000Z", dryRun: true, matched: 0, deleted: 0 },
+    });
   });
 
   const settle = async () => {
@@ -645,5 +677,208 @@ describe("Activity 线索跟进与发布记录", () => {
       followUpRemark: "已电话联系，待确认预算",
     });
     expect(mocks.messageSuccess).toHaveBeenCalledWith("跟进备注已保存");
+  });
+
+  it("admin 导出线索生成 CSV 并提示成功", async () => {
+    const createObjectURL = vi.fn(() => "blob:mock-url");
+    const revokeObjectURL = vi.fn();
+    Object.assign(URL, { createObjectURL, revokeObjectURL });
+
+    const wrapper = await mountActivity();
+    await clickButtonByText(wrapper, "线索");
+    await settle();
+    await settle();
+    await clickButtonByText(wrapper, "导出 CSV");
+    await settle();
+
+    expect(mocks.exportLeadCsv).toHaveBeenCalledWith({
+      pageId: 7,
+      status: undefined,
+      channel: undefined,
+    });
+    expect(createObjectURL).toHaveBeenCalled();
+    expect(revokeObjectURL).toHaveBeenCalled();
+    expect(mocks.messageSuccess).toHaveBeenCalledWith("线索已导出");
+  });
+
+  it("导出失败时展示后端返回的原因", async () => {
+    mocks.exportLeadCsv.mockRejectedValue(new Error("只有管理员可以导出线索"));
+
+    const wrapper = await mountActivity();
+    await clickButtonByText(wrapper, "线索");
+    await settle();
+    await settle();
+    await clickButtonByText(wrapper, "导出 CSV");
+    await settle();
+
+    expect(mocks.messageError).toHaveBeenCalledWith("只有管理员可以导出线索");
+  });
+
+  it("展示保留策略，清理超期线索需先预览再确认", async () => {
+    mocks.purgeExpiredLeads
+      .mockResolvedValueOnce({
+        code: 10000,
+        message: "success",
+        data: {
+          retentionDays: 180,
+          cutoffAt: "2025-04-04T00:00:00.000Z",
+          dryRun: true,
+          matched: 3,
+          deleted: 0,
+        },
+      })
+      .mockResolvedValueOnce({
+        code: 10000,
+        message: "success",
+        data: {
+          retentionDays: 180,
+          cutoffAt: "2025-04-04T00:00:00.000Z",
+          dryRun: false,
+          matched: 3,
+          deleted: 3,
+        },
+      });
+
+    const wrapper = await mountActivity();
+    await clickButtonByText(wrapper, "线索");
+    await settle();
+    await settle();
+
+    expect(wrapper.text()).toContain("线索保留 180 天");
+
+    await clickButtonByText(wrapper, "清理超期线索");
+    await settle();
+
+    expect(mocks.purgeExpiredLeads).toHaveBeenNthCalledWith(1, true);
+    expect(mocks.messageBoxConfirm).toHaveBeenCalled();
+    expect(mocks.purgeExpiredLeads).toHaveBeenNthCalledWith(2, false);
+    expect(mocks.messageSuccess).toHaveBeenCalledWith("已清理 3 条超期线索");
+  });
+
+  it("没有超期线索时只提示，不执行删除", async () => {
+    const wrapper = await mountActivity();
+    await clickButtonByText(wrapper, "线索");
+    await settle();
+    await settle();
+    await clickButtonByText(wrapper, "清理超期线索");
+    await settle();
+
+    expect(mocks.purgeExpiredLeads).toHaveBeenCalledTimes(1);
+    expect(mocks.messageBoxConfirm).not.toHaveBeenCalled();
+    expect(mocks.messageInfo).toHaveBeenCalledWith("没有超过 180 天的线索需要清理");
+  });
+});
+
+describe("Activity 角色门禁", () => {
+  const mockRow = (partial: RowData = {}) => ({
+    id: 7,
+    name: "夏季促销页",
+    isAbled: 0,
+    status: "draft",
+    create_time: "2026-08-18 00:00:00",
+    update_time: "2026-08-18 00:00:00",
+    ...partial,
+  });
+
+  const setupRows = (rows: RowData[]) => {
+    mocks.getCmsPageList.mockResolvedValue({
+      code: 10000,
+      message: "success",
+      data: { list: rows, total: rows.length, pageNum: 1, pageSize: 10 },
+    });
+    mocks.getLeadList.mockResolvedValue({
+      code: 10000,
+      message: "success",
+      data: { list: [], total: 0, pageNum: 1, pageSize: 20 },
+    });
+  };
+
+  const mountAs = async (role: "admin" | "editor" | "viewer", rows: RowData[]) => {
+    localStorage.setItem("role", role);
+    setupRows(rows);
+    return mountActivity();
+  };
+
+  /** 按钮文案集合：避免被筛选下拉选项、提示语里的同名词干扰 */
+  const buttonTexts = (wrapper: ReturnType<typeof mount>) =>
+    wrapper
+      .findAll("button")
+      .map((item) => item.text().replace(/\s+/g, " ").trim())
+      .filter(Boolean);
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("viewer 只读：不渲染任何写操作入口，并提示当前为观察员", async () => {
+    const wrapper = await mountAs("viewer", [mockRow({ status: "published", isAbled: 1 })]);
+
+    expect(wrapper.text()).toContain("观察员账号");
+    const labels = buttonTexts(wrapper);
+    // 写操作入口全部隐藏（含查看含手机号的线索）
+    [
+      "新增页面",
+      "AI 新建",
+      "装修",
+      "复制",
+      "删除",
+      "提交审核",
+      "通过审核",
+      "驳回",
+      "回滚到最新发布",
+      "线索",
+      "上线",
+      "下线",
+    ].forEach((label) => expect(labels).not.toContain(label));
+    // 只读入口保留
+    ["发布记录", "预览", "AI 优化"].forEach((label) =>
+      expect(labels).toContain(label),
+    );
+  });
+
+  it("editor 可建页与提交审核，但看不到审核、发布、回滚、删除入口", async () => {
+    const wrapper = await mountAs("editor", [
+      mockRow({ id: 11, status: "draft" }),
+      mockRow({ id: 12, status: "pending_review" }),
+      mockRow({ id: 13, status: "approved" }),
+    ]);
+
+    const labels = buttonTexts(wrapper);
+    ["新增页面", "AI 新建", "装修", "复制", "提交审核", "线索"].forEach((label) =>
+      expect(labels).toContain(label),
+    );
+    // 审核 / 发布 / 回滚 / 删除 / 上下线仍为管理员专属
+    ["通过审核", "驳回", "发布", "回滚到最新发布", "删除", "上线"].forEach((label) =>
+      expect(labels).not.toContain(label),
+    );
+  });
+
+  it("admin 可见全部写操作入口", async () => {
+    const wrapper = await mountAs("admin", [
+      mockRow({ id: 21, status: "pending_review" }),
+    ]);
+
+    const labels = buttonTexts(wrapper);
+    ["通过审核", "驳回", "回滚到最新发布", "删除"].forEach((label) =>
+      expect(labels).toContain(label),
+    );
+  });
+
+  it("本地角色缺失时按 viewer 最小权限处理", async () => {
+    localStorage.removeItem("role");
+    setupRows([mockRow({ status: "published", isAbled: 1 })]);
+    const wrapper = await mountActivity();
+
+    expect(wrapper.text()).toContain("观察员账号");
+    expect(buttonTexts(wrapper)).not.toContain("新增页面");
+  });
+
+  it("已驳回页面展示审核备注", async () => {
+    const wrapper = await mountAs("editor", [
+      mockRow({ id: 31, status: "rejected", reviewNote: "首屏文案不合规，请调整" }),
+    ]);
+
+    expect(wrapper.text()).toContain("已驳回");
+    expect(wrapper.html()).toContain("首屏文案不合规，请调整");
   });
 });

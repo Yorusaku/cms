@@ -59,6 +59,17 @@ const toRuntimeLinkString = (value: unknown) => {
   return "";
 };
 
+const parseJsonArray = <T>(value: unknown, fallback: T[]): T[] => {
+  if (Array.isArray(value)) return value as T[];
+  if (typeof value !== "string" || !value.trim()) return fallback;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed as T[] : fallback;
+  } catch {
+    return fallback;
+  }
+};
+
 const carouselEditorSchema: MaterialEditorSchema = {
   sections: [
     {
@@ -1575,6 +1586,185 @@ export const materialRegistry: MaterialRegistryItem[] = [
             normalizedProps.priceColor ?? normalizedProps.exchangePriceColor,
             "#DD1A21",
           ) || "#DD1A21",
+      };
+    },
+  },
+  {
+    type: "BusinessForm",
+    aliases: ["business-form", "info-form"],
+    group: "business",
+    label: "信息采集表单",
+    icon: "表",
+    maxCount: 10,
+    defaultProps: {
+      title: "信息登记",
+      subtitle: "请填写以下信息",
+      submitText: "提交信息",
+      fields: [
+        { key: "name", label: "姓名", type: "text", required: true },
+        { key: "phone", label: "联系电话", type: "text", required: true },
+      ],
+      fieldsJson: JSON.stringify([
+        { key: "name", label: "姓名", type: "text", required: true },
+        { key: "phone", label: "联系电话", type: "text", required: true },
+      ], null, 2),
+    },
+    runtimeComponent: () => import("../components/BusinessFormBlock.vue"),
+    editorConfig: {
+      mode: "schema",
+      schema: {
+        sections: [
+          {
+            type: "section",
+            label: "表单内容",
+            fields: [
+              { type: "text", path: "title", label: "标题" },
+              { type: "text", path: "subtitle", label: "说明" },
+              { type: "text", path: "submitText", label: "提交按钮文字" },
+              {
+                type: "textarea",
+                path: "fieldsJson",
+                label: "字段配置(JSON)",
+                rows: 8,
+                placeholder: '[{"key":"name","label":"姓名","type":"text","required":true}]',
+              },
+            ],
+          },
+        ],
+      },
+    },
+    normalizeProps: (props) => {
+      const normalizedProps = toRecord(props);
+      const fields = parseJsonArray<Record<string, unknown>>(normalizedProps.fieldsJson ?? normalizedProps.fields, [
+        { key: "name", label: "姓名", type: "text", required: true },
+        { key: "phone", label: "联系电话", type: "text", required: true },
+      ]).map((field) => ({
+        key: toStringValue(field.key),
+        label: toStringValue(field.label),
+        type: ["text", "date", "select"].includes(toStringValue(field.type))
+          ? toStringValue(field.type)
+          : "text",
+        required: toFlexibleBoolean(field.required, false),
+        placeholder: toStringValue(field.placeholder),
+        options: parseJsonArray<string>(field.options, []),
+      }));
+      return {
+        title: toStringValue(normalizedProps.title, "信息登记"),
+        subtitle: toStringValue(normalizedProps.subtitle, "请填写以下信息"),
+        submitText: toStringValue(normalizedProps.submitText, "提交信息"),
+        fields,
+        fieldsJson: JSON.stringify(fields, null, 2),
+      };
+    },
+  },
+  {
+    type: "BusinessList",
+    aliases: ["business-list", "data-list"],
+    group: "business",
+    label: "业务数据列表",
+    icon: "列",
+    maxCount: 10,
+    defaultProps: {
+      title: "业务数据",
+      subtitle: "支持关键词筛选和分页展示",
+      columns: [
+        { key: "name", label: "名称" },
+        { key: "status", label: "状态" },
+      ],
+      rows: [
+        { id: 1, name: "示例记录", status: "待处理" },
+        { id: 2, name: "第二条记录", status: "已完成" },
+      ],
+      columnsJson: JSON.stringify([
+        { key: "name", label: "名称" },
+        { key: "status", label: "状态" },
+      ], null, 2),
+      rowsJson: JSON.stringify([
+        { id: 1, name: "示例记录", status: "待处理" },
+        { id: 2, name: "第二条记录", status: "已完成" },
+      ], null, 2),
+      pageSize: 5,
+    },
+    runtimeComponent: () => import("../components/BusinessListBlock.vue"),
+    editorConfig: {
+      mode: "schema",
+      schema: {
+        sections: [
+          {
+            type: "section",
+            label: "列表内容",
+            fields: [
+              { type: "text", path: "title", label: "标题" },
+              { type: "text", path: "subtitle", label: "说明" },
+              { type: "textarea", path: "columnsJson", label: "列配置(JSON)", rows: 6 },
+              { type: "textarea", path: "rowsJson", label: "示例数据(JSON)", rows: 8 },
+              { type: "number", path: "pageSize", label: "每页数量", min: 1, max: 20 },
+            ],
+          },
+        ],
+      },
+    },
+    normalizeProps: (props) => {
+      const normalizedProps = toRecord(props);
+      const columns = parseJsonArray<{ key?: unknown; label?: unknown }>(normalizedProps.columnsJson ?? normalizedProps.columns, [
+        { key: "name", label: "名称" },
+        { key: "status", label: "状态" },
+      ]).map((column) => ({ key: toStringValue(column.key), label: toStringValue(column.label) }));
+      const rows = parseJsonArray<Record<string, string | number | null>>(normalizedProps.rowsJson ?? normalizedProps.rows, [
+        { id: 1, name: "示例记录", status: "待处理" },
+      ]);
+      return {
+        title: toStringValue(normalizedProps.title, "业务数据"),
+        subtitle: toStringValue(normalizedProps.subtitle, "支持关键词筛选和分页展示"),
+        columns,
+        rows,
+        columnsJson: JSON.stringify(columns, null, 2),
+        rowsJson: JSON.stringify(rows, null, 2),
+        pageSize: toFiniteNumber(normalizedProps.pageSize, 5),
+      };
+    },
+  },
+  {
+    type: "StatCard",
+    aliases: ["stat-card", "statistics-card"],
+    group: "business",
+    label: "统计卡片",
+    icon: "数",
+    maxCount: 20,
+    defaultProps: {
+      title: "待处理事项",
+      value: 12,
+      description: "较昨日 +8%",
+      icon: "数",
+      accentColor: "#2563eb",
+    },
+    runtimeComponent: () => import("../components/StatCardBlock.vue"),
+    editorConfig: {
+      mode: "schema",
+      schema: {
+        sections: [
+          {
+            type: "section",
+            label: "指标内容",
+            fields: [
+              { type: "text", path: "title", label: "指标标题" },
+              { type: "text", path: "value", label: "指标值" },
+              { type: "text", path: "description", label: "辅助说明" },
+              { type: "text", path: "icon", label: "图标文字" },
+              { type: "color", path: "accentColor", label: "主题颜色" },
+            ],
+          },
+        ],
+      },
+    },
+    normalizeProps: (props) => {
+      const normalizedProps = toRecord(props);
+      return {
+        title: toStringValue(normalizedProps.title, "待处理事项"),
+        value: toStringValue(normalizedProps.value, "12"),
+        description: toStringValue(normalizedProps.description, "较昨日 +8%"),
+        icon: toStringValue(normalizedProps.icon, "数"),
+        accentColor: toStringValue(normalizedProps.accentColor, "#2563eb"),
       };
     },
   },

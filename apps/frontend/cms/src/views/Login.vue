@@ -68,11 +68,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import { ElMessage, type FormInstance, type FormRules } from "element-plus";
 import { View, Hide } from "@element-plus/icons-vue";
 import { login } from "../api/activity";
+import { isUserRole } from "@/utils/auth";
 
+const route = useRoute();
 const router = useRouter();
 const loginFormRef = ref<FormInstance>();
 const usernameRef = ref();
@@ -111,28 +113,30 @@ const handleLogin = async () => {
     if (valid) {
       loading.value = true;
       try {
-        const res: any = await login({
+        const res = await login({
           username: loginForm.username,
           password: loginForm.password,
         });
 
-        console.log("=== 登录接口调试信息 ===");
-        console.log("登录响应:", res);
-        console.log("响应结构:", Object.keys(res || {}));
-        if (res && res.data) {
-          console.log("data字段:", res.data);
-          console.log("token是否存在:", !!res.data.token);
+        if (res.code !== 10000 || !res.data?.token) {
+          throw new Error(res.message || "登录响应缺少令牌");
         }
 
-        // 存储token和用户信息
         localStorage.setItem("token", res.data.token);
+        // 角色以服务端返回为准；返回缺字段时清掉旧值，由 JWT payload 兜底，
+        // 两者都拿不到就按 viewer 最小权限处理，不沿用上一次登录的角色。
+        if (isUserRole(res.data.role)) {
+          localStorage.setItem("role", res.data.role);
+        } else {
+          localStorage.removeItem("role");
+        }
         localStorage.setItem("username", loginForm.username);
 
         ElMessage.success("登录成功");
-        router.push("/activity");
-      } catch (error: any) {
-        console.error("登录失败:", error);
-        ElMessage.error(error?.message || "登录失败，请检查用户名和密码");
+        const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "/activity";
+        router.push(redirect);
+      } catch (error: unknown) {
+        ElMessage.error(error instanceof Error ? error.message : "登录失败，请检查用户名和密码");
       } finally {
         loading.value = false;
       }

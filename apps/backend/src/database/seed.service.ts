@@ -9,6 +9,7 @@ import { PublishLog } from '../modules/page/entities/publish-log.entity'
 import { Template } from '../modules/template/entities/template.entity'
 import { TEMPLATE_SEEDS } from './seeds/template-seeds'
 import { buildDemoPageSchema } from './seeds/demo-page-schemas'
+import { DEFAULT_ADMIN_PASSWORDS } from '../common/config/env-validation'
 
 const DEMO_PAGES = [
   { name: '618 年中大促', isAbled: 1, status: 'published' },
@@ -43,19 +44,57 @@ export class SeedService implements OnModuleInit {
   ) {}
 
   async onModuleInit(): Promise<void> {
-    await this.seedUsers()
+    if (!this.isSeedEnabled()) {
+      this.logger.log('种子数据已关闭（SEED_ENABLED=false），跳过初始化')
+      return
+    }
+
+    await this.seedAdminUser()
+
+    if (this.isProduction()) {
+      this.logger.log('生产环境仅创建管理员账号，跳过演示账号、演示页与演示模板')
+      return
+    }
+
+    await this.seedDemoUsers()
     await this.seedDemoPages()
     await this.seedTemplates()
   }
 
-  private async seedUsers(): Promise<void> {
+  /**
+   * 是否启用种子数据。
+   * 显式配置 SEED_ENABLED 时以其为准；未配置时开发/测试默认开启，生产默认关闭。
+   */
+  private isSeedEnabled(): boolean {
+    const raw = this.configService.get<string>('SEED_ENABLED')
+    if (raw !== undefined && raw !== null && String(raw).trim() !== '') {
+      return String(raw).toLowerCase() !== 'false'
+    }
+    return !this.isProduction()
+  }
+
+  private isProduction(): boolean {
+    return this.configService.get<string>('NODE_ENV', 'development') === 'production'
+  }
+
+  private async seedAdminUser(): Promise<void> {
     const count = await this.userRepo.count()
     if (count > 0) return
 
-    // Admin
     const adminUsername = this.configService.get<string>('ADMIN_USERNAME', 'admin')
-    const adminPassword = this.configService.get<string>('ADMIN_PASSWORD', 'admin123456')
-    const adminHash = await bcrypt.hash(adminPassword, 10)
+    const adminPassword = this.configService.get<string>('ADMIN_PASSWORD')
+
+    if (this.isProduction()) {
+      // 独立入口（pnpm seed）不经过 main.ts 的启动校验，这里再兜一次底
+      if (!adminPassword || DEFAULT_ADMIN_PASSWORDS.includes(adminPassword)) {
+        throw new Error(
+          '生产环境首次初始化必须显式配置非默认的 ADMIN_PASSWORD，已拒绝创建管理员账号'
+        )
+      }
+    }
+
+    const password = adminPassword || 'admin123456'
+    const adminHash = await bcrypt.hash(password, 10)
     await this.userRepo.save({
       username: adminUsername,
       password: adminHash,
@@ -63,8 +102,13 @@ export class SeedService implements OnModuleInit {
       nickname: '管理员'
     })
     this.logger.log(`Seeded admin user: ${adminUsername}`)
+  }
 
-    // Editor & Viewer
+  /** 演示账号（editor / viewer）仅用于开发与测试环境 */
+  private async seedDemoUsers(): Promise<void> {
+    const count = await this.userRepo.count()
+    if (count > 1) return
+
     for (const u of SEED_USERS) {
       const hash = await bcrypt.hash(u.password, 10)
       await this.userRepo.save({
@@ -115,6 +159,9 @@ export class SeedService implements OnModuleInit {
           action: 'publish',
           operatorUserId: admin?.id ?? null,
           operator: 'admin',
+          reviewerName: 'admin',
+          publisherName: 'admin',
+          rollbackerName: null,
           note: '首次发布',
           sourceVersionId: null,
           schemaSnapshot: schema,

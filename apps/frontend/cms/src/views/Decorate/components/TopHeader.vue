@@ -6,21 +6,33 @@
     </a>
     <div class="page-operate">
       <el-tooltip content="撤销 (Ctrl+Z)" placement="bottom">
-        <el-button size="default" :disabled="!pageStore.canUndo" @click="handleUndo">
+        <el-button size="default" :disabled="!canEdit || !pageStore.canUndo" @click="handleUndo">
           <el-icon><RefreshLeft /></el-icon>
         </el-button>
       </el-tooltip>
       <el-tooltip content="重做 (Ctrl+Y)" placement="bottom">
-        <el-button size="default" :disabled="!pageStore.canRedo" @click="handleRedo">
+        <el-button size="default" :disabled="!canEdit || !pageStore.canRedo" @click="handleRedo">
           <el-icon><RefreshRight /></el-icon>
         </el-button>
       </el-tooltip>
       <el-divider direction="vertical" />
-      <el-button type="default" size="default" :loading="saveLoading" @click="saveDraft">
+      <el-button
+        v-if="canEdit"
+        type="default"
+        size="default"
+        :loading="saveLoading"
+        @click="saveDraft"
+      >
         保存草稿
       </el-button>
-      <el-button type="primary" size="default" :loading="publishLoading" @click="publishPage">
-        发布
+      <el-button
+        v-if="canEdit"
+        type="primary"
+        size="default"
+        :loading="publishLoading"
+        @click="submitReview"
+      >
+        提交审核
       </el-button>
       <el-button size="default" :loading="previewLoading" @click="saveAndPreview">预览</el-button>
       <el-button size="default" @click="openPublishLogs">发布记录</el-button>
@@ -29,22 +41,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref, computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { RefreshLeft, RefreshRight } from "@element-plus/icons-vue";
 import { useEventListener } from "@vueuse/core";
 import { usePageStore } from "@/store/usePageStore";
-import { publishCmsPage, saveCmsPage, type SavePageParams } from "@/api/activity";
+import { saveCmsPage, submitPageReview, type SavePageParams } from "@/api/activity";
 import { migrateSchemaToV1 } from "@cms/utils";
 import { runPagePreflight, type PreflightIssue } from "@/utils/page-preflight";
 import { clearPageDraft } from "@/utils/page-draft";
-import { markPageDraft, markPagePublished } from "@/utils/page-publish";
+import { markPageDraft } from "@/utils/page-publish";
 import { trackEvent } from "@/utils/tracking";
+import { getEffectiveRole } from "@/utils/auth";
 
 const route = useRoute();
 const router = useRouter();
 const pageStore = usePageStore();
+
+/** 装修页写操作（撤销/重做/保存草稿/提交审核）限管理员与编辑员；观察员只读 */
+const canEdit = computed(() => ["admin", "editor"].includes(getEffectiveRole()));
 
 const saveLoading = ref(false);
 const previewLoading = ref(false);
@@ -127,29 +143,18 @@ const saveAndPreview = async () => {
     const response = (await savePage()) as SavePageResponse;
     const pageId = getCurrentPageId(response);
     if (pageId) {
-      await publishCmsPage({ pageId, note: "发布并预览" });
-      markPagePublished({
-        pageId,
-        schema: pageStore.exportPageSchema(),
-        note: "发布并预览",
-      });
-      await trackEvent({
-        eventType: "cta_click",
-        pageId,
-        ctaText: "publish_and_preview",
-      });
       openPreview(pageId);
     }
-    ElMessage.success("发布成功");
+    ElMessage.success("草稿已保存并打开预览");
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : String(err);
-    ElMessage.warning(`发布并预览失败: ${errorMessage}`);
+    ElMessage.warning(`预览失败: ${errorMessage}`);
   } finally {
     previewLoading.value = false;
   }
 };
 
-const publishPage = async () => {
+const submitReview = async () => {
   publishLoading.value = true;
   try {
     const preflightPassed = await runPreflight();
@@ -160,22 +165,12 @@ const publishPage = async () => {
     const response = (await savePage()) as SavePageResponse;
     const pageId = getCurrentPageId(response);
     if (pageId) {
-      await publishCmsPage({ pageId, note: "发布" });
-      markPagePublished({
-        pageId,
-        schema: pageStore.exportPageSchema(),
-        note: "发布",
-      });
-      await trackEvent({
-        eventType: "cta_click",
-        pageId,
-        ctaText: "publish_page",
-      });
+      await submitPageReview({ pageId });
     }
-    ElMessage.success("发布成功");
+    ElMessage.success("已提交审核");
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : String(err);
-    ElMessage.warning(`发布失败: ${errorMessage}`);
+    ElMessage.warning(`提交审核失败: ${errorMessage}`);
   } finally {
     publishLoading.value = false;
   }

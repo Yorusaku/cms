@@ -6,6 +6,14 @@
         <p class="text-gray-600 mt-1">管理页面、发布状态、版本记录与回滚</p>
       </div>
 
+      <el-alert
+        v-if="isViewer"
+        class="mb-4"
+        type="info"
+        :closable="false"
+        title="当前为观察员账号：仅可查看页面与发布记录，不能建页、提交审核、发布或回滚。"
+      />
+
       <el-card class="mb-6 shadow-none border border-gray-200">
         <el-form :model="searchForm" inline class="w-full">
           <el-form-item label="页面标题">
@@ -29,8 +37,11 @@
               clearable
               class="w-40"
             >
-              <el-option label="草稿" value="draft" />
-              <el-option label="已发布" value="published" />
+            <el-option label="草稿" value="draft" />
+            <el-option label="待审核" value="pending_review" />
+            <el-option label="已驳回" value="rejected" />
+            <el-option label="审核通过" value="approved" />
+            <el-option label="已发布" value="published" />
             </el-select>
           </el-form-item>
           <el-form-item>
@@ -48,11 +59,11 @@
 
       <div class="mb-6 flex justify-between items-center">
         <div>
-          <el-button type="primary" @click="handleAdd">
+          <el-button v-if="canEdit" type="primary" @click="handleAdd">
             <el-icon><Plus /></el-icon>
             新增页面
           </el-button>
-          <el-button type="success" @click="openAiDialog">
+          <el-button v-if="canEdit" type="success" @click="openAiDialog">
             <el-icon><Plus /></el-icon>
             AI 新建
           </el-button>
@@ -70,9 +81,18 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="内容状态" width="120" align="center">
+        <el-table-column label="内容状态" width="130" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.contentStatus === 'published' ? 'success' : 'warning'" size="small">
+            <el-tooltip
+              v-if="getRowReviewNote(row)"
+              :content="`审核备注：${getRowReviewNote(row)}`"
+              placement="top"
+            >
+              <el-tag :type="getStatusTagType(row.contentStatus)" size="small">
+                {{ row.contentStatusLabel }}
+              </el-tag>
+            </el-tooltip>
+            <el-tag v-else :type="getStatusTagType(row.contentStatus)" size="small">
               {{ row.contentStatusLabel }}
             </el-tag>
           </template>
@@ -81,29 +101,47 @@
         <el-table-column prop="update_time" label="更新时间" width="180" align="center" />
         <el-table-column label="操作" fixed="right" width="700" align="center">
           <template #default="{ row }">
-            <el-button type="primary" size="small" @click="handleEdit(row.id)">装修</el-button>
+            <el-button v-if="canEdit" type="primary" size="small" @click="handleEdit(row.id)">装修</el-button>
             <el-button
+              v-if="canPublish"
               type="success"
               size="small"
               :loading="row.loading"
-              :disabled="!canPublish"
-              :title="canPublish ? '' : '仅管理员可发布'"
+              :disabled="row.isAbled === 0 && row.status !== 'offline'"
               @click="handleToggleActivity(row)"
             >
               {{ row.isAbled === 0 ? "上线" : "下线" }}
             </el-button>
-            <el-button size="small" :loading="duplicateLoadingId === row.id" @click="handleDuplicate(row.id)">
+            <el-button
+              v-if="canEdit && ['draft', 'rejected'].includes(row.status)"
+              size="small"
+              type="warning"
+              @click="handleSubmitReview(row)"
+            >提交审核</el-button>
+            <el-button
+              v-if="canReview && row.status === 'pending_review'"
+              size="small"
+              type="primary"
+              @click="handleReview(row, 'approved')"
+            >通过审核</el-button>
+            <el-button
+              v-if="canReview && row.status === 'pending_review'"
+              size="small"
+              @click="handleReview(row, 'rejected')"
+            >驳回</el-button>
+            <el-button v-if="canPublish && row.status === 'approved'" size="small" type="success" @click="handlePublishApproved(row)">发布</el-button>
+            <el-button v-if="canEdit" size="small" :loading="duplicateLoadingId === row.id" @click="handleDuplicate(row.id)">
               复制
             </el-button>
             <el-button type="info" size="small" @click="handlePreview(row.id)">预览</el-button>
             <el-button size="small" @click="openPublishLogs(row.id)">发布记录</el-button>
-            <el-button size="small" @click="openLeadDrawer(row.id)">线索</el-button>
+            <el-button v-if="canEdit" size="small" @click="openLeadDrawer(row.id)">线索</el-button>
             <el-button size="small" type="warning" @click="openAiDiagnosis(row)">
               <el-icon><TrendCharts /></el-icon>
               AI 优化
             </el-button>
-            <el-button size="small" type="warning" @click="handleRollbackLatest(row)">回滚到最新发布</el-button>
-            <el-popconfirm title="确定要删除这个页面吗？" @confirm="handleDelete(row.id)">
+            <el-button v-if="canPublish" size="small" type="warning" @click="handleRollbackLatest(row)">回滚到最新发布</el-button>
+            <el-popconfirm v-if="canPublish" title="确定要删除这个页面吗？" @confirm="handleDelete(row.id)">
               <template #reference>
                 <el-button type="danger" size="small">删除</el-button>
               </template>
@@ -146,12 +184,25 @@
                 <strong>{{ item.displayVersion }}</strong>
                 <el-tag v-if="item.isCurrent" type="success" size="small" class="ml-2">当前线上</el-tag>
                 <el-tag v-else-if="item.action === 'rollback'" type="warning" size="small" class="ml-2">回滚版本</el-tag>
-                - {{ item.operator || "当前用户" }}
+              </p>
+              <p class="text-xs text-gray-500 mt-1">
+                审核人：{{ item.reviewerName || "-" }}
+                <span class="mx-1">·</span>
+                发布人：{{ item.publisherName || item.operator || "当前用户" }}
+                <template v-if="item.rollbackerName">
+                  <span class="mx-1">·</span>
+                  回滚人：{{ item.rollbackerName }}
+                </template>
               </p>
               <p class="text-xs text-gray-500 mt-1">{{ item.note || "发布" }}</p>
               <div class="mt-2 flex gap-2">
                 <el-button size="small" @click="previewVersion(item.versionId)">只读预览</el-button>
-                <el-button size="small" type="warning" @click="rollbackVersion(item.versionId)">
+                <el-button
+                  v-if="canPublish"
+                  size="small"
+                  type="warning"
+                  @click="rollbackVersion(item.versionId)"
+                >
                   回滚到此版本
                 </el-button>
               </div>
@@ -171,7 +222,21 @@
         </el-select>
         <el-input v-model="leadFilters.channel" clearable placeholder="按渠道或 UTM 搜索" class="w-56" @keyup.enter="reloadLeadList" />
         <el-button @click="reloadLeadList">筛选</el-button>
+        <el-button v-if="canPublish" :loading="exportingLeads" @click="handleExportLeads">
+          导出 CSV
+        </el-button>
+        <el-button v-if="canPublish" type="warning" plain :loading="purgingLeads" @click="handlePurgeLeads">
+          清理超期线索
+        </el-button>
       </div>
+
+      <el-alert
+        v-if="canEdit && retentionPolicy"
+        class="mb-3"
+        type="info"
+        :closable="false"
+        :title="`数据保留策略：线索保留 ${retentionPolicy.retentionDays} 天，${formatDateLabel(retentionPolicy.cutoffAt)} 之前的线索可清理`"
+      />
       <template v-if="leadLoading">
         <div class="text-sm text-gray-500">加载中...</div>
       </template>
@@ -194,7 +259,12 @@
           <el-table-column prop="createdAt" label="提交时间" min-width="160" />
           <el-table-column label="跟进状态" min-width="130">
             <template #default="{ row }">
-              <el-select :model-value="row.status" size="small" @change="handleLeadStatusChange(row, $event)">
+              <el-select
+                :model-value="row.status"
+                size="small"
+                :disabled="!canEdit"
+                @change="handleLeadStatusChange(row, $event)"
+              >
                 <el-option label="待跟进" value="new" />
                 <el-option label="已联系" value="contacted" />
                 <el-option label="已转化" value="converted" />
@@ -204,9 +274,10 @@
           </el-table-column>
           <el-table-column label="跟进备注" min-width="150">
             <template #default="{ row }">
-              <el-button size="small" @click="editLeadRemark(row)">
+              <el-button v-if="canEdit" size="small" @click="editLeadRemark(row)">
                 {{ row.followUpRemark ? "修改备注" : "添加备注" }}
               </el-button>
+              <span v-else class="text-xs text-gray-500">{{ row.followUpRemark || "-" }}</span>
             </template>
           </el-table-column>
         </el-table>
@@ -281,15 +352,15 @@
 
     <el-dialog
       v-model="aiDialogVisible"
-      title="AI 新建活动页"
+      title="AI 新建业务页面"
       width="760px"
       destroy-on-close
     >
       <el-form label-width="96px" class="ai-form">
         <el-form-item label="页面标题" required>
-          <el-input v-model="aiForm.pageName" placeholder="如：618 爆款限时购" maxlength="80" />
+          <el-input v-model="aiForm.pageName" placeholder="如：员工服务办理中心" maxlength="80" />
         </el-form-item>
-        <el-form-item label="活动类型" required>
+        <el-form-item label="页面场景" required>
           <el-select v-model="aiForm.activityType" class="w-full" placeholder="请选择活动类型">
             <el-option
               v-for="item in aiActivityOptions"
@@ -300,26 +371,26 @@
           </el-select>
         </el-form-item>
         <el-form-item label="目标人群" required>
-          <el-input v-model="aiForm.audience" placeholder="如：25-35 岁新锐白领" maxlength="120" />
+          <el-input v-model="aiForm.audience" placeholder="如：企业员工或客户" maxlength="120" />
         </el-form-item>
-        <el-form-item label="优惠信息" required>
+        <el-form-item label="页面需求" required>
           <el-input
             v-model="aiForm.promotion"
-            placeholder="如：满 299 减 80，前 100 名加赠礼包"
+            placeholder="如：展示服务介绍、办理须知和常见问题"
             maxlength="160"
           />
         </el-form-item>
-        <el-form-item label="按钮文案" required>
-          <el-input v-model="aiForm.ctaText" placeholder="如：立即领取优惠" maxlength="40" />
+        <el-form-item label="提交文案" required>
+          <el-input v-model="aiForm.ctaText" placeholder="如：提交申请" maxlength="40" />
         </el-form-item>
-        <el-form-item label="留资目标">
+        <el-form-item label="业务目标">
           <el-input
             v-model="aiForm.leadGoal"
-            placeholder="如：领取优惠券并预约专属顾问"
+            placeholder="如：收集预约信息或展示办理进度"
             maxlength="120"
           />
         </el-form-item>
-        <el-form-item label="页面风格">
+        <el-form-item label="视觉风格">
           <el-select v-model="aiForm.styleTone" class="w-full" placeholder="请选择页面风格">
             <el-option
               v-for="item in aiStyleOptions"
@@ -330,42 +401,12 @@
           </el-select>
         </el-form-item>
 
-        <el-form-item label="商品信息">
-          <div class="ai-products">
-            <div
-              v-for="(product, index) in aiForm.products"
-              :key="index"
-              class="ai-product-row"
-            >
-              <el-input v-model="product.name" placeholder="商品名" maxlength="80" />
-              <el-input v-model="product.price" placeholder="现价" maxlength="20" />
-              <el-input v-model="product.originalPrice" placeholder="原价" maxlength="20" />
-              <el-input v-model="product.sellingPoint" placeholder="卖点" maxlength="120" />
-              <el-button
-                size="small"
-                type="danger"
-                text
-                @click="removeAiProduct(index)"
-              >
-                删除
-              </el-button>
-            </div>
-            <el-button
-              size="small"
-              :disabled="aiForm.products.length >= 6"
-              @click="addAiProduct"
-            >
-              添加商品
-            </el-button>
-          </div>
-        </el-form-item>
-
         <el-form-item label="补充描述">
           <el-input
             v-model="aiForm.extraPrompt"
             type="textarea"
             :rows="3"
-            placeholder="如：突出夏季清爽感，首屏要强调限时福利"
+            placeholder="如：首屏突出办理条件，列表展示处理状态"
             maxlength="500"
             show-word-limit
           />
@@ -400,16 +441,29 @@ import {
   getCmsPageById,
   getCmsPageList,
   getPagePublishLogs,
+  publishCmsPage,
+  reviewPage,
   rollbackPageVersion,
   saveCmsPage,
+  submitPageReview,
   updateStatus,
   type PageItem,
   type PublishLogItem,
   type SavePageParams,
 } from "../api/activity";
-import { getLeadList, updateLeadStatus, type LeadItem } from "@/api/lead";
+import {
+  exportLeadCsv,
+  getLeadList,
+  getLeadRetentionPolicy,
+  purgeExpiredLeads,
+  updateLeadStatus,
+  type LeadItem,
+  type LeadRetentionPolicy,
+} from "@/api/lead";
 import { usePageStore } from "../store/usePageStore";
 import { trackEvent } from "@/utils/tracking";
+import { getEffectiveRole, type UserRole } from "@/utils/auth";
+import { saveBlob } from "@/utils/download";
 import { type PageContentStatus, type PublishLogRecord } from "@/utils/page-publish";
 
 interface PageDetailResponse {
@@ -426,16 +480,16 @@ type ActivityRow = PageItem & {
   loading: boolean;
 };
 
-interface AiProductFormItem {
-  name: string;
-  price: string;
-  originalPrice: string;
-  sellingPoint: string;
-}
-
-const userRole = ref(localStorage.getItem("role") || "editor");
+// 角色来源统一走 utils/auth（localStorage.role 优先，JWT payload 兜底，无法识别按 viewer 最小权限处理）
+const userRole = ref<UserRole>(getEffectiveRole());
 const showTemplatePicker = ref(false);
+/** 审核、发布、下线、回滚、删除：仅管理员 */
 const canPublish = computed(() => userRole.value === "admin");
+const canReview = computed(() => userRole.value === "admin");
+/** 建页、编辑草稿、提交审核、处理线索：管理员与编辑员 */
+const canEdit = computed(() => ["admin", "editor"].includes(userRole.value));
+/** 观察员只读：不参与任何写操作，也不查看含手机号的线索详情 */
+const isViewer = computed(() => userRole.value === "viewer");
 
 const router = useRouter();
 const route = useRoute();
@@ -457,8 +511,8 @@ const aiDiagnoseLoading = ref(false);
 const aiDiagnosis = ref<AiDiagnosePageResponse | null>(null);
 const aiDiagnosisPageName = ref("");
 
-const aiActivityOptions = ["电商大促", "新品首发", "限时秒杀", "会员专享"];
-const aiStyleOptions = ["热烈促销", "高级简洁", "年轻活力", "温暖亲和"];
+const aiActivityOptions = ["内容展示", "信息登记", "数据查询"];
+const aiStyleOptions = ["简洁专业", "清晰明快", "温暖亲和", "稳重可信"];
 
 const adviceSeverityLabels: Record<AiAdviceSeverity, string> = {
   info: "观察",
@@ -475,23 +529,15 @@ const adviceCategoryLabels: Record<AiAdviceCategory, string> = {
   tracking: "埋点",
 };
 
-const createAiProduct = (): AiProductFormItem => ({
-  name: "",
-  price: "",
-  originalPrice: "",
-  sellingPoint: "",
-});
-
 const aiForm = reactive({
   pageName: "",
-  activityType: "电商大促",
+  activityType: "内容展示",
   audience: "",
   promotion: "",
-  ctaText: "立即领取优惠",
+  ctaText: "提交申请",
   leadGoal: "",
-  styleTone: "热烈促销",
+  styleTone: "简洁专业",
   extraPrompt: "",
-  products: [createAiProduct()],
 });
 
 const publishDrawerVisible = ref(false);
@@ -512,6 +558,9 @@ const leadFilters = reactive({
   status: undefined as LeadItem["status"] | undefined,
   channel: "",
 });
+const retentionPolicy = ref<LeadRetentionPolicy | null>(null);
+const exportingLeads = ref(false);
+const purgingLeads = ref(false);
 
 const pagination = reactive({
   current: 1,
@@ -533,16 +582,77 @@ const normalizeSchemaValue = (value: unknown) => {
 
 const toActivityRow = (item: PageItem): ActivityRow => {
   const onlineStatus = Number(item.isAbled || 0);
-  const contentStatus = item.status === "published" ? "published" : ("draft" as const);
+  const contentStatus = item.status as PageContentStatus;
+  const contentStatusLabels: Record<PageContentStatus, string> = {
+    draft: "草稿", pending_review: "待审核", rejected: "已驳回", approved: "审核通过", published: "已发布", offline: "已下线",
+  };
 
   return {
     ...item,
     onlineStatus,
     onlineStatusLabel: onlineStatus === 1 ? "上线" : "下线",
     contentStatus,
-    contentStatusLabel: contentStatus === "published" ? "已发布" : "草稿",
+    contentStatusLabel: contentStatusLabels[contentStatus] || contentStatus,
     loading: false,
   };
+};
+
+const contentStatusTagTypes: Record<PageContentStatus, "info" | "warning" | "danger" | "primary" | "success"> = {
+  draft: "info",
+  pending_review: "warning",
+  rejected: "danger",
+  approved: "primary",
+  published: "success",
+  offline: "info",
+};
+
+const getStatusTagType = (status: PageContentStatus) =>
+  contentStatusTagTypes[status] || "info";
+
+/** 行上展示审核备注（驳回原因 / 审核说明），无备注返回空串 */
+const getRowReviewNote = (row: ActivityRow): string => {
+  const note = row.reviewNote;
+  return typeof note === "string" && note.trim() ? note : "";
+};
+
+const handleSubmitReview = async (row: ActivityRow) => {
+  try {
+    const { value } = await ElMessageBox.prompt("可填写给审核人的说明", "提交审核", { inputType: "textarea", confirmButtonText: "提交", cancelButtonText: "取消" });
+    const response = await submitPageReview({ pageId: row.id, note: value || undefined });
+    if (response.code !== 10000) throw new Error(response.message || "提交审核失败");
+    ElMessage.success("已提交审核");
+    await getTableData();
+  } catch (error: unknown) {
+    if (error !== "cancel") ElMessage.error(error instanceof Error ? error.message : "提交审核失败");
+  }
+};
+
+const handleReview = async (row: ActivityRow, decision: "approved" | "rejected") => {
+  try {
+    const { value } = await ElMessageBox.prompt(decision === "approved" ? "可填写审核说明" : "请填写驳回原因", decision === "approved" ? "通过审核" : "驳回审核", { inputType: "textarea", confirmButtonText: "确定", cancelButtonText: "取消", inputValidator: decision === "rejected" ? (input) => Boolean(input.trim()) || "驳回原因不能为空" : undefined });
+    const response = await reviewPage({ pageId: row.id, decision, note: value || undefined });
+    if (response.code !== 10000) throw new Error(response.message || "审核处理失败");
+    ElMessage.success(decision === "approved" ? "审核通过" : "已驳回");
+    await getTableData();
+  } catch (error: unknown) {
+    if (error !== "cancel") ElMessage.error(error instanceof Error ? error.message : "审核处理失败");
+  }
+};
+
+const handlePublishApproved = async (row: ActivityRow) => {
+  try {
+    // 显式指定中文按钮文案，避免 Element Plus 默认 locale 渲染成 OK / Cancel
+    await ElMessageBox.confirm(`确定发布页面【${row.name}】吗？`, "发布确认", {
+      confirmButtonText: "确定",
+      cancelButtonText: "取消",
+    });
+    const response = await publishCmsPage({ pageId: row.id });
+    if (response.code !== 10000) throw new Error(response.message || "发布失败");
+    ElMessage.success("发布成功");
+    await getTableData();
+  } catch (error: unknown) {
+    if (error !== "cancel") ElMessage.error(error instanceof Error ? error.message : "发布失败");
+  }
 };
 
 const filteredTableData = computed(() => {
@@ -707,30 +817,18 @@ const handleAdd = () => {
 
 const resetAiForm = () => {
   aiForm.pageName = "";
-  aiForm.activityType = "电商大促";
+  aiForm.activityType = "内容展示";
   aiForm.audience = "";
   aiForm.promotion = "";
-  aiForm.ctaText = "立即领取优惠";
+  aiForm.ctaText = "提交申请";
   aiForm.leadGoal = "";
-  aiForm.styleTone = "热烈促销";
+  aiForm.styleTone = "简洁专业";
   aiForm.extraPrompt = "";
-  aiForm.products = [createAiProduct()];
 };
 
 const openAiDialog = () => {
   resetAiForm();
   aiDialogVisible.value = true;
-};
-
-const addAiProduct = () => {
-  if (aiForm.products.length >= 6) {
-    return;
-  }
-  aiForm.products.push(createAiProduct());
-};
-
-const removeAiProduct = (index: number) => {
-  aiForm.products.splice(index, 1);
 };
 
 const buildAiGeneratePayload = (): AiGeneratePageRequest => {
@@ -743,14 +841,7 @@ const buildAiGeneratePayload = (): AiGeneratePageRequest => {
     leadGoal: aiForm.leadGoal.trim() || undefined,
     styleTone: aiForm.styleTone.trim() || undefined,
     extraPrompt: aiForm.extraPrompt.trim() || undefined,
-    products: aiForm.products
-      .map((product) => ({
-        name: product.name.trim(),
-        price: product.price.trim() || undefined,
-        originalPrice: product.originalPrice.trim() || undefined,
-        sellingPoint: product.sellingPoint.trim() || undefined,
-      }))
-      .filter((product) => product.name),
+    products: [],
   };
 };
 
@@ -759,13 +850,13 @@ const validateAiPayload = (payload: AiGeneratePageRequest) => {
     return "请填写页面标题";
   }
   if (!payload.activityType) {
-    return "请选择活动类型";
+    return "请选择页面场景";
   }
   if (!payload.audience) {
     return "请填写目标人群";
   }
   if (!payload.promotion) {
-    return "请填写优惠信息";
+    return "请填写页面需求";
   }
   if (!payload.ctaText) {
     return "请填写按钮文案";
@@ -890,6 +981,9 @@ const normalizeLogRecord = (pageId: number, item: PublishLogItem): PublishLogRec
     versionId: String(item.versionId),
     displayVersion: String(item.displayVersion || `v${item.versionId}`),
     operator: String(item.operator || "当前用户"),
+    reviewerName: item.reviewerName ? String(item.reviewerName) : null,
+    publisherName: item.publisherName ? String(item.publisherName) : null,
+    rollbackerName: item.rollbackerName ? String(item.rollbackerName) : null,
     note: String(item.note || "发布"),
     publishedAt: Number.isFinite(timestamp) ? timestamp : Date.now(),
     action: item.action,
@@ -944,7 +1038,88 @@ const openLeadDrawer = async (pageId: number) => {
   leadFilters.status = undefined;
   leadFilters.channel = "";
   leadDrawerVisible.value = true;
-  await loadLeadList();
+  await Promise.all([loadLeadList(), loadRetentionPolicy()]);
+};
+
+const loadRetentionPolicy = async () => {
+  if (!canEdit.value || retentionPolicy.value) {
+    return;
+  }
+  try {
+    const response = await getLeadRetentionPolicy();
+    if (response.code === 10000) {
+      retentionPolicy.value = response.data;
+    }
+  } catch {
+    // 保留策略为辅助信息，取不到时不阻断线索查看
+    retentionPolicy.value = null;
+  }
+};
+
+const handleExportLeads = async () => {
+  exportingLeads.value = true;
+  try {
+    const { blob, filename } = await exportLeadCsv({
+      pageId: activeLeadPageId.value ?? undefined,
+      status: leadFilters.status,
+      channel: leadFilters.channel.trim() || undefined,
+    });
+
+    saveBlob(blob, filename);
+
+    ElMessage.success("线索已导出");
+  } catch (error: unknown) {
+    ElMessage.error(error instanceof Error ? error.message : "导出线索失败");
+  } finally {
+    exportingLeads.value = false;
+  }
+};
+
+const handlePurgeLeads = async () => {
+  purgingLeads.value = true;
+  try {
+    // 先预览将要删除的数量，交由用户二次确认，避免误删
+    const preview = await purgeExpiredLeads(true);
+    if (preview.code !== 10000) {
+      throw new Error(preview.message || "获取超期线索数量失败");
+    }
+    const { matched, retentionDays } = preview.data;
+    if (matched === 0) {
+      ElMessage.info(`没有超过 ${retentionDays} 天的线索需要清理`);
+      return;
+    }
+
+    await ElMessageBox.confirm(
+      `将永久删除 ${matched} 条超过 ${retentionDays} 天的线索，删除后不可恢复，是否继续？`,
+      "清理超期线索",
+      {
+        confirmButtonText: "确定清理",
+        cancelButtonText: "取消",
+        type: "warning",
+      },
+    );
+
+    const result = await purgeExpiredLeads(false);
+    if (result.code !== 10000) {
+      throw new Error(result.message || "清理超期线索失败");
+    }
+
+    ElMessage.success(`已清理 ${result.data.deleted} 条超期线索`);
+    await loadLeadList();
+  } catch (error: unknown) {
+    if (error !== "cancel") {
+      ElMessage.error(error instanceof Error ? error.message : "清理超期线索失败");
+    }
+  } finally {
+    purgingLeads.value = false;
+  }
+};
+
+const formatDateLabel = (value: string) => {
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp)
+    ? new Date(timestamp).toLocaleDateString("zh-CN")
+    : value;
 };
 
 const loadLeadList = async () => {

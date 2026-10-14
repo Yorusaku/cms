@@ -20,8 +20,6 @@ const makeButtonProps = (text: string, color = "#1677ff") => ({
 const makeTitleProps = (title: string, align: string = "center") => ({
   title, align, fontSize: 18, color: "#333" });
 
-const makeImageProps = (label: string, imgUrl: string = "") => ({ label, imgUrl, link: "" });
-
 // 模板列表
 export const TEMPLATE_SEEDS: TemplateSeed[] = [
   // ============ 营销 (4个) ============
@@ -202,6 +200,67 @@ export const TEMPLATE_SEEDS: TemplateSeed[] = [
           [btn]: { id: btn, type: "CmsButton", parentId: null, children: [], props: makeButtonProps("联系我们"), styles: {} },
         },
         rootIds: [title1, richtext, btn],
+      };
+    })(),
+  },
+
+  // ============ 业务页面 (3个) ============
+  {
+    name: "业务公告页",
+    thumbnail: null,
+    category: "business",
+    description: "用于展示业务公告、服务说明和办理须知",
+    schema: (() => {
+      const notice = cid("BusinessNotice");
+      const stat = cid("BusinessStat");
+      const intro = cid("BusinessIntro");
+      return {
+        version: "2.0.0" as const,
+        pageConfig: { name: "业务公告页", scene: "content" as const, shareDesc: "业务服务说明", shareImage: "", backgroundColor: "#f8fafc", backgroundImage: "", backgroundPosition: "top", cover: "" },
+        componentMap: {
+          [intro]: { id: intro, type: "RichText", parentId: null, children: [], props: { content: "<h2>业务服务公告</h2><p>这里展示服务说明、办理条件和常见问题。</p>" }, styles: {} },
+          [stat]: { id: stat, type: "StatCard", parentId: null, children: [], props: { title: "本周办理量", value: 128, description: "较上周 +8%", icon: "数", accentColor: "#2563eb" }, styles: {} },
+          [notice]: { id: notice, type: "Notice", parentId: null, children: [], props: { noticelist: [{ text: "请按页面说明准备办理材料" }], backgroundColor: "#eff6ff", textColor: "#1d4ed8" }, styles: {} },
+        },
+        rootIds: [intro, stat, notice],
+      };
+    })(),
+  },
+  {
+    name: "信息登记页",
+    thumbnail: null,
+    category: "business",
+    description: "用于收集预约、申请和客户服务信息",
+    schema: (() => {
+      const intro = cid("FormIntro");
+      const form = cid("BusinessForm");
+      return {
+        version: "2.0.0" as const,
+        pageConfig: { name: "信息登记页", scene: "form" as const, shareDesc: "在线登记办理信息", shareImage: "", backgroundColor: "#f8fafc", backgroundImage: "", backgroundPosition: "top", cover: "" },
+        componentMap: {
+          [intro]: { id: intro, type: "RichText", parentId: null, children: [], props: { content: "<h2>服务申请</h2><p>填写信息后提交申请，工作人员会及时跟进。</p>" }, styles: {} },
+          [form]: { id: form, type: "BusinessForm", parentId: null, children: [], props: { title: "信息登记", subtitle: "请填写申请信息", submitText: "提交申请", fields: [{ key: "name", label: "姓名", type: "text", required: true }, { key: "phone", label: "联系电话", type: "text", required: true }, { key: "date", label: "预约日期", type: "date", required: true }] }, styles: {} },
+        },
+        rootIds: [intro, form],
+      };
+    })(),
+  },
+  {
+    name: "业务查询页",
+    thumbnail: null,
+    category: "business",
+    description: "用于展示业务办理记录、状态和统计信息",
+    schema: (() => {
+      const stat = cid("ListStat");
+      const list = cid("BusinessList");
+      return {
+        version: "2.0.0" as const,
+        pageConfig: { name: "业务查询页", scene: "list" as const, shareDesc: "查询业务办理状态", shareImage: "", backgroundColor: "#f8fafc", backgroundImage: "", backgroundPosition: "top", cover: "" },
+        componentMap: {
+          [stat]: { id: stat, type: "StatCard", parentId: null, children: [], props: { title: "待处理事项", value: 12, description: "本周新增", icon: "数", accentColor: "#2563eb" }, styles: {} },
+          [list]: { id: list, type: "BusinessList", parentId: null, children: [], props: { title: "办理记录", subtitle: "支持关键词筛选", columns: [{ key: "name", label: "事项" }, { key: "status", label: "状态" }], rows: [{ id: 1, name: "服务申请", status: "处理中" }, { id: 2, name: "资料补交", status: "已完成" }], pageSize: 5 }, styles: {} },
+        },
+        rootIds: [stat, list],
       };
     })(),
   },

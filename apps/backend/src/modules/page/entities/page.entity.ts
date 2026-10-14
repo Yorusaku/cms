@@ -65,6 +65,18 @@ export class Page {
   @Column({ type: "varchar", length: 20, default: "draft" })
   status: string;
 
+  @Column({ type: "text", nullable: true, name: "review_note" })
+  reviewNote: string | null;
+
+  @Column({ type: "uuid", nullable: true, name: "submitted_by" })
+  submittedBy: string | null;
+
+  @Column({ type: "uuid", nullable: true, name: "reviewed_by" })
+  reviewedBy: string | null;
+
+  @Column({ type: "timestamptz", nullable: true, name: "reviewed_at" })
+  reviewedAt: Date | null;
+
   @Column({ type: "boolean", name: "is_deleted", default: false })
   isDeleted: boolean;
 

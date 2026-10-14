@@ -102,6 +102,98 @@ export class ActivityPage {
       .click();
   }
 
+  /** 按页面名定位行下标（用于审核/发布后表格刷新导致的行序变化），找不到返回 -1 */
+  async findRowIndexByName(name: string): Promise<number> {
+    const rows = this.getTableRows();
+    const count = await rows.count();
+    for (let index = 0; index < count; index += 1) {
+      const text = await rows.nth(index).innerText();
+      if (text.includes(name)) return index;
+    }
+    return -1;
+  }
+
+  /** 行内「提交审核」（draft / rejected 状态可见，admin 与 editor 均可） */
+  async clickSubmitReviewInRow(rowIndex: number) {
+    await this.getTableRows()
+      .nth(rowIndex)
+      .getByRole("button", { name: "提交审核", exact: true })
+      .first()
+      .click();
+  }
+
+  /**
+   * 等表格刷新完成：Activity 页每次写操作后会重新拉列表，
+   * 结果行在刷新期间被 v-loading 遮罩覆盖，先等遮罩消失再操作，避免点击被吞。
+   */
+  private async waitTableIdle() {
+    await expect(this.page.locator(".el-loading-mask"))
+      .toBeHidden({ timeout: 10000 })
+      .catch(() => undefined);
+  }
+
+  /**
+   * 等确认弹窗关闭动画结束。
+   * 弹窗在关闭过渡期间仍算「可见」，若不等它消失就进入下一步，
+   * 下一个动作会匹配到这个正在关闭的旧弹窗，导致找不到可点按钮而超时。
+   */
+  private async waitMessageBoxClosed() {
+    await expect(this.page.locator(".el-message-box:visible"))
+      .toHaveCount(0, { timeout: 5000 })
+      .catch(() => undefined);
+  }
+
+  /** 当前可见的 MessageBox（关闭动画中的残影不计入，避免误命中） */
+  private currentMessageBox() {
+    return this.page.locator(".el-message-box:visible").last();
+  }
+
+  /** 点 MessageBox 的确认按钮并等弹窗关闭、表格刷新 */
+  private async confirmMessageBox() {
+    const box = this.currentMessageBox();
+    await expect(box).toBeVisible({ timeout: 5000 });
+    // 确认按钮统一取弹窗内的 primary 按钮：不同调用点文案不一致
+    // （审核 prompt 传了中文「确定」，发布 confirm 未传文案时 Element Plus 渲染默认英文 "OK"），
+    // 按样式类定位比按文案更稳。
+    const confirmButton = box
+      .locator(".el-message-box__btns button.el-button--primary")
+      .first();
+    await expect(confirmButton).toBeVisible({ timeout: 5000 });
+    await confirmButton.click();
+    await this.waitMessageBoxClosed();
+    await this.waitTableIdle();
+  }
+
+  /** 行内「通过审核」：ElMessageBox.prompt 需要填审核备注后确认（admin 专属） */
+  async approveRow(rowIndex: number, note = "自动化审核通过") {
+    await this.waitTableIdle();
+    await this.getTableRows()
+      .nth(rowIndex)
+      .getByRole("button", { name: "通过审核", exact: true })
+      .first()
+      .click();
+
+    const box = this.currentMessageBox();
+    await expect(box).toBeVisible({ timeout: 5000 });
+    const noteInput = box.locator("textarea").first();
+    if ((await noteInput.count()) > 0) {
+      await noteInput.fill(note);
+    }
+    await this.confirmMessageBox();
+  }
+
+  /** 行内「发布」：ElMessageBox.confirm 需要确认（admin 专属，精确匹配避免命中「回滚到最新发布」） */
+  async publishRow(rowIndex: number) {
+    await this.waitTableIdle();
+    await this.getTableRows()
+      .nth(rowIndex)
+      .getByRole("button", { name: "发布", exact: true })
+      .first()
+      .click();
+
+    await this.confirmMessageBox();
+  }
+
   async expectDrawerVisible() {
     await expect(this.page.locator(".el-drawer").first()).toBeVisible({
       timeout: 3000,

@@ -11,6 +11,7 @@
       <el-tab-pane label="电商" name="ecommerce" />
       <el-tab-pane label="品牌" name="brand" />
       <el-tab-pane label="通用" name="general" />
+      <el-tab-pane label="业务" name="business" />
     </el-tabs>
 
     <div v-loading="loading" class="template-grid">
@@ -152,16 +153,18 @@ const categoryColor = (cat: string) => {
     ecommerce: "#ffd93d",
     brand: "#6c5ce7",
     general: "#00b894",
+    business: "#2563eb",
   };
   return map[cat] || "#95a5a6";
 };
 
-const categoryTagType = (cat: string): "danger" | "warning" | "success" | "info" => {
-  const map: Record<string, "danger" | "warning" | "success" | "info"> = {
+const categoryTagType = (cat: string): "primary" | "danger" | "warning" | "success" | "info" => {
+  const map: Record<string, "primary" | "danger" | "warning" | "success" | "info"> = {
     marketing: "danger",
     ecommerce: "warning",
     brand: "info",
     general: "success",
+    business: "primary",
   };
   return map[cat] || "info";
 };
@@ -172,6 +175,7 @@ const categoryLabel = (cat: string) => {
     ecommerce: "电商",
     brand: "品牌",
     general: "通用",
+    business: "业务",
   };
   return map[cat] || cat;
 };

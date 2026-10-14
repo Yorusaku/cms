@@ -426,7 +426,7 @@ export const usePageStore = defineStore("page", () => {
     // 将字符串形式的 transformFn 转换为函数
     if (linkage.transformFn && typeof linkage.transformFn === 'string') {
       try {
-        // eslint-disable-next-line no-new-func
+         
         runtime.transformFn = new Function('value', `return ${linkage.transformFn.replace(/^\(value\)\s*=>\s*/, '')}`);
       } catch (error) {
         console.error('Failed to parse transformFn:', error);

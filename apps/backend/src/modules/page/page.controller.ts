@@ -6,7 +6,7 @@ import { GetPageJsonDto } from "./dto/get-page-json.dto";
 import { AddPageJsonDto, UpdatePageJsonDto } from "./dto/save-page.dto";
 import { DeletePageDto } from "./dto/delete-page.dto";
 import { UpdatePageStatusDto } from "./dto/update-page-status.dto";
-import { GetPublishLogsDto, PublishPageDto, RollbackVersionDto } from "./dto/publish-log.dto";
+import { GetPublishLogsDto, PublishPageDto, RollbackVersionDto, ReviewPageDto, SubmitReviewDto } from "./dto/publish-log.dto";
 import { Roles } from "../../common/decorators/roles.decorator";
 import { Public } from "../../common/decorators/public.decorator";
 import type { AuthenticatedUser } from "../auth/strategies/jwt.strategy";
@@ -16,6 +16,7 @@ export class PageController {
   constructor(private readonly pageService: PageService) {}
 
   @Get("getPageList")
+  @Roles("admin", "editor", "viewer")
   async getPageList(@Query() dto: GetPageListDto) {
     return this.pageService.getPageList(dto);
   }
@@ -27,6 +28,7 @@ export class PageController {
   }
 
   @Get("getPageJson")
+  @Roles("admin", "editor", "viewer")
   async getPageJson(@Query() dto: GetPageJsonDto) {
     return this.pageService.getPageJson(dto.id);
   }
@@ -51,7 +53,7 @@ export class PageController {
   }
 
   @Post("publishPage")
-  @Roles("admin", "editor")
+  @Roles("admin")
   async publishPage(@Body() dto: PublishPageDto, @Req() req: Request & { user: AuthenticatedUser }) {
     return this.pageService.publishPage(dto.pageId, req.user, dto.note);
   }
@@ -71,13 +73,26 @@ export class PageController {
   }
 
   @Get("getPagePublishLogs")
+  @Roles("admin", "editor", "viewer")
   async getPagePublishLogs(@Query() dto: GetPublishLogsDto) {
     return this.pageService.getPagePublishLogs(dto.pageId);
   }
 
   @Post("rollbackPageVersion")
-  @Roles("admin", "editor")
+  @Roles("admin")
   async rollbackPageVersion(@Body() dto: RollbackVersionDto, @Req() req: Request & { user: AuthenticatedUser }) {
     return this.pageService.rollbackPageVersion(dto.pageId, dto.versionId, req.user);
+  }
+
+  @Post("submitPageReview")
+  @Roles("admin", "editor")
+  async submitPageReview(@Body() dto: SubmitReviewDto, @Req() req: Request & { user: AuthenticatedUser }) {
+    return this.pageService.submitForReview(dto.pageId, req.user, dto.note);
+  }
+
+  @Post("reviewPage")
+  @Roles("admin")
+  async reviewPage(@Body() dto: ReviewPageDto, @Req() req: Request & { user: AuthenticatedUser }) {
+    return this.pageService.reviewPage(dto.pageId, req.user, dto.decision, dto.note);
   }
 }

@@ -160,6 +160,14 @@ class Request {
           return Promise.reject(error);
         }
 
+        // 二进制响应（CSV / Excel 导出等）：后端直接回文件流，没有 { code, message, data }
+        // 业务包，若按业务码解包会把 Blob 的 undefined code 误判为业务失败，
+        // 因此原样返回，交由调用方读取 response.data。
+        const responseType = response.config.responseType;
+        if (responseType === "blob" || responseType === "arraybuffer") {
+          return response;
+        }
+
         // 业务状态码检查
         if (data.code === 10000) {
           // 请求成功
@@ -372,6 +380,28 @@ class Request {
     return this.instance
       .delete<ResponseData<T>>(url, config)
       .then((res) => res.data);
+  }
+
+  /**
+   * 下载二进制响应（CSV / Excel 等文件导出）
+   *
+   * 注意：本项目的后端异常统一以 HTTP 200 + `{ code, message }` 业务包返回，
+   * 因此导出失败时拿到的仍是一个 Blob，只是其 `type` 为 JSON。
+   * 调用方必须检查 `blob.type`，不能直接当作文件保存。
+   *
+   * @param url - 请求地址
+   * @param config - 请求配置
+   * @returns Promise<Blob>
+   *
+   * @example
+   * const blob = await request.download('/export/leadCsv')
+   */
+  public async download(url: string, config?: RequestConfig): Promise<Blob> {
+    const response = await this.instance.get<Blob>(url, {
+      ...config,
+      responseType: "blob",
+    });
+    return response.data;
   }
 }
 

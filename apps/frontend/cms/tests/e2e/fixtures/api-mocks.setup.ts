@@ -24,9 +24,23 @@ const readJsonBody = async (route: Route) => {
   }
 };
 
-export async function setAuthToken(page: Page, token: string) {
+/**
+ * 注入登录态。角色需一并写入：前端门禁统一从 localStorage.role（其次 JWT payload）取角色，
+ * 取不到按 viewer 最小权限处理，写操作入口会被隐藏。默认 admin 保持既有用例全操作可见。
+ */
+export async function setAuthToken(
+  page: Page,
+  token: string,
+  role: "admin" | "editor" | "viewer" = "admin",
+) {
   await page.goto("/cms-manage/login");
-  await page.evaluate((t) => localStorage.setItem("token", t), token);
+  await page.evaluate(
+    ({ t, r }) => {
+      localStorage.setItem("token", t);
+      localStorage.setItem("role", r);
+    },
+    { t: token, r: role },
+  );
 }
 
 export async function setupApiMocks(page: Page) {
@@ -135,6 +149,34 @@ export async function setupApiMocks(page: Page) {
           json: successResponse({
             versionId: `${pageId}-${Date.now()}`,
             versionNo: 1,
+          }),
+        });
+      },
+    },
+    {
+      pattern: /\/api\/atlas-cms\/submitPageReview$/,
+      handler: async (route) => {
+        const body = await readJsonBody(route);
+        await route.fulfill({
+          json: successResponse({
+            id: Number(body.pageId || 1),
+            name: "mock",
+            isAbled: 0,
+            status: "pending_review",
+          }),
+        });
+      },
+    },
+    {
+      pattern: /\/api\/atlas-cms\/reviewPage$/,
+      handler: async (route) => {
+        const body = await readJsonBody(route);
+        await route.fulfill({
+          json: successResponse({
+            id: Number(body.pageId || 1),
+            name: "mock",
+            isAbled: 0,
+            status: body.decision === "rejected" ? "rejected" : "approved",
           }),
         });
       },

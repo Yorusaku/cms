@@ -35,6 +35,15 @@ export class PublishLog {
   @Column({ type: "varchar", length: 100, nullable: true })
   operator: string;
 
+  @Column({ type: "varchar", length: 100, nullable: true, name: "reviewer_name" })
+  reviewerName: string | null;
+
+  @Column({ type: "varchar", length: 100, nullable: true, name: "publisher_name" })
+  publisherName: string | null;
+
+  @Column({ type: "varchar", length: 100, nullable: true, name: "rollbacker_name" })
+  rollbackerName: string | null;
+
   @Column({ type: "text", nullable: true })
   note: string;
 

@@ -11,6 +11,7 @@ export interface SubmitLeadPayload {
   sessionId: string;
   utm?: Record<string, string>;
   channel?: Record<string, string>;
+  consentAccepted: boolean;
 }
 
 export const submitLead = (payload: SubmitLeadPayload): Promise<ResponseData<{ id: number; duplicated: boolean }>> => {

@@ -3,6 +3,7 @@ import {
   IsUUID,
   IsObject,
   IsOptional,
+  IsBoolean,
   IsString,
   Matches,
   MaxLength,
@@ -45,4 +46,7 @@ export class CreateLeadDto {
   @IsOptional()
   @IsObject()
   channel?: Record<string, string>;
+
+  @IsBoolean()
+  consentAccepted: boolean;
 }

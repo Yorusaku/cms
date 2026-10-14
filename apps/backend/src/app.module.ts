@@ -10,6 +10,7 @@ import { TemplateModule } from "./modules/template/template.module";
 import { LeadModule } from "./modules/lead/lead.module";
 import { TrackingModule } from "./modules/tracking/tracking.module";
 import { AiModule } from "./modules/ai/ai.module";
+import { HealthModule } from "./common/health/health.module";
 import { JwtAuthGuard } from "./common/guards/auth.guard";
 import { RolesGuard } from "./common/guards/roles.guard";
 import { resolve } from "path";
@@ -29,6 +30,7 @@ import { resolve } from "path";
     TrackingModule,
     AiModule,
     UploadModule,
+    HealthModule,
   ],
   providers: [
     {

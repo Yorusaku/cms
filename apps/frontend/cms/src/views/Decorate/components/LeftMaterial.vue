@@ -56,7 +56,7 @@ import { getMaterialDefaults, getMaterialGroups } from "@cms/ui";
 
 const pageStore = usePageStore();
 
-const activeNames = ref([1, 2]);
+const activeNames = ref([1, 2, 3]);
 const keyword = ref("");
 const materialGroups = getMaterialGroups();
 

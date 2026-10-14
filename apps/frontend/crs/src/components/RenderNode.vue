@@ -3,6 +3,7 @@ import { computed, defineComponent, h, inject, onMounted, onUnmounted, ref, watc
 import type { IComponentSchemaV2 } from "@cms/types";
 import { getMaterialAsyncComponent, resolveMaterialRuntimeProps } from "@cms/ui";
 import { usePageStore } from "@/store/usePageStore";
+import { trackEvent } from "@/utils/tracking";
 
 const FallbackComponent = defineComponent({
   name: "CrsMaterialFallback",
@@ -23,6 +24,8 @@ interface Props {
   componentMap: Record<string, IComponentSchemaV2>;
   pageId?: number;
   publishedVersionId?: string;
+  /** 祖先组件链（自顶向下，格式 `type:id`），供埋点携带上下文 */
+  ancestorPath?: string[];
 }
 
 const props = defineProps<Props>();
@@ -33,6 +36,12 @@ const sendSelectEvent = inject<(componentId: string) => Promise<void> | void>(
 );
 
 const currentNode = computed(() => props.componentMap[props.nodeId]);
+
+/** 子节点继承的祖先链：当前节点追加到父链尾部 */
+const childAncestorPath = computed(() => {
+  const node = currentNode.value;
+  return node ? [...(props.ancestorPath ?? []), `${node.type}:${node.id}`] : props.ancestorPath ?? [];
+});
 
 const resolveComponent = (type: string) => {
   return getMaterialAsyncComponent(type) || FallbackComponent;
@@ -70,6 +79,22 @@ const updateMergedProps = () => {
 };
 
 const handleClick = async () => {
+  if (currentNode.value && props.pageId) {
+    const isCta = ["Button", "LeadForm", "FloatLayer"].includes(currentNode.value.type);
+    void trackEvent({
+      eventType: isCta ? "cta_click" : "component_click",
+      pageId: props.pageId,
+      publishedVersionId: props.publishedVersionId,
+      componentId: currentNode.value.id,
+      componentType: currentNode.value.type,
+      ctaText: isCta ? String(currentNode.value.props?.text ?? currentNode.value.props?.title ?? currentNode.value.type) : undefined,
+      payload: {
+        source: "crs_component",
+        // 递归埋点上下文：带上祖先链，便于区分「哪个容器里的按钮被点」
+        ancestorPath: props.ancestorPath ?? [],
+      },
+    });
+  }
   if (sendSelectEvent) {
     await sendSelectEvent(props.nodeId);
   }
@@ -114,7 +139,13 @@ watch(
       @click.stop="handleClick"
     >
       <template v-for="childId in currentNode.children" :key="childId">
-        <RenderNode :node-id="childId" :component-map="componentMap" />
+        <RenderNode
+          :node-id="childId"
+          :component-map="componentMap"
+          :page-id="pageId"
+          :published-version-id="publishedVersionId"
+          :ancestor-path="childAncestorPath"
+        />
       </template>
     </component>
 

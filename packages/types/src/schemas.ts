@@ -137,7 +137,7 @@ export const MaterialEditorConfigSchema = z
 /** 物料定义（宽松校验） */
 export const MaterialDefinitionSchema = z.object({
   type: z.string(),
-  group: z.enum(["basic", "marketing"]),
+  group: z.enum(["basic", "marketing", "business"]),
   label: z.string(),
   icon: z.string(),
   maxCount: z.number(),

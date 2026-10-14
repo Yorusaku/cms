@@ -45,6 +45,7 @@ export const trackEvent = async (event: MarketingTrackEvent) => {
 
   const payload = {
     ...event,
+    source: "cms" as const,
     sessionId: getSessionId(),
     timestamp: event.timestamp ?? Date.now(),
   };

@@ -34,17 +34,22 @@ export class AiService {
       request,
       this.getMaterialContract(),
     );
+    const isBusinessScene = this.isBusinessScene(request.activityType);
     const providerSchema = providerDraft
-      ? this.normalizeProviderSchema(providerDraft.schema, warnings)
+      ? this.normalizeProviderSchema(providerDraft.schema, warnings, isBusinessScene)
       : null;
-    const schema = providerSchema ?? this.createMockMarketingSchema(request, warnings);
+    const fallbackSchema = providerSchema ?? (
+      isBusinessScene
+        ? this.createMockBusinessSchema(request, warnings)
+        : this.createMockMarketingSchema(request, warnings)
+    );
 
     if (!providerSchema && providerDraft) {
       warnings.push("模型生成结果未通过平台校验，已回退为 mock 草稿。");
     }
 
     warnings.push(...(providerDraft?.warnings ?? []));
-    const result = PageSchemaV2Schema.safeParse(schema);
+    const result = PageSchemaV2Schema.safeParse(fallbackSchema);
 
     if (!result.success) {
       throw new BadRequestException("AI 生成的页面结构未通过 Schema 校验");
@@ -66,7 +71,7 @@ export class AiService {
     const summary =
       providerSchema && providerDraft?.summary
         ? providerDraft.summary
-        : `已根据「${request.activityType}」生成 ${result.data.rootIds.length} 个营销模块，页面已保存为草稿。`;
+        : `已根据「${request.activityType}」生成 ${result.data.rootIds.length} 个业务模块，页面已保存为草稿。`;
 
     return {
       pageId: saved.id,
@@ -379,9 +384,90 @@ export class AiService {
     };
   }
 
+  private isBusinessScene(scene: string): boolean {
+    return ["内容展示", "信息登记", "数据查询"].includes(scene.trim());
+  }
+
+  private createMockBusinessSchema(
+    request: AiGeneratePageRequest,
+    warnings: string[],
+  ): IPageSchemaV2 {
+    const scene = request.activityType.trim();
+    const intro = this.createComponent("ai-business-intro", "RichText", {
+      content: this.createBusinessIntroHtml(request),
+      backgroundColor: "#ffffff",
+      padding: "16px 14px 8px",
+    });
+    const stat = this.createComponent("ai-business-stat", "StatCard", {
+      title: "当前办理量",
+      value: 128,
+      description: "本周累计处理",
+      icon: "数",
+      accentColor: "#2563eb",
+    });
+    const businessForm = this.createComponent("ai-business-form", "BusinessForm", {
+      title: "信息登记",
+      subtitle: request.leadGoal || "请填写业务办理信息",
+      submitText: request.ctaText || "提交信息",
+      fields: [
+        { key: "name", label: "姓名", type: "text", required: true },
+        { key: "phone", label: "联系电话", type: "text", required: true },
+        { key: "remark", label: "需求说明", type: "text", required: false },
+      ],
+    });
+    const businessList = this.createComponent("ai-business-list", "BusinessList", {
+      title: "办理记录",
+      subtitle: request.promotion || "支持关键词筛选和分页展示",
+      columns: [
+        { key: "name", label: "事项" },
+        { key: "status", label: "状态" },
+      ],
+      rows: [
+        { id: 1, name: request.pageName, status: "处理中" },
+        { id: 2, name: "历史办理记录", status: "已完成" },
+      ],
+      pageSize: 5,
+    });
+
+    const components = scene === "信息登记"
+      ? [intro, businessForm]
+      : scene === "数据查询"
+        ? [stat, businessList]
+        : [intro, stat];
+
+    warnings.push("AI 业务页面使用平台内置物料生成，可继续在编辑器中调整配置。");
+    return {
+      version: "2.0.0",
+      pageConfig: {
+        name: request.pageName,
+        scene: scene === "信息登记" ? "form" : scene === "数据查询" ? "list" : "content",
+        shareDesc: request.promotion || request.pageName,
+        shareImage: "",
+        backgroundColor: "#f8fafc",
+        backgroundImage: "",
+        backgroundPosition: "top",
+        cover: "",
+      },
+      componentMap: Object.fromEntries(components.map((component) => [component.id, component])),
+      rootIds: components.map((component) => component.id),
+      tracking: {
+        enabled: true,
+        context: { source: "ai_generate_business_page", scene },
+      },
+    };
+  }
+
+  private createBusinessIntroHtml(request: AiGeneratePageRequest): string {
+    const title = this.escapeHtml(request.pageName);
+    const audience = this.escapeHtml(request.audience);
+    const requirement = this.escapeHtml(request.promotion);
+    return `<h2 style="margin:0 0 8px;color:#111827;font-size:20px;">${title}</h2><p style="margin:0;color:#374151;line-height:1.7;">面向${audience}，${requirement}。</p>`;
+  }
+
   private normalizeProviderSchema(
     rawSchema: unknown,
     warnings: string[],
+    isBusinessScene = false,
   ): IPageSchemaV2 | null {
     const result = PageSchemaV2Schema.safeParse(rawSchema);
     if (!result.success) {
@@ -398,6 +484,9 @@ export class AiService {
       "Dialog",
       "AssistLine",
       "FloatLayer",
+      "BusinessForm",
+      "BusinessList",
+      "StatCard",
     ]);
 
     for (const componentId of schema.rootIds) {
@@ -420,9 +509,16 @@ export class AiService {
       }
     }
 
-    if (!schema.rootIds.some((id) => schema.componentMap[id]?.type === "LeadForm")) {
-      warnings.push("模型结果缺少线索表单，已回退为 mock 草稿。");
+    const requiredTypes = isBusinessScene
+      ? ["BusinessForm", "BusinessList", "StatCard", "RichText"]
+      : ["LeadForm"];
+    if (!schema.rootIds.some((id) => requiredTypes.includes(schema.componentMap[id]?.type ?? ""))) {
+      warnings.push(isBusinessScene ? "模型结果缺少业务物料，已回退为 mock 草稿。" : "模型结果缺少线索表单，已回退为 mock 草稿。");
       return null;
+    }
+
+    if (isBusinessScene) {
+      schema.pageConfig.scene = schema.pageConfig.scene ?? "content";
     }
 
     schema.tracking = {
@@ -447,6 +543,9 @@ export class AiService {
         "Dialog: props.title, content, confirmText, cancelText, visible",
         "AssistLine: props.height, type, borderColor, backgroundColor",
         "FloatLayer: props.imageUrl, defaultImage, link, width, bottom, right",
+        "BusinessForm: props.title, subtitle, submitText, fields",
+        "BusinessList: props.title, subtitle, columns, rows, pageSize",
+        "StatCard: props.title, value, description, icon, accentColor",
       ],
       null,
       2,

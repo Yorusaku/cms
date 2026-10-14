@@ -97,6 +97,17 @@ describe("material registry", () => {
     expect(getMaterialDefaults("carousel").height).toBe("200px");
   });
 
+  it("should expose business materials for content, form and list pages", () => {
+    expect(resolveMaterialDefinition("business-form")?.type).toBe("BusinessForm");
+    expect(resolveMaterialDefinition("data-list")?.type).toBe("BusinessList");
+    expect(resolveMaterialDefinition("stat-card")?.type).toBe("StatCard");
+    expect(materialRegistry.filter((material) => material.group === "business").map((material) => material.type)).toEqual([
+      "BusinessForm",
+      "BusinessList",
+      "StatCard",
+    ]);
+  });
+
   it("should normalize legacy schema data for notice, dialog and product", () => {
     const schema = createPageSchema();
     schema.componentMap = {

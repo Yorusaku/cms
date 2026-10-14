@@ -4,6 +4,7 @@ import { DataSource, EntityManager, ILike, Repository } from "typeorm";
 import { v4 as uuid } from "uuid";
 import { Page } from "./entities/page.entity";
 import { PublishLog } from "./entities/publish-log.entity";
+import { User } from "../auth/entities/user.entity";
 import type { IPageSchemaV2, IComponentSchemaV1 } from "@cms/types";
 
 export interface PublishActor {
@@ -27,6 +28,10 @@ export interface PageItem {
   publishedAt: string | null;
   create_time: string;
   update_time: string;
+  reviewNote?: string | null;
+  submittedBy?: string | null;
+  reviewedBy?: string | null;
+  reviewedAt?: string | null;
 }
 
 interface SavePageInput {
@@ -52,6 +57,8 @@ export class PageService {
     private readonly publishLogRepo: Repository<PublishLog>,
     @InjectDataSource()
     private readonly dataSource: DataSource,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
   ) {}
 
   async getPageList(query: PageListQuery): Promise<{
@@ -84,7 +91,6 @@ export class PageService {
     const findWhere: Record<string, unknown> = {
       isDeleted: false,
       isAbled: 1,
-      status: "published",
     };
     if (name) findWhere.name = ILike(`%${name}%`);
     const [rows, total] = await this.pageRepo.findAndCount({
@@ -102,7 +108,7 @@ export class PageService {
 
   async getPublishedPage(id: number): Promise<Record<string, unknown>> {
     const page = await this.pageRepo.findOne({ where: { id, isDeleted: false } });
-    if (!page || page.isAbled !== 1 || page.status !== "published" || !page.publishedSchema || !page.publishedVersionId) {
+    if (!page || page.isAbled !== 1 || !page.publishedSchema || !page.publishedVersionId) {
       throw new NotFoundException("页面暂不可访问");
     }
     return {
@@ -120,7 +126,8 @@ export class PageService {
     };
   }
 
-  async addPageJson(input: SavePageInput, actor?: PublishActor): Promise<{ id: number }> {
+  async addPageJson(input: SavePageInput, _actor?: PublishActor): Promise<{ id: number }> {
+    if (input.online === 1) throw new ConflictException("请通过审核发布流程上线页面");
     const saved = await this.pageRepo.save(this.pageRepo.create({
       name: input.name,
       schema: input.schema as unknown as IPageSchemaV2,
@@ -134,14 +141,11 @@ export class PageService {
       isAbled: 0,
       status: "draft",
     }));
-    if (input.online === 1) {
-      if (!actor) throw new ConflictException("缺少发布操作人");
-      await this.publishPage(saved.id, actor, "兼容发布");
-    }
     return { id: saved.id };
   }
 
-  async updatePageJson(input: SavePageInput, actor?: PublishActor): Promise<void> {
+  async updatePageJson(input: SavePageInput, _actor?: PublishActor): Promise<void> {
+    if (input.online === 1) throw new ConflictException("请通过审核发布流程上线页面");
     const page = await this.getEditablePage(input.id!);
     Object.assign(page, {
       name: input.name,
@@ -154,20 +158,55 @@ export class PageService {
       backgroundPosition: input.backgroundPosition ?? page.backgroundPosition,
       cover: input.cover ?? page.cover,
     });
+    page.status = "draft";
+    page.reviewNote = null;
+    page.reviewedBy = null;
+    page.reviewedAt = null;
     await this.pageRepo.save(page);
-    if (input.online === 1) {
-      if (!actor) throw new ConflictException("缺少发布操作人");
-      await this.publishPage(page.id, actor, "兼容发布");
+  }
+
+  async submitForReview(pageId: number, actor: PublishActor, note?: string): Promise<PageItem> {
+    const page = await this.getEditablePage(pageId);
+    if (!["draft", "rejected"].includes(page.status)) throw new ConflictException("当前页面不能提交审核");
+    page.status = "pending_review";
+    page.reviewNote = note?.trim() || null;
+    page.submittedBy = actor.id;
+    page.reviewedBy = null;
+    page.reviewedAt = null;
+    await this.pageRepo.save(page);
+    return this.toPageItem(page);
+  }
+
+  async reviewPage(
+    pageId: number,
+    actor: PublishActor,
+    decision: "approved" | "rejected",
+    note?: string,
+  ): Promise<PageItem> {
+    const page = await this.getEditablePage(pageId);
+    if (page.status !== "pending_review") {
+      throw new ConflictException("只有待审核页面可以处理审核");
     }
+    if (decision === "rejected" && !note?.trim()) throw new ConflictException("驳回时必须填写原因");
+    page.status = decision;
+    page.reviewNote = note?.trim() || page.reviewNote || null;
+    page.reviewedBy = actor.id;
+    page.reviewedAt = new Date();
+    await this.pageRepo.save(page);
+    return this.toPageItem(page);
   }
 
   async publishPage(pageId: number, actor: PublishActor, note = "发布"): Promise<{ versionId: string; versionNo: number }> {
     return this.dataSource.transaction(async (manager) => {
       const page = await this.lockPage(manager, pageId);
       if (!page.schema) throw new ConflictException("页面草稿为空，无法发布");
+      if (page.status !== "approved") {
+        throw new ConflictException("页面必须审核通过后才能发布");
+      }
       const versionNo = await this.getNextVersionNo(manager, pageId);
       const versionId = `${page.id}-${Date.now()}-${uuid().slice(0, 8)}`;
       const publishedAt = new Date();
+      const reviewerName = await this.resolveUsername(manager, page.reviewedBy);
       await manager.getRepository(PublishLog).save({
         versionId,
         pageId: page.id,
@@ -176,6 +215,9 @@ export class PageService {
         action: "publish",
         operatorUserId: actor.id,
         operator: actor.username,
+        reviewerName,
+        publisherName: actor.username,
+        rollbackerName: null,
         note,
         sourceVersionId: null,
         schemaSnapshot: page.schema,
@@ -214,6 +256,9 @@ export class PageService {
       versionNo: log.versionNo,
       action: log.action,
       operator: log.operator,
+      reviewerName: log.reviewerName ?? null,
+      publisherName: log.publisherName ?? null,
+      rollbackerName: log.rollbackerName ?? null,
       note: log.note,
       sourceVersionId: log.sourceVersionId,
       isCurrent: log.versionId === page.publishedVersionId,
@@ -237,6 +282,9 @@ export class PageService {
         action: "rollback",
         operatorUserId: actor.id,
         operator: actor.username,
+        reviewerName: source.reviewerName,
+        publisherName: source.publisherName,
+        rollbackerName: actor.username,
         note: `回滚至 ${source.displayVersion}`,
         sourceVersionId: source.versionId,
         schemaSnapshot: source.schemaSnapshot,
@@ -246,6 +294,16 @@ export class PageService {
       await manager.getRepository(Page).save(page);
       return { versionId: nextVersionId, schema: source.schemaSnapshot as unknown as Record<string, unknown> };
     });
+  }
+
+  /** 在事务内把审核人 id 解析为用户名，用于发布日志快照；查不到时返回 null。 */
+  private async resolveUsername(
+    manager: EntityManager,
+    userId: string | null,
+  ): Promise<string | null> {
+    if (!userId) return null;
+    const user = await manager.getRepository(User).findOne({ where: { id: userId } });
+    return user?.username ?? null;
   }
 
   private async getEditablePage(id: number): Promise<Page> {
@@ -276,6 +334,8 @@ export class PageService {
       id: page.id, name: page.name, isAbled: page.isAbled, status: page.status,
       publishedVersionId: page.publishedVersionId, publishedAt: page.publishedAt?.toISOString() ?? null,
       create_time: page.createTime?.toISOString() ?? "", update_time: page.updateTime?.toISOString() ?? "",
+      reviewNote: page.reviewNote, submittedBy: page.submittedBy, reviewedBy: page.reviewedBy,
+      reviewedAt: page.reviewedAt?.toISOString() ?? null,
     };
   }
 

@@ -7,6 +7,7 @@ import { AuthController } from "./auth.controller";
 import { AuthService } from "./auth.service";
 import { JwtStrategy } from "./strategies/jwt.strategy";
 import { User } from "./entities/user.entity";
+import { resolveJwtSecret } from "../../common/config/env-validation";
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { User } from "./entities/user.entity";
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>("JWT_SECRET", "dev-secret"),
+        // 生产环境缺失 JWT_SECRET 时直接抛错，不回退到开发密钥
+        secret: resolveJwtSecret(config),
         signOptions: {
           expiresIn: config.get<string>("JWT_EXPIRES_IN", "7d"),
         },

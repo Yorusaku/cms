@@ -16,6 +16,9 @@ const TRACK_EVENT_TYPES = [
 ] as const;
 
 export class CreateTrackingEventDto {
+  @IsOptional()
+  @IsIn(["crs", "cms"])
+  source?: "crs" | "cms";
   @IsString()
   @IsIn(TRACK_EVENT_TYPES)
   eventType: (typeof TRACK_EVENT_TYPES)[number];

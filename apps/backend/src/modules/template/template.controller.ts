@@ -1,5 +1,6 @@
 ﻿import { Controller, Get, Post, Body, Query } from "@nestjs/common";
 import { TemplateService } from "./template.service";
+import { Roles } from "../../common/decorators/roles.decorator";
 import { Template } from "./entities/template.entity";
 
 @Controller("atlas-cms")
@@ -7,6 +8,7 @@ export class TemplateController {
   constructor(private readonly templateService: TemplateService) {}
 
   @Get("getTemplateList")
+  @Roles("admin", "editor", "viewer")
   async getTemplateList(
     @Query("category") category?: string,
   ): Promise<Template[]> {
@@ -14,11 +16,13 @@ export class TemplateController {
   }
 
   @Get("getTemplateById")
+  @Roles("admin", "editor", "viewer")
   async getTemplateById(@Query("id") id: number): Promise<Template> {
     return this.templateService.getTemplateById(Number(id));
   }
 
   @Post("createPageFromTemplate")
+  @Roles("admin", "editor")
   async createPageFromTemplate(
     @Body() body: { templateId: number; name: string },
   ): Promise<{ id: number }> {

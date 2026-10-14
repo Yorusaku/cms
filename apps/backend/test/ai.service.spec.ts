@@ -92,6 +92,29 @@ describe("AiService", () => {
     expect(result.warnings).toContain("未填写商品信息，已使用 AI 默认示例商品。");
   });
 
+  it("业务场景回退为受限的业务物料 Schema", async () => {
+    const { service, pageService } = createService();
+
+    const result = await service.generatePage({
+      pageName: "员工服务办理中心",
+      activityType: "信息登记",
+      audience: "企业员工",
+      promotion: "展示办理须知和常见问题",
+      products: [],
+      ctaText: "提交申请",
+      leadGoal: "收集预约信息",
+    });
+
+    expect(result.schema.pageConfig.scene).toBe("form");
+    expect(result.schema.rootIds.map((id) => result.schema.componentMap[id].type)).toEqual([
+      "RichText",
+      "BusinessForm",
+    ]);
+    expect(pageService.addPageJson).toHaveBeenCalledWith(
+      expect.objectContaining({ schema: expect.objectContaining({ pageConfig: expect.objectContaining({ scene: "form" }) }) }),
+    );
+  });
+
   it("结合页面结构和漏斗数据输出优化建议", async () => {
     const { service } = createService({
       pageSchema: createMinimalSchema(),

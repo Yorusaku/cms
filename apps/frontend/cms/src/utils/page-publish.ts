@@ -5,13 +5,17 @@ import {
   rollbackPageVersion,
 } from "@/api/activity";
 
-export type PageContentStatus = "draft" | "published";
+export type PageContentStatus = "draft" | "pending_review" | "rejected" | "approved" | "published" | "offline";
 
 export interface PublishLogRecord {
   pageId: number;
   versionId: string;
   displayVersion: string;
   operator: string;
+  /** 发布日志角色快照：审核人 / 发布人 / 回滚人（历史数据可能为空） */
+  reviewerName?: string | null;
+  publisherName?: string | null;
+  rollbackerName?: string | null;
   note: string;
   publishedAt: number;
   action?: "publish" | "rollback";

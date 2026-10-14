@@ -7,6 +7,7 @@ import { PublishLog } from '../modules/page/entities/publish-log.entity'
 import { Template } from '../modules/template/entities/template.entity'
 import { TEMPLATE_SEEDS } from './seeds/template-seeds'
 import { buildDemoPageSchema } from './seeds/demo-page-schemas'
+import { DEFAULT_ADMIN_PASSWORDS } from '../common/config/env-validation'
 
 const DEMO_PAGES = [
   { name: '618 年中大促', published: true },
@@ -34,15 +35,47 @@ async function ensureUser(
   )
 }
 
+/**
+ * 种子数据入口（`pnpm --filter @cms/backend seed`）。
+ *
+ * 与 SeedService 保持同一套保护规则：
+ * - `SEED_ENABLED=false` 或（未配置且）`NODE_ENV=production` 时跳过；
+ * - 生产环境只创建管理员账号，且密码必须是显式配置的非默认值；
+ * - 演示账号（editor/viewer）、演示页与演示模板仅出现在非生产环境。
+ */
+const isProduction = process.env.NODE_ENV === 'production'
+const seedEnabled =
+  process.env.SEED_ENABLED === undefined
+    ? !isProduction
+    : String(process.env.SEED_ENABLED).toLowerCase() !== 'false'
+
 async function seed() {
+  if (!seedEnabled) {
+    console.log('SEED_ENABLED 未生效（生产默认关闭），跳过种子数据。')
+    return
+  }
+
   await AppDataSource.initialize()
   try {
+    const adminPassword = process.env.ADMIN_PASSWORD
+    if (isProduction && (!adminPassword || DEFAULT_ADMIN_PASSWORDS.includes(adminPassword))) {
+      throw new Error(
+        '生产环境首次初始化必须显式配置非默认的 ADMIN_PASSWORD，已拒绝创建管理员账号'
+      )
+    }
+
     const admin = await ensureUser(
       process.env.ADMIN_USERNAME || 'admin',
-      process.env.ADMIN_PASSWORD || 'admin123456',
+      adminPassword || 'admin123456',
       'admin',
       '管理员'
     )
+
+    if (isProduction) {
+      console.log('生产环境仅创建管理员账号，跳过演示账号、演示页与演示模板。')
+      return
+    }
+
     await ensureUser('editor', 'editor123', 'editor', '编辑员')
     await ensureUser('viewer', 'viewer123', 'viewer', '观察员')
 
@@ -78,6 +111,9 @@ async function seed() {
             action: 'publish',
             operatorUserId: admin.id,
             operator: admin.username,
+            reviewerName: admin.username,
+            publisherName: admin.username,
+            rollbackerName: null,
             note: '首次发布',
             sourceVersionId: null,
             schemaSnapshot: schema,

@@ -52,6 +52,12 @@ export class Lead {
   @Column({ type: "jsonb", nullable: true })
   channel: Record<string, string> | null;
 
+  @Column({ type: "boolean", name: "consent_accepted", default: false })
+  consentAccepted: boolean;
+
+  @Column({ type: "timestamptz", nullable: true, name: "consent_at" })
+  consentAt: Date | null;
+
   @CreateDateColumn({ type: "timestamptz", name: "created_at" })
   createdAt: Date;
 

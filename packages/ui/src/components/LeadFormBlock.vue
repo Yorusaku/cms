@@ -23,6 +23,10 @@
         rows="3"
         :placeholder="remarkPlaceholder"
       />
+      <label v-if="privacyRequired" class="lead-consent">
+        <input v-model="consentAccepted" type="checkbox" />
+        <span>我已阅读并同意隐私政策</span>
+      </label>
       <button class="lead-submit" :disabled="submitting" type="submit">
         {{ submitting ? submittingText : submitText }}
       </button>
@@ -47,6 +51,7 @@ interface SubmitLeadPayload {
   sessionId: string;
   utm?: Record<string, string>;
   channel?: Record<string, string>;
+  consentAccepted: boolean;
 }
 
 interface TrackingPayload {
@@ -73,6 +78,7 @@ interface Props {
   endpoint?: string;
   trackingEndpoint?: string;
   trackingEnabled?: boolean;
+  privacyRequired?: boolean;
   styles?: Record<string, string>;
 }
 
@@ -91,6 +97,7 @@ const props = withDefaults(defineProps<Props>(), {
   endpoint: "/atlas-cms/submitLead",
   trackingEndpoint: "/atlas-cms/trackEvent",
   trackingEnabled: true,
+  privacyRequired: true,
 });
 
 const form = reactive({
@@ -100,6 +107,7 @@ const form = reactive({
 });
 
 const submitting = ref(false);
+const consentAccepted = ref(false);
 const message = ref("");
 const messageType = ref<"success" | "error">("success");
 
@@ -233,6 +241,12 @@ const handleSubmit = async () => {
     return;
   }
 
+  if (props.privacyRequired && !consentAccepted.value) {
+    messageType.value = "error";
+    message.value = "请先同意隐私政策";
+    return;
+  }
+
   if (!props.pageId || !props.publishedVersionId) {
     messageType.value = "error";
     message.value = "页面版本无效，请刷新后重试";
@@ -255,6 +269,7 @@ const handleSubmit = async () => {
       sessionId,
       utm: marketing.utm,
       channel: marketing.channel,
+      consentAccepted: consentAccepted.value,
     });
 
     await trackSubmit({
@@ -271,6 +286,7 @@ const handleSubmit = async () => {
     form.name = "";
     form.phoneNumber = "";
     form.remark = "";
+    consentAccepted.value = false;
     pendingRequestId = null;
   } catch {
     messageType.value = "error";

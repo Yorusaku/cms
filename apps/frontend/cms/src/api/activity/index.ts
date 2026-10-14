@@ -1,4 +1,4 @@
-﻿import http from "@/utils/http";
+import http from "@/utils/http";
 import type { RequestConfig, ResponseData } from "@cms/utils";
 import { PageListResponseSchema } from "@cms/types";
 
@@ -20,7 +20,7 @@ export interface PageItem {
   id: number;
   name: string;
   isAbled: number;
-  status: "draft" | "published" | "offline";
+  status: "draft" | "pending_review" | "rejected" | "approved" | "published" | "offline";
   publishedVersionId: string | null;
   publishedAt: string | null;
   create_time: string;
@@ -39,6 +39,9 @@ export interface PublishLogItem {
   versionId: string | number;
   displayVersion?: string;
   operator?: string;
+  reviewerName?: string | null;
+  publisherName?: string | null;
+  rollbackerName?: string | null;
   note?: string;
   publishedAt?: number | string;
   action?: "publish" | "rollback";
@@ -78,6 +81,14 @@ export function publishCmsPage(data: { pageId: number; note?: string }): Promise
   return http.post("/atlas-cms/publishPage", data, writeConfig);
 }
 
+export function submitPageReview(data: { pageId: number; note?: string }): Promise<ResponseData<PageItem>> {
+  return http.post<PageItem>("/atlas-cms/submitPageReview", data, writeConfig);
+}
+
+export function reviewPage(data: { pageId: number; decision: "approved" | "rejected"; note?: string }): Promise<ResponseData<PageItem>> {
+  return http.post<PageItem>("/atlas-cms/reviewPage", data, writeConfig);
+}
+
 export function delCmsPageById(
   pageId: number,
 ): Promise<ResponseData<unknown>> {
@@ -104,8 +115,8 @@ export function deletePage(
 
 export function login(
   data: { username: string; password: string },
-): Promise<ResponseData<{ token: string }>> {
-  return http.post<{ token: string }>("/atlas-cms/login", data, writeConfig);
+): Promise<ResponseData<{ token: string; role: "admin" | "editor" | "viewer" }>> {
+  return http.post<{ token: string; role: "admin" | "editor" | "viewer" }>("/atlas-cms/login", data, writeConfig);
 }
 
 export function getPagePublishLogs(
@@ -128,7 +139,7 @@ export interface TemplateItem {
   id: number;
   name: string;
   thumbnail: string | null;
-  category: 'marketing' | 'ecommerce' | 'brand' | 'general';
+  category: 'marketing' | 'ecommerce' | 'brand' | 'general' | 'business';
   description: string | null;
   useCount: number;
   isActive: boolean;

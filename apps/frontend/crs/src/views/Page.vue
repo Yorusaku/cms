@@ -43,7 +43,7 @@ import { normalizePageSchemaMaterials } from "@cms/ui";
 import { getPageDataById, parsePageSchema, type PageSchema } from "@/api/page";
 import SchemaRenderer from "@/components/SchemaRenderer.vue";
 import { usePageStore } from "@/store/usePageStore";
-import { getMarketingParamsFromLocation, trackEvent } from "@/utils/tracking";
+import { getMarketingContext, trackEvent } from "@/utils/tracking";
 
 defineOptions({
   name: "CrsPageView",
@@ -107,7 +107,7 @@ const loadPageData = async () => {
         : "移动端页面";
     document.title = pageTitle;
 
-    const marketing = getMarketingParamsFromLocation();
+    const marketing = getMarketingContext();
     await trackEvent({
       eventType: "page_view",
       pageId: pageId.value,
