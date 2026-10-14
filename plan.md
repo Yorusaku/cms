@@ -22,6 +22,21 @@
 - 环境适配：`pnpm ci:all`（turbo）在子进程受限环境会报 `os error 231`，CI 机器如同样受限需改用逐包命令或调整 turbo 并发。
 - **文档入库策略待定（需拍板）**：`.gitignore` 第 54 行为 `docs/`（注释 `# Docs (local only)`），因此本次新增的 `docs/OPERATIONS.md` 与更新的 `docs/ACCEPTANCE_CHECKLIST_ZH.md` 都**不会进入版本库**；但 `README.md` / `AGENTS.md` / 本文件均已引用 `docs/OPERATIONS.md`，换机器会出现死链。可选方案：给该文件加 `!docs/OPERATIONS.md` 例外并提交；或把运维手册并入仓库内非忽略位置（如根目录）；或维持 local only 并去掉文档中的引用。
 
+## 架构稳定化与开发体验改造（2026-10-15）
+
+按「架构稳定化与开发体验改造计划」执行第 1 / 3 / 4 项，第 2 项经评估推迟。
+
+- **统一物料来源（第 1 项）**：核查后确认 CMS 左栏 `LeftMaterial.vue` 早已通过 `getMaterialGroups()` / `getMaterialDefaults()` 读取注册表，且 `component-list.ts` 已无生产代码引用。因此只做收尾——该文件标注 `@deprecated` 并禁止新增物料；`generate-material.mjs` 放开 `--group business`（此前 business 分组只能手工添加，正是双份维护的来源：3 个 business 物料被同时写进 `definitions.ts` 与 `component-list.ts`）。**未按原计划做「由注册表适配生成旧格式」**：老 `data` 字段（`validTime` / `layout` / `imageMargin`）与注册表 `defaultProps`（`autoplay` / `showIndicators` / `imageFit`）不等价，适配产物会造出语义不清的兼容层。
+- **统一 Zod（第 3 项）**：`apps/backend/package.json` 由 `^4.4.3` 改为 `catalog:`，依赖树统一为 `zod@3.24.0`。backend 的 `src` 无任何 zod 引用（唯一使用点是 `test/mocks/cms-types.ts`），不涉及 API 迁移。
+- **workspace 源码加载（第 4 项）**：CMS/CRS 的 Vite 与 CMS 的 Vitest 增加 `@cms/{types,utils,hooks,ui}` 源码 alias，**仅 `serve` 态注入**，`build` 仍以各包 dist 为准；CRS 补齐 `optimizeDeps.exclude`。alias 指向包 `src` 目录而非单文件 entry——`@cms/ui` 的 exports 含子路径（`./styles/tokens.css`、`./components/*.vue`），前缀匹配必须保留。实测 dev 态 `@cms/ui` 解析为 `packages/ui/src/index.ts`。
+- **附带修复**：`ai-build.spec.ts` 的断言未跟上 Action 19 的文案变更（弹窗标题改为「AI 新建业务页面」、三个 placeholder 改为业务场景措辞），该用例此前稳定失败。
+
+**推迟项（第 2 项：拆分 `definitions.ts` 为领域文件）**：该文件 1774 行但仅 14 个物料，体积主要来自 editor schema；真正的改造成本是 `generate-material.mjs` 依赖 `MATERIALS_AUTO_IMPORTS/SCHEMAS/REGISTRY` 锚点做字符串注入，拆文件须先重写该注入逻辑。建议在物料数量明显增长时再做。
+
+**本轮验证**：`pnpm why zod -r` 已无 4.x；alias 注入条件（serve 有 / build 无）经 `resolveConfig` 实测；后端 Jest 63/63、utils 57/57、ui 36/36、CMS 52/52；五包 lint 通过；三端 typecheck 通过；六包构建通过；mock E2E 29/29；live E2E 12/12。
+
+**环境注意**：本机沙箱的 safe-delete 守卫会拦截 vite 的 `.vite/deps_temp_*`（50+ 文件）清理，导致 dev server 进程崩溃、E2E 大面积失败；跑 E2E / 构建需在非沙箱下执行，或先手动清理 `node_modules/.vite`。
+
 ## 收口结论（Action 24）
 
 - `pnpm lint` 逐包（backend / cms / crs / utils / ui）：**0 error**（仅 warning）；期间修复了根 `eslint.config.js` 的 flat config 插件缺失、backend lint 脚本 glob 在 Windows 下的展开失败、utils 与 cms 的既有未使用变量错误。
