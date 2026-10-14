@@ -4,7 +4,7 @@
 
 ## 1. 项目概览
 
-CMS 营销 H5 可视化低代码平台，目标不是完整企业化，而是做出「可演示、可验证、可复用」的平台闭环：低代码搭建、发布预览、版本回滚、渠道参数透传、埋点与线索收集。当前一期已补齐 AI 一句话建页、基础漏斗汇总和 AI 转化建议，动作日志维护在根目录 `plan.md`。
+CMS 营销 H5 可视化低代码平台，面向单一公司内部运营团队，目标是形成可审计、可验证、可复用的平台闭环：低代码搭建、审核发布、预览回滚、渠道参数透传、埋点、线索治理与效果看板。AI 一句话建页和转化建议属于辅助能力，动作日志维护在根目录 `plan.md`。
 
 技术基线：
 
@@ -61,8 +61,9 @@ cms-vue3/
 
 ```bash
 pnpm --filter <pkg> test -- --run          # 跑单个包的测试（如 @cms/cms / @cms/utils）
-pnpm --filter @cms/cms test:e2e            # CMS E2E
-pnpm --filter @cms/cms test:e2e -- tests/e2e/smoke-core.spec.ts   # 核心冒烟
+pnpm --filter @cms/cms test:e2e            # CMS mock E2E（仅 CMS + API mock）
+pnpm --filter @cms/cms test:e2e -- tests/e2e/smoke-core.spec.ts   # 核心 5 条闭环冒烟
+pnpm --filter @cms/cms test:e2e:live       # 真实三端 E2E（独立测试库）
 ```
 
 ### 后端专属
@@ -89,7 +90,7 @@ pnpm --filter @cms/backend seed                # 写入种子数据（含管理�
 ## 5. 测试规范
 
 - 前端单元/组件测试：Vitest + jsdom；后端：Jest；E2E：Playwright。
-- 测试文件命名：单测 `*.spec.ts` / `*.test.ts`，E2E 保留 `*.e2e.ts`。
+- 测试文件命名：单测与 E2E 统一使用 `*.spec.ts` / `*.test.ts`；真实链路 E2E 位于 `apps/frontend/cms/tests/e2e-live/`。
 - 改动 store / composable / utils / schema / 关键交互 / 缺陷修复时，必须补充或更新测试。
 - AI 一期或活动页相关的可验证小闭环完成后，要同步更新根目录 `plan.md`，一条 Action 对应一个明确的验证结果。
 - 合并前至少通过 `pnpm lint`、`pnpm typecheck`、与改动范围对应的测试（先跑最窄命令，再按需跑全量）。
@@ -104,7 +105,10 @@ pnpm --filter @cms/backend seed                # 写入种子数据（含管理�
 - **UI 治理白名单**：Element 深覆盖 / 选择器受白名单约束（`scripts/check-ui-governance.mjs` 读取 `docs/` 下的 `element-deep-override-allowlist.txt` / `element-selector-allowlist.txt` / `important-override-allowlist.txt`），改深覆盖样式需同步更新白名单。
 - **跨包引用**：禁止跨包引用私有内部文件，只依赖包的公开导出（`exports` 字段）。
 - **断点续作**：根目录 `plan.md` 记录 AI 一期与后续接手动作。每完成一个可验证小闭环，先更新顶部状态和动作清单，再追加对应 Action 日志；若 Action 阻塞，必须写明原因、已尝试内容和需要的外部输入。
-- **E2E 约定**：`pnpm --filter @cms/cms test:e2e -- tests/e2e/smoke-core.spec.ts` 是最小可独立验证的核心冒烟；完整 `pnpm --filter @cms/cms test:e2e` 可能仍暴露既有失败，先查看 `plan.md` 再决定是否治理。
+- **生产补全交接**：内部运营工具生产补全使用 Action 19-24。每个 Action 必须记录 Status、Goal、Scope、Changes、Verification、Decisions、Risks、Open Questions、Next、Handoff；接手时先读 `plan.md` 顶部状态和最后一个未完成 Action。
+- **E2E 约定**：`pnpm --filter @cms/cms test:e2e -- tests/e2e/smoke-core.spec.ts` 是最小核心冒烟；完整 mock 套件当前为 **28/28** 通过。`pnpm --filter @cms/cms test:e2e:live` 覆盖真实 Backend/CMS/CRS 主链路（当前 **12/12**），运行前会重建独立库 `cms_platform_resume_e2e`，仅可指向专用测试数据库，详情见 `docs/E2E-FINDINGS.md` 与 `plan.md` Action 15-24。
+- **E2E 运行提示**：live 套件的 backend 由 webServer 以 `node dist/main` 启动，改动后端源码后必须先 `pnpm --filter @cms/backend build`；运行前确认 3300 没有残留进程（否则报 `is already used`）。结果判定看 `--reporter=line` 的逐条输出，收尾偶发不会自动退出时可手动结束 3300 上的进程。
+- **生产运行约定**：存储统一走 `StorageAdapter`（`STORAGE_DRIVER=local|s3`），上传目录只能通过 `modules/upload/storage/local-storage.adapter.ts` 的 `resolveUploadDir()` 解析；生产环境配置校验见 `common/config/env-validation.ts`（示例密钥、默认数据库/管理员密码会拒绝启动）；探针接口为 `GET /health`，是唯一使用真实 HTTP 状态码的接口。部署与恢复流程见 `docs/OPERATIONS.md`。
 
 ## 7. Commit 与 PR 规范
 
@@ -123,7 +127,11 @@ pnpm --filter @cms/backend seed                # 写入种子数据（含管理�
 - `constitution.md` — 最高约束
 - `CLAUDE.md` — Claude Code 快速上手
 - `README.md` — 项目介绍与演示
+- `plan.md` — 生产补全动作清单与交接日志（断点续作入口）
 - `docs/ARCHITECTURE.md` — 架构设计
 - `docs/DEVELOPMENT.md` — 开发指南
 - `docs/API.md` — 接口契约
+- `docs/OPERATIONS.md` — 生产运维手册（上线检查 / 存储 / 备份恢复 / 回滚）
+- `docs/E2E-FINDINGS.md` — 真实链路 E2E 的发现与修复记录
+- `docs/ACCEPTANCE_CHECKLIST_ZH.md` — 验收清单
 - `docs/PERFORMANCE.md` / `BUILD-OPTIMIZATION.md` — 性能与构建优化

@@ -9,7 +9,7 @@
 
 ## 项目定位
 
-这是一个个人项目，目标不是完整企业化，而是做出“可演示、可验证、可复用”的平台闭环：
+面向真实公司内部运营团队，目标是提供可审计、可验证、可复用的运营闭环：
 
 - 运营可独立完成页面搭建与发布
 - 发布链路支持回滚恢复
@@ -46,6 +46,27 @@
 - 鉴权统一使用：`Authorization: Bearer <token>`
 - CMS -> CRS 预览通信使用 `postMessage` 白名单来源校验
 - 预览源、父窗口源与埋点开关均使用 env 配置
+
+### 5. 权限与发布治理
+
+- 角色矩阵：`viewer` 只读 / `editor` 建页与提交审核 / `admin` 审核、发布、下线、回滚、用户管理
+- 页面状态流：`draft → pending_review → rejected / approved → published → offline`
+- 发布日志记录审核人、发布人、回滚人快照；已发布页编辑后可回草稿，线上快照继续可访问
+- 前端按角色隐藏操作入口，后端以 `@Roles` 为准做最终鉴权
+
+### 6. 线索与效果数据
+
+- 线索治理：隐私同意、`requestId` 幂等去重、非管理员手机号脱敏、导出（仅管理员）与访问审计
+- 数据保留：`LEAD_RETENTION_DAYS`（默认 180 天）+ 管理员手动清理超期线索（先预览再确认）
+- 效果看板：按页面 / 日期 / 渠道 / 版本 / 来源过滤，含独立访客、每日趋势与 CSV 导出
+- 埋点口径：`crs` 访客事件与 `cms` 后台操作分开统计，看板默认只算访客漏斗
+
+### 7. 生产运行保障
+
+- 统一存储接口：本地磁盘（开发）与 S3 兼容对象存储（生产）通过 `STORAGE_DRIVER` 切换
+- 生产启动校验：示例密钥、默认数据库密码、默认管理员密码会直接拒绝启动
+- 种子数据保护：生产默认关闭，且只会创建管理员账号
+- 健康检查 `/health`（区分 database / storage），可直接用于探针
 
 ## 技术架构
 
@@ -153,7 +174,12 @@ pnpm --filter @cms/cms test:e2e
 
 # 核心 5 条闭环冒烟
 pnpm --filter @cms/cms test:e2e -- tests/e2e/smoke-core.spec.ts
+
+# 真实 Backend + CMS + CRS 主链路（重建独立测试库）
+pnpm --filter @cms/cms test:e2e:live
 ```
+
+`test:e2e` 使用 CMS 与 API mock；`test:e2e:live` 会启动真实三端，并重建专用测试库 `cms_platform_resume_e2e`。运行真实链路套件前，请确认 `DB_HOST`、`DB_PORT`、`DB_USERNAME`、`DB_PASSWORD` 与 `RESUME_DB_DATABASE` 指向可删除的测试 PostgreSQL 实例，切勿指向业务库。
 
 ### 类型与治理检查
 
@@ -164,20 +190,28 @@ pnpm --filter @cms/backend typecheck
 pnpm check:ui-governance
 ```
 
-### 最近一次验证基线（2026-08-18）
+### 最近一次验证基线（2026-09-30）
 
-- `pnpm --filter @cms/backend build`：通过
-- `pnpm --filter @cms/backend test -- --runInBand`：通过，3 个测试文件 / 5 条测试
-- `pnpm --filter @cms/cms test -- --run src/tests/api.test.ts src/tests/Activity.ai.test.ts`：通过，2 个测试文件 / 16 条测试
-- `pnpm --filter @cms/cms test:e2e -- tests/e2e/smoke-core.spec.ts`：通过，5 条核心冒烟
-- 完整 `pnpm --filter @cms/cms test:e2e` 当前仍有既有 E2E fixture/page object 失败，详情见 `plan.md`
+- `pnpm --filter @cms/backend test -- --runInBand`：通过，7 个测试文件 / 62 条测试
+- `pnpm --filter @cms/utils test -- --run`：通过，4 个文件 / 57 条测试
+- `pnpm --filter @cms/ui test -- --run`：通过，7 个文件 / 33 条测试
+- 各包 `typecheck` 与 `lint`：通过（`pnpm --filter <pkg> typecheck` / `pnpm --filter <pkg> lint`）
+- `pnpm --filter @cms/backend build`、`@cms/ui` / `@cms/cms` / `@cms/crs` / `@cms/types` / `@cms/utils` build：通过
+- `pnpm --filter @cms/cms test:e2e`：**28/28** 通过（含 5 条核心冒烟）
+- `pnpm --filter @cms/cms test:e2e:live`：**12/12** 通过，覆盖登录、建页、编辑、提交审核、审核发布、CRS 访问、留资、线索跟进与导出、发布记录、回滚、埋点漏斗与 AI 建页（mock）
+
+> 根目录 `pnpm lint` / `pnpm typecheck` 走 turbo 并发调度，在子进程/管道受限的环境（部分容器与沙箱）下可能报 `os error 231`；此时改用 `pnpm --filter <pkg> <script>` 逐包执行即可，验收口径相同。
+
+完整验证记录与已解决问题见 [plan.md](./plan.md) Action 15-24 及 [docs/E2E-FINDINGS.md](./docs/E2E-FINDINGS.md)。
 
 ## 演示与文档
 
 - 演示脚本：[docs/DEMO_SCRIPT_ZH.md](./docs/DEMO_SCRIPT_ZH.md)
 - 验收清单：[docs/ACCEPTANCE_CHECKLIST_ZH.md](./docs/ACCEPTANCE_CHECKLIST_ZH.md)
+- 生产运维手册（上线检查 / 存储 / 备份恢复 / 回滚）：[docs/OPERATIONS.md](./docs/OPERATIONS.md)
 - 简历证据映射：[docs/RESUME_EVIDENCE_ZH.md](./docs/RESUME_EVIDENCE_ZH.md)
-- AI 一期断点续作：[plan.md](./plan.md)
+- 生产补全断点续作：[plan.md](./plan.md)
+- 真实链路 E2E 验证与发现：[docs/E2E-FINDINGS.md](./docs/E2E-FINDINGS.md)
 - AI 检索图谱：[docs/PROJECT_AI_GRAPH.md](./docs/PROJECT_AI_GRAPH.md)
 - AI 检索索引：[docs/PROJECT_AI_INDEX.json](./docs/PROJECT_AI_INDEX.json)
 

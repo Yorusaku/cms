@@ -4,7 +4,7 @@
 
 ## 项目定位
 
-CMS 营销 H5 可视化低代码平台（个人项目，目标是「可演示、可验证、可复用」的平台闭环）。pnpm workspace monorepo：
+CMS 营销 H5 可视化低代码平台（面向单一公司运营团队，目标是可审计、可验证、可复用的生产运营闭环）。pnpm workspace monorepo：
 
 - 前端：Vue 3 + TypeScript + Vite（CMS 用 Element Plus，CRS 用 Vant）
 - 后端：NestJS + TypeORM + PostgreSQL（JWT 鉴权）
@@ -20,6 +20,8 @@ pnpm dev                                            # turbo 一键启动全部
 pnpm build / build:cms / build:crs / build:backend  # 构建
 pnpm lint / typecheck / test                        # lint / 类型检查 / 测试
 pnpm --filter <pkg> test -- --run                   # 单包跑测试
+pnpm --filter @cms/cms test:e2e                     # CMS mock E2E（26/26 已验证）
+pnpm --filter @cms/cms test:e2e:live                # 真实三端 E2E（11/11 已验证）
 pnpm check:ui-governance                            # UI 治理检查（Element 深覆盖白名单）
 pnpm ci:all                                         # CI 全量：quality + security:scan
 
@@ -55,8 +57,10 @@ pnpm --filter @cms/backend seed                     # 写入种子数据（含�
 - **鉴权与通信**：统一 `Authorization: Bearer <token>`；CMS→CRS 预览通过 `postMessage`，来源白名单由 env 控制（`VITE_CRS_PREVIEW_ORIGIN` / `VITE_POSTMESSAGE_PARENT_ORIGIN` / `VITE_TRACKING_ENABLED`）。
 - **中文编码历史坑**：`packages/ui/src/materials/definitions.ts` 曾出现中文编码损坏（~80 处乱码）。改动该文件前先确认文件是 UTF-8，避免引入新乱码。
 - **环境变量**：各 app 有 `.env.example`（backend / cms / crs）。backend 需本地 PostgreSQL，启动前跑 `migration:run` + `seed` 生成管理员账号。
-- **后端启动坑**：若 `pnpm --filter @cms/backend dev` 报找不到 `dist/main`，先运行 `pnpm --filter @cms/backend build`，再按当前产物入口 `apps/backend/dist/apps/backend/src/main.js` 复核真实启动；不要把这个误判为数据库或 AI 模块问题。
-- **E2E 现状**：核心冒烟 `pnpm --filter @cms/cms test:e2e -- tests/e2e/smoke-core.spec.ts` 已可跑通；完整 Playwright 套件仍有既有 fixture/page object 失败，详情看 `plan.md`。
+- **后端启动排障**：`dev` 使用 Nest watch；生产入口为 `apps/backend/dist/main.js`。若启动报找不到 `dist/main`，先运行 `pnpm --filter @cms/backend build`，再用 `pnpm --filter @cms/backend start` 复核，避免误判为数据库或 AI 模块问题。
+- **E2E 现状**：mock 套件 `pnpm --filter @cms/cms test:e2e` 已连续 3 次 26/26 全绿，核心冒烟 `tests/e2e/smoke-core.spec.ts` 为 5/5。真实链路套件 `pnpm --filter @cms/cms test:e2e:live` 已 11/11 全绿，覆盖 Backend/CMS/CRS 主链路。
+- **真实 E2E 数据库边界**：`test:e2e:live` 的 global setup 会删除并重建 `RESUME_DB_DATABASE`（默认 `cms_platform_resume_e2e`），仅可配置为专用测试库；它默认连接 `127.0.0.1:5433`，可通过 `DB_HOST`、`DB_PORT`、`DB_USERNAME`、`DB_PASSWORD` 覆盖。执行前确认绝不指向业务库。
+- **E2E 排障入口**：mock 套件与真实套件共用 `tests/e2e/pages/*.page.ts`，改 page object 后要同时验证两套。已解决的 F1-F7 与验证结果见 `docs/E2E-FINDINGS.md`、`plan.md` Action 15-18。
 - **治理检查**：Element 深覆盖/选择器有白名单约束（`scripts/check-ui-governance.mjs` 读取 `docs/` 下的 `element-deep-override-allowlist.txt` / `element-selector-allowlist.txt` / `important-override-allowlist.txt`），改动 Element 深覆盖样式时需同步更新白名单，否则 `check:ui-governance` 会失败。
 
 ## 规范入口
