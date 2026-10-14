@@ -2,12 +2,22 @@ import { defineConfig } from "vite";
 import vue from "@vitejs/plugin-vue";
 import { resolve } from "path";
 
+const workspaceRoot = resolve(__dirname, "../../..");
+
+/** 测试与开发保持同一套解析：直接读取 workspace 包源码，避免 dist 与源码行为分叉 */
+const workspaceSourceAlias = {
+  "@cms/types": resolve(workspaceRoot, "packages/types/src"),
+  "@cms/utils": resolve(workspaceRoot, "packages/utils/src"),
+  "@cms/hooks": resolve(workspaceRoot, "packages/hooks/src"),
+  "@cms/ui": resolve(workspaceRoot, "packages/ui/src"),
+};
+
 export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
       "@": resolve(__dirname, "src"),
-      "@cms/ui": resolve(__dirname, "../../../packages/ui/src"),
+      ...workspaceSourceAlias,
     },
   },
   test: {
