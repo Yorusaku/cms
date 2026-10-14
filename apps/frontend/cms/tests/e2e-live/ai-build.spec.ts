@@ -31,16 +31,16 @@ test.describe.serial('AI 一句话建页（本地 mock）', () => {
       .filter({ hasText: /AI 新建/ })
       .first()
       .click()
-    const dialog = page.locator('.el-dialog').filter({ hasText: /AI 新建活动页/ })
+    const dialog = page.locator('.el-dialog').filter({ hasText: /AI 新建业务页面/ })
     await expect(dialog).toBeVisible({ timeout: 10000 })
 
     // 填写必填描述字段
-    await dialog.getByPlaceholder('如：618 爆款限时购').fill(pageName)
-    await dialog.getByPlaceholder('如：25-35 岁新锐白领').fill('18-30 岁学生党')
+    await dialog.getByPlaceholder('如：员工服务办理中心').fill(pageName)
+    await dialog.getByPlaceholder('如：企业员工或客户').fill('到店办理的客户')
     await dialog
-      .getByPlaceholder('如：满 299 减 80，前 100 名加赠礼包')
-      .fill('全场 8 折，前 50 名加赠礼包')
-    // 按钮文案/活动类型/页面风格均有默认值，无需填写
+      .getByPlaceholder('如：展示服务介绍、办理须知和常见问题')
+      .fill('展示服务介绍、办理材料与流程说明')
+    // 提交文案/页面场景/视觉风格均有默认值，无需填写
 
     // 提交生成
     await dialog
