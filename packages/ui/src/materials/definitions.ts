@@ -1600,6 +1600,9 @@ export const materialRegistry: MaterialRegistryItem[] = [
       title: "信息登记",
       subtitle: "请填写以下信息",
       submitText: "提交信息",
+      submittingText: "提交中...",
+      successText: "提交成功，我们会尽快处理",
+      errorText: "提交失败，请稍后重试",
       fields: [
         { key: "name", label: "姓名", type: "text", required: true },
         { key: "phone", label: "联系电话", type: "text", required: true },
@@ -1621,6 +1624,9 @@ export const materialRegistry: MaterialRegistryItem[] = [
               { type: "text", path: "title", label: "标题" },
               { type: "text", path: "subtitle", label: "说明" },
               { type: "text", path: "submitText", label: "提交按钮文字" },
+              { type: "text", path: "submittingText", label: "提交中文字" },
+              { type: "text", path: "successText", label: "成功提示" },
+              { type: "text", path: "errorText", label: "失败提示" },
               {
                 type: "textarea",
                 path: "fieldsJson",
@@ -1652,6 +1658,12 @@ export const materialRegistry: MaterialRegistryItem[] = [
         title: toStringValue(normalizedProps.title, "信息登记"),
         subtitle: toStringValue(normalizedProps.subtitle, "请填写以下信息"),
         submitText: toStringValue(normalizedProps.submitText, "提交信息"),
+        submittingText: toStringValue(normalizedProps.submittingText, "提交中..."),
+        successText: toStringValue(
+          normalizedProps.successText,
+          "提交成功，我们会尽快处理",
+        ),
+        errorText: toStringValue(normalizedProps.errorText, "提交失败，请稍后重试"),
         fields,
         fieldsJson: JSON.stringify(fields, null, 2),
       };

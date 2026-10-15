@@ -40,28 +40,14 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref } from "vue";
-
-interface SubmitLeadPayload {
-  requestId: string;
-  name: string;
-  phoneNumber: string;
-  remark?: string;
-  pageId: number;
-  publishedVersionId: string;
-  sessionId: string;
-  utm?: Record<string, string>;
-  channel?: Record<string, string>;
-  consentAccepted: boolean;
-}
-
-interface TrackingPayload {
-  eventType: "form_submit";
-  pageId: number;
-  publishedVersionId: string;
-  payload?: Record<string, unknown>;
-  utm?: Record<string, string>;
-  channel?: Record<string, string>;
-}
+import {
+  PHONE_NUMBER_REG,
+  createRequestId,
+  getMarketingParams,
+  getTrackingSessionId,
+  submitLeadRequest,
+  trackFormSubmitRequest,
+} from "../utils/form-submit";
 
 interface Props {
   title?: string;
@@ -113,118 +99,8 @@ const messageType = ref<"success" | "error">("success");
 
 const wrapperStyle = computed(() => props.styles || {});
 
-const getBaseApiUrl = () => {
-  if (typeof import.meta !== "undefined") {
-    const env = (import.meta as unknown as { env?: Record<string, string> }).env;
-    if (env?.VITE_API_BASE_URL) {
-      return env.VITE_API_BASE_URL;
-    }
-  }
-  return "/api";
-};
-
-const getSessionId = () => {
-  const key = "__crs_tracking_session__";
-  const current = sessionStorage.getItem(key);
-  if (current) {
-    return current;
-  }
-  const next = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-  sessionStorage.setItem(key, next);
-  return next;
-};
-
-const getMarketingParams = () => {
-  const querySource =
-    window.location.hash && window.location.hash.includes("?")
-      ? window.location.hash.slice(window.location.hash.indexOf("?"))
-      : window.location.search;
-
-  const params = new URLSearchParams(querySource || "");
-  const pickByPrefixes = (prefixes: string[]) => {
-    const result: Record<string, string> = {};
-    params.forEach((value, key) => {
-      if (prefixes.some((prefix) => key.startsWith(prefix))) {
-        result[key] = value;
-      }
-    });
-    return result;
-  };
-
-  return {
-    utm: pickByPrefixes(["utm_"]),
-    channel: pickByPrefixes(["channel_", "ch_", "src_", "campaign_", "ad_"]),
-  };
-};
-
-const buildUrl = (path: string) => {
-  if (/^https?:\/\//.test(path)) {
-    return path;
-  }
-
-  const base = getBaseApiUrl().replace(/\/$/, "");
-  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${base}${normalizedPath}`;
-};
-
-const requestJson = async (url: string, payload: unknown) => {
-  const token = localStorage.getItem("token");
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-
-  const response = await fetch(url, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(payload),
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-
-  const body = (await response.json()) as {
-    code?: number;
-    message?: string;
-  };
-
-  if (typeof body.code === "number" && body.code !== 10000) {
-    throw new Error(body.message || "request_failed");
-  }
-};
-
-const submitLead = async (payload: SubmitLeadPayload) => {
-  await requestJson(buildUrl(props.endpoint), payload);
-};
-
-const trackSubmit = async (payload: TrackingPayload) => {
-  if (!props.trackingEnabled) {
-    return;
-  }
-
-  await requestJson(buildUrl(props.trackingEndpoint), {
-    ...payload,
-    sessionId: getSessionId(),
-    timestamp: Date.now(),
-  });
-};
-
-const phoneReg = /^1[3-9]\d{9}$/;
-let pendingRequestId: string | null = null;
-
-const createRequestId = () => {
-  if (globalThis.crypto?.randomUUID) {
-    return globalThis.crypto.randomUUID();
-  }
-  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (char) => {
-    const random = Math.floor(Math.random() * 16);
-    const value = char === "x" ? random : (random & 0x3) | 0x8;
-    return value.toString(16);
-  });
-};
+/** 同一轮提交内复用 requestId，重试时保持幂等 */
+const pendingRequestId = ref<string | null>(null);
 
 const handleSubmit = async () => {
   message.value = "";
@@ -235,7 +111,7 @@ const handleSubmit = async () => {
     return;
   }
 
-  if (!phoneReg.test(form.phoneNumber)) {
+  if (!PHONE_NUMBER_REG.test(form.phoneNumber)) {
     messageType.value = "error";
     message.value = "请输入正确手机号";
     return;
@@ -256,30 +132,42 @@ const handleSubmit = async () => {
   submitting.value = true;
   try {
     const marketing = getMarketingParams();
-    pendingRequestId ??= createRequestId();
-    const sessionId = getSessionId();
+    pendingRequestId.value ??= createRequestId();
+    const sessionId = getTrackingSessionId();
 
-    await submitLead({
-      requestId: pendingRequestId,
-      name: form.name,
-      phoneNumber: form.phoneNumber,
-      remark: form.remark || undefined,
-      pageId: props.pageId,
-      publishedVersionId: props.publishedVersionId,
-      sessionId,
-      utm: marketing.utm,
-      channel: marketing.channel,
-      consentAccepted: consentAccepted.value,
-    });
+    await submitLeadRequest(
+      {
+        requestId: pendingRequestId.value,
+        name: form.name,
+        phoneNumber: form.phoneNumber,
+        remark: form.remark || undefined,
+        pageId: props.pageId,
+        publishedVersionId: props.publishedVersionId,
+        sessionId,
+        utm: marketing.utm,
+        channel: marketing.channel,
+        consentAccepted: consentAccepted.value,
+      },
+      props.endpoint,
+    );
 
-    await trackSubmit({
-      eventType: "form_submit",
-      pageId: props.pageId,
-      publishedVersionId: props.publishedVersionId,
-      payload: { formType: "lead_form" },
-      utm: marketing.utm,
-      channel: marketing.channel,
-    });
+    if (props.trackingEnabled) {
+      try {
+        await trackFormSubmitRequest(
+          {
+            eventType: "form_submit",
+            pageId: props.pageId,
+            publishedVersionId: props.publishedVersionId,
+            payload: { formType: "lead_form" },
+            utm: marketing.utm,
+            channel: marketing.channel,
+          },
+          props.trackingEndpoint,
+        );
+      } catch {
+        // 埋点失败不影响线索提交结果
+      }
+    }
 
     messageType.value = "success";
     message.value = props.successText;
@@ -287,7 +175,7 @@ const handleSubmit = async () => {
     form.phoneNumber = "";
     form.remark = "";
     consentAccepted.value = false;
-    pendingRequestId = null;
+    pendingRequestId.value = null;
   } catch {
     messageType.value = "error";
     message.value = props.errorText;

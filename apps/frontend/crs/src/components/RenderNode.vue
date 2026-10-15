@@ -47,6 +47,12 @@ const resolveComponent = (type: string) => {
   return getMaterialAsyncComponent(type) || FallbackComponent;
 };
 
+/**
+ * 需要页面上下文才能完成提交的物料：线索表单与业务表单。
+ * 发布页/预览页都必须拿到真实 pageId 与 publishedVersionId。
+ */
+const FORM_MATERIAL_TYPES = ["LeadForm", "BusinessForm"];
+
 const shouldRender = computed(() => {
   if (!currentNode.value) return false;
   if (typeof currentNode.value.condition === "boolean") {
@@ -69,7 +75,7 @@ const updateMergedProps = () => {
   mergedProps.value = {
     ...baseProps,
     ...linkageState,
-    ...(currentNode.value.type === "LeadForm"
+    ...(FORM_MATERIAL_TYPES.includes(currentNode.value.type)
       ? {
           pageId: props.pageId,
           publishedVersionId: props.publishedVersionId,

@@ -35,5 +35,12 @@ export default defineConfig({
       timeout: 60000,
       reuseExistingServer: !process.env.CI,
     },
+    {
+      // 渲染端：业务表单提交链路需在真实 CRS 页面中验证（预览 iframe 也指向它）
+      command: "pnpm --filter @cms/crs dev",
+      port: 3010,
+      timeout: 60000,
+      reuseExistingServer: !process.env.CI,
+    },
   ],
 });
