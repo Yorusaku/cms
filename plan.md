@@ -57,6 +57,22 @@
 - live E2E 首跑出现 2 条 flaky（登录态竞态 + 冷启动），重跑即全绿；结论以第二次为准。
 - Jest 的 `expect()` 不支持第二参数（`expect(value, message)` 是 Vitest 写法）。
 
+## 业务表单真实提交闭环（2026-10-15）
+
+BusinessForm 从「仅前端校验 + 假成功」改为可落库的业务表单，复用既有 `POST /atlas-cms/submitLead`；不新增表、不新增接口、不改 Lead DTO 公开字段。
+
+- **公共能力抽取**：新增 `packages/ui/src/utils/form-submit.ts`，把 LeadFormBlock 原有的提交逻辑（requestId 幂等、sessionId、utm/channel、Bearer、业务码判断、埋点）抽出共用；LeadFormBlock 行为不变（其 3 条单测仍全绿）。该模块只依赖浏览器全局，不引入 CRS 私有模块，保证 `@cms/ui` 可被 CMS/CRS 同源消费。
+- **字段映射（固定规则）**：`name` → `name`；`phone` / `phoneNumber` → `phoneNumber`；其余字段按 **label** 序列化为 remark JSON（如 `{"预约日期":"2026-10-20"}`），只收非空值；remark 超 500 字符（后端 `@MaxLength`）阻止提交；缺 `name` / `phone` 字段时显示配置错误且不发请求。
+- **隐私同意**：`privacyRequired` 默认 true，渲染勾选框、未勾选拦截；为 false 时不渲染且 `consentAccepted` 上报 true。
+- **RenderNode**：`FORM_MATERIAL_TYPES = ["LeadForm", "BusinessForm"]`，BusinessForm 与 LeadForm 一样注入 `pageId` / `publishedVersionId`。
+- **物料定义**：`defaultProps` 与 `normalizeProps` 透传 `submittingText` / `successText` / `errorText`——`normalizeProps` 是白名单式返回，不透传会被静默丢弃；编辑器新增对应配置项。
+- **mock 套件补 CRS**：`playwright.config.ts` 增加 CRS webServer。原来只起 CMS，而预览 iframe 指向 CRS，业务表单提交必须在真实 CRS 页面验证。
+- **E2E 坑**：CRS 的 `.env` 里 `VITE_API_BASE_URL=http://127.0.0.1:3300`，请求 URL **不带 `/api` 前缀**，`setupApiMocks` 的 pattern 全部匹配不到，页面直接 Network Error。新 spec 改用宽松 pattern 自行打桩。
+
+**本轮验证**：ui 单测 **49/49**（新增 13 条）、backend Jest **74/74**、四端 typecheck 通过、六包 lint 通过、根 build 7 tasks、mock E2E **30/30**、live E2E **15/15**（新增 `business-form-live` 3 条：API 建页 + 审核发布 → CRS 访客提交 → CMS 线索列表，备注列含扩展字段）。
+
+**仍存在的限制**：BusinessList 仍是静态数据，未做通用数据源；扩展字段暂存于 remark（JSON 字符串），CMS 线索列表按纯文本展示，暂无结构化解析。
+
 ## 收口结论（Action 24）
 
 - `pnpm lint` 逐包（backend / cms / crs / utils / ui）：**0 error**（仅 warning）；期间修复了根 `eslint.config.js` 的 flat config 插件缺失、backend lint 脚本 glob 在 Windows 下的展开失败、utils 与 cms 的既有未使用变量错误。
