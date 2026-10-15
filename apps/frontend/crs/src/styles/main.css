@@ -1,7 +1,32 @@
 @import "tailwindcss";
 @import "@cms/ui/styles/tokens.css";
 
+/**
+ * Vant 主题对齐设计 token（见 packages/ui/src/styles/tokens.css）。
+ *
+ * 只做 token → 库变量的映射；不要在业务代码里覆盖 --van-* 本身。
+ * 注意：语义色改为跟随 token 后，成功/警告色会比 Vant 默认值更贴近
+ * Element Plus 色板——这是有意为之，目的是让两端的状态反馈看起来是同一套。
+ */
 :root {
+  /* 品牌与语义色 */
   --van-primary-color: var(--color-primary);
+  --van-success-color: var(--color-success);
+  --van-danger-color: var(--color-danger);
+  --van-warning-color: var(--color-warning);
+
+  /* 文字层级 */
+  --van-text-color: var(--color-text-primary);
+  --van-text-color-2: var(--color-text-regular);
+  --van-text-color-3: var(--color-text-secondary);
+
+  /* 描边与背景 */
+  --van-border-color: var(--color-border-lighter);
+  --van-background: var(--color-bg-page);
+  --van-background-2: var(--color-bg-card);
+
+  /* 圆角与字号 */
   --van-radius-md: var(--radius-md);
+  --van-radius-lg: var(--radius-lg);
+  --van-font-size-md: var(--font-size-base);
 }

@@ -1,7 +1,37 @@
 @import "tailwindcss";
 @import "@cms/ui/styles/tokens.css";
 
+/**
+ * Element Plus 主题对齐设计 token（见 packages/ui/src/styles/tokens.css）。
+ *
+ * 只做 token → 库变量的映射；不要在业务代码里覆盖 --el-* 本身。
+ * EP 的 primary 衍生色（--el-color-primary-light-N / dark-2）保持库内默认，
+ * 与当前主色视觉接近；如需精调再单独处理。
+ */
 :root {
+  /* 品牌与语义色 */
   --el-color-primary: var(--color-primary);
+  --el-color-success: var(--color-success);
+  --el-color-warning: var(--color-warning);
+  --el-color-danger: var(--color-danger);
+  --el-color-error: var(--color-danger);
+  --el-color-info: var(--color-info);
+
+  /* 文字层级 */
+  --el-text-color-primary: var(--color-text-primary);
+  --el-text-color-regular: var(--color-text-regular);
+  --el-text-color-secondary: var(--color-text-secondary);
+  --el-text-color-placeholder: var(--color-text-placeholder);
+
+  /* 描边与背景 */
+  --el-border-color: var(--color-border);
+  --el-border-color-light: var(--color-border-light);
+  --el-border-color-lighter: var(--color-border-lighter);
+  --el-bg-color-page: var(--color-bg-page);
+  --el-bg-color: var(--color-bg-card);
+
+  /* 圆角与字号 */
   --el-border-radius-base: var(--radius-md);
+  --el-border-radius-small: var(--radius-sm);
+  --el-font-size-base: var(--font-size-base);
 }
