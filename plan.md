@@ -86,6 +86,17 @@ BusinessForm 从「仅前端校验 + 假成功」改为可落库的业务表单�
 
 **本轮验证**：`pnpm check:ui-governance` 通过、ui 单测 49/49、CmsButton 7/7、两端 lint、两端构建、mock E2E **30/30**、live E2E **15/15**。
 
+**续：物料组件接入 token（同日补完）**
+
+上一轮只统一了外壳层，遗漏了物料组件内部——它们用 Tailwind 标准色写死（`#2563eb` / `#16a34a` / `#dc2626`），是独立于两端的第三套配色，而且正是用户每次提交都会看到的颜色（外壳 toast 反而一年看不了几次）。
+
+- 10 个组件的 `<style>` 块：颜色改 `var(--color-*)`、圆角改 `var(--radius-*)`
+- 6 处 props 默认值对齐 token 取值（StatCard / DialogBlock / ImageNavBlock / ImageBlock / AssistLineBlock）
+- 有意保留的硬编码：白色背景默认值、NoticeBlock 的警告色系、ProductBlock 的电商价格红
+- 完整替换对照表见 `.workbuddy/memory/2026-10-15.md`，新增物料时按表取值
+
+**验证**：ui 单测 49/49、ui typecheck + build、三包 lint、mock E2E **30/30**、live E2E **15/15**；构建产物中 `#2563eb` 已清零。
+
 ## 收口结论（Action 24）
 
 - `pnpm lint` 逐包（backend / cms / crs / utils / ui）：**0 error**（仅 warning）；期间修复了根 `eslint.config.js` 的 flat config 插件缺失、backend lint 脚本 glob 在 Windows 下的展开失败、utils 与 cms 的既有未使用变量错误。
