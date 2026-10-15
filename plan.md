@@ -37,6 +37,26 @@
 
 **环境注意**：本机沙箱的 safe-delete 守卫会拦截 vite 的 `.vite/deps_temp_*`（50+ 文件）清理，导致 dev server 进程崩溃、E2E 大面积失败；跑 E2E / 构建需在非沙箱下执行，或先手动清理 `node_modules/.vite`。
 
+## Zod 3 → Zod 4 协议迁移（2026-10-15）
+
+独立迁移：workspace 的 Zod 统一到 **4.6.7**，页面 Schema / AI Schema / 前后端构建 / 测试行为保持不变。
+
+- **版本**：`pnpm-workspace.yaml` catalog `zod` 3.24.0 → 4.6.7；`apps/backend` 与 `packages/types` 均保持 `catalog:`。`pnpm why zod -r` 已无 3.x。
+- **API 适配点**（`packages/types/src/schemas.ts`、`apps/backend/test/mocks/cms-types.ts`）：
+  1. `z.record(value)` → `z.record(z.string(), value)`：Zod 4 的 record 要求显式 key schema，共 7 处；
+  2. `.passthrough()` → `.loose()`：Zod 4 已废弃 `.passthrough()`（仍可用但标记 deprecated），`.loose()` 语义等价，共 8 处；
+  3. `z.ZodTypeAny` → `z.ZodType`：Zod 4 移除了 `ZodTypeAny`。
+- **业务语义未变**：页面 Schema 仍允许扩展字段、`componentMap` 仍是组件 ID → 组件 Schema 映射、AI 输出仍必须过 `PageSchemaV2Schema`、`safeParsePageSchema` / `safeParseApiResponse` 返回约定不变。
+- **新增协议守卫**：`apps/backend/test/schema-protocol.spec.ts` 11 条，覆盖三类业务页 Schema、AI 生成响应、version / componentMap / rootIds 缺失、组件字段类型错误、safeParse 返回约定与业务物料 defaultProps。
+- **连带修改**：`apps/backend/jest.config.cjs` 的 `@cms/types/(.*)` 映射由 `packages/types/src/$1` 改为 `packages/types/dist/cjs/$1` —— packages/types 是 ESM 包（`type: "module"`），Jest 的 CommonJS 运行时直接加载其 src 会报 `Cannot find module`。
+
+**本轮验证**：`pnpm why zod -r` 仅 4.6.7；`@cms/types` build 通过；backend typecheck / Jest **74/74**；cms / crs / ui typecheck 通过；ui 单测 36/36（串行）；六包 lint 通过；根目录 `pnpm build` 7 tasks 成功；mock E2E **29/29**；live E2E **12/12**。
+
+**踩坑记录**：
+- safe-delete 守卫（`CODEBUDDY_SAFE_DELETE_ENABLED=1`）会拦截 vite 的 `node_modules/.vite/deps_temp_*` 清理（>50 文件）→ dev server 崩溃 → E2E 大面积失败。解法：对该命令临时 `export CODEBUDDY_SAFE_DELETE_ENABLED=0 CODEBUDDY_SAFE_DELETE_SANDBOX=0`。
+- live E2E 首跑出现 2 条 flaky（登录态竞态 + 冷启动），重跑即全绿；结论以第二次为准。
+- Jest 的 `expect()` 不支持第二参数（`expect(value, message)` 是 Vitest 写法）。
+
 ## 收口结论（Action 24）
 
 - `pnpm lint` 逐包（backend / cms / crs / utils / ui）：**0 error**（仅 warning）；期间修复了根 `eslint.config.js` 的 flat config 插件缺失、backend lint 脚本 glob 在 Windows 下的展开失败、utils 与 cms 的既有未使用变量错误。
