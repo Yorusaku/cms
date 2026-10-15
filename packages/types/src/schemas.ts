@@ -3,7 +3,7 @@ import { z } from "zod";
 // ==================== API 响应 Schema ====================
 
 /** 分页数据 */
-export const PaginatedDataSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
+export const PaginatedDataSchema = <T extends z.ZodType>(itemSchema: T) =>
   z.object({
     list: z.array(itemSchema),
     total: z.number(),
@@ -12,7 +12,7 @@ export const PaginatedDataSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
   });
 
 /** 统一 API 响应 */
-export const ApiResponseSchema = <T extends z.ZodTypeAny>(dataSchema: T) =>
+export const ApiResponseSchema = <T extends z.ZodType>(dataSchema: T) =>
   z.object({
     code: z.number(),
     message: z.string(),
@@ -26,7 +26,7 @@ export const PageItemSchema = z.object({
   isAbled: z.number(),
   create_time: z.string(),
   update_time: z.string(),
-}).passthrough();
+}).loose();
 
 /** 页面列表响应 */
 export const PageListResponseSchema = ApiResponseSchema(
@@ -42,7 +42,7 @@ export const PageDetailResponseSchema = ApiResponseSchema(
     isAbled: z.number(),
     create_time: z.string(),
     update_time: z.string(),
-  }).passthrough()
+  }).loose()
 );
 
 /** 登录响应 */
@@ -57,9 +57,9 @@ export const LoginResponseSchema = ApiResponseSchema(
 /** 组件行为 */
 export const ActionSchemaSchema = z.object({
   type: z.string(),
-  config: z.record(z.unknown()),
+  config: z.record(z.string(), z.unknown()),
   condition: z.union([z.boolean(), z.string()]).optional(),
-}).passthrough();
+}).loose();
 
 /** 组件联动配置 */
 export const ComponentLinkageSchema = z.object({
@@ -75,7 +75,7 @@ export const ComponentLinkageSchema = z.object({
       expression: z.string().optional(),
       operator: z.enum(["AND", "OR"]).optional(),
     })
-    .passthrough()
+    .loose()
     .optional(),
   enabled: z.boolean(),
 });
@@ -84,31 +84,31 @@ export const ComponentLinkageSchema = z.object({
 export const ComponentSchemaV2Schema = z.object({
   id: z.string(),
   type: z.string(),
-  props: z.record(z.unknown()),
+  props: z.record(z.string(), z.unknown()),
   parentId: z.string().nullable(),
   children: z.array(z.string()),
-  styles: z.record(z.string()).optional(),
-  events: z.record(z.array(ActionSchemaSchema)).optional(),
+  styles: z.record(z.string(), z.string()).optional(),
+  events: z.record(z.string(), z.array(ActionSchemaSchema)).optional(),
   condition: z.union([z.boolean(), z.string()]).optional(),
-  track: z.record(z.unknown()).optional(),
-  state: z.record(z.unknown()).optional(),
-}).passthrough();
+  track: z.record(z.string(), z.unknown()).optional(),
+  state: z.record(z.string(), z.unknown()).optional(),
+}).loose();
 
 /** V2 页面 Schema */
 export const PageSchemaV2Schema = z.object({
   version: z.literal("2.0.0"),
-  pageConfig: z.record(z.unknown()),
-  componentMap: z.record(ComponentSchemaV2Schema),
+  pageConfig: z.record(z.string(), z.unknown()),
+  componentMap: z.record(z.string(), ComponentSchemaV2Schema),
   rootIds: z.array(z.string()),
-  state: z.record(z.unknown()).optional(),
+  state: z.record(z.string(), z.unknown()).optional(),
   linkages: z.array(ComponentLinkageSchema).optional(),
   tracking: z
     .object({
       enabled: z.boolean().optional(),
-      context: z.record(z.unknown()).optional(),
+      context: z.record(z.string(), z.unknown()).optional(),
     })
     .optional(),
-}).passthrough();
+}).loose();
 
 // ==================== 物料定义 Schema ====================
 
@@ -127,12 +127,12 @@ export const MaterialFieldOptionSchema = z.object({
   value: z.union([z.string(), z.number(), z.boolean()]),
 });
 
-// 由于物料编辑器配置的联合类型比较复杂，使用宽松的 passthrough schema
+// 由于物料编辑器配置的联合类型比较复杂，使用宽松的 loose schema
 export const MaterialEditorConfigSchema = z
   .object({
     mode: z.enum(["schema", "legacy"]),
   })
-  .passthrough();
+  .loose();
 
 /** 物料定义（宽松校验） */
 export const MaterialDefinitionSchema = z.object({
@@ -141,8 +141,8 @@ export const MaterialDefinitionSchema = z.object({
   label: z.string(),
   icon: z.string(),
   maxCount: z.number(),
-  defaultProps: z.record(z.unknown()),
-}).passthrough();
+  defaultProps: z.record(z.string(), z.unknown()),
+}).loose();
 
 // ==================== 辅助校验函数 ====================
 

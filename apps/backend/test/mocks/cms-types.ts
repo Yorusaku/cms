@@ -12,7 +12,7 @@ export const AiGeneratePageRequestSchema = z.object({
   activityType: z.string(),
   audience: z.string(),
   promotion: z.string(),
-  products: z.array(z.record(z.unknown())).default([]),
+  products: z.array(z.record(z.string(), z.unknown())).default([]),
   leadGoal: z.string().optional(),
   ctaText: z.string(),
   styleTone: z.string().optional(),
@@ -21,23 +21,24 @@ export const AiGeneratePageRequestSchema = z.object({
 
 export const PageSchemaV2Schema = z.object({
   version: z.literal("2.0.0"),
-  pageConfig: z.record(z.unknown()),
+  pageConfig: z.record(z.string(), z.unknown()),
   componentMap: z.record(
+    z.string(),
     z.object({
       id: z.string(),
       type: z.string(),
-      props: z.record(z.unknown()),
+      props: z.record(z.string(), z.unknown()),
       parentId: z.string().nullable(),
       children: z.array(z.string()),
-      styles: z.record(z.string()).optional(),
+      styles: z.record(z.string(), z.string()).optional(),
       condition: z.union([z.boolean(), z.string()]).optional(),
-    }).passthrough(),
+    }).loose(),
   ),
   rootIds: z.array(z.string()),
   tracking: z
     .object({
       enabled: z.boolean().optional(),
-      context: z.record(z.unknown()).optional(),
+      context: z.record(z.string(), z.unknown()).optional(),
     })
     .optional(),
-}).passthrough();
+}).loose();

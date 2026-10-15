@@ -79,4 +79,4 @@ catalog:
   vite-plugin-dts: 4.5.0
 
   # Validation
-  zod: 3.24.0
+  zod: 4.6.7
