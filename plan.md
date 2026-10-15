@@ -73,6 +73,19 @@ BusinessForm 从「仅前端校验 + 假成功」改为可落库的业务表单�
 
 **仍存在的限制**：BusinessList 仍是静态数据，未做通用数据源；扩展字段暂存于 remark（JSON 字符串），CMS 线索列表按纯文本展示，暂无结构化解析。
 
+## 设计 token 体系扩展（2026-10-15）
+
+把「两端 UI 库各自一套主题色」收敛为「单一 token 源 + 两端映射」。
+
+- **唯一源**：`packages/ui/src/styles/tokens.css` 从 3 个变量扩为完整骨架——品牌色、语义色（success/warning/danger/info 及各浅色变体）、中性色（文字层级 / 描边 / 背景）、圆角、字号、间距、阴影。
+- **两端映射**：CMS `main.css` 的 `--el-*` 由 2 条补到 18 条；CRS `main.css` 的 `--van-*` 由 2 条补到 13 条。业务代码此后只引用 token 或 Tailwind utility，不写死颜色。
+- **Tailwind 同源**：`@theme` 补语义色与圆角映射，`bg-primary` / `text-success` 等 utility 与 token 一致（已验证 `.bg-primary → var(--color-primary)`）。
+- **已知取舍**：EP 的 primary 衍生色（`--el-color-primary-light-N` / `dark-2`）保持库内默认——只改主色会导致 hover 态与主色略微偏移，当前色值接近故暂不处理；如需精调，可在 CMS `main.css` 里按 `color-mix()` 派生。
+
+**视觉影响（已记录在 commit message）**：CRS 的成功/警告/危险色由 Vant 默认色板改为跟随 token；Tailwind `rounded-sm/md/lg` 由 2/6/8px 变为 4/8/12px（源码 13 处引用）。回退只需改 `tokens.css` 对应值。
+
+**本轮验证**：`pnpm check:ui-governance` 通过、ui 单测 49/49、CmsButton 7/7、两端 lint、两端构建、mock E2E **30/30**、live E2E **15/15**。
+
 ## 收口结论（Action 24）
 
 - `pnpm lint` 逐包（backend / cms / crs / utils / ui）：**0 error**（仅 warning）；期间修复了根 `eslint.config.js` 的 flat config 插件缺失、backend lint 脚本 glob 在 Windows 下的展开失败、utils 与 cms 的既有未使用变量错误。
