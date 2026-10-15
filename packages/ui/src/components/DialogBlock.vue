@@ -86,9 +86,9 @@ const {
   cancelText = "取消",
   confirmText = "确定",
   backgroundColor = "#ffffff",
-  titleColor = "#1f2937",
-  contentColor = "#6b7280",
-  confirmColor = "#3b82f6"
+  titleColor = "#303133",
+  contentColor = "#909399",
+  confirmColor = "#419bf9"
 } = defineProps<IDialogProps>()
 
 const emit = defineEmits<{

@@ -30,7 +30,7 @@ const {
   height = 1,
   paddingVisible = false,
   borderColor,
-  defBorderColor = "#e5e5e5",
+  defBorderColor = "#dcdfe6",
   type = 1,
   borderStyle = "solid",
 } = defineProps<IAssistLineProps>();

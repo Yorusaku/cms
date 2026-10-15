@@ -30,7 +30,7 @@ const {
   width = "100%",
   height = 200,
   borderRadius = 0,
-  backgroundColor = "#f5f5f5",
+  backgroundColor = "#f5f7fa",
   defaultImage = "https://via.placeholder.com/400x200",
 } = defineProps<IImageProps>();
 </script>

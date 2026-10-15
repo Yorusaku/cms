@@ -295,8 +295,8 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: #f0f2f5;
-  color: #999;
+  background-color: var(--color-bg-page);
+  color: var(--color-text-secondary);
 }
 
 .placeholder-icon {

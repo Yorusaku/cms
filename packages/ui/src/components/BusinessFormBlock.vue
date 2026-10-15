@@ -260,18 +260,18 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-.business-form-block { padding: 20px; background: #fff; border-radius: 10px; }
-.form-header h3 { margin: 0; color: #1f2937; font-size: 18px; }
-.form-header p { margin: 6px 0 16px; color: #6b7280; font-size: 13px; }
+.business-form-block { padding: 20px; background: var(--color-bg-card); border-radius: var(--radius-lg); }
+.form-header h3 { margin: 0; color: var(--color-text-primary); font-size: 18px; }
+.form-header p { margin: 6px 0 16px; color: var(--color-text-secondary); font-size: 13px; }
 .business-form { display: grid; gap: 14px; }
 .form-field { display: grid; gap: 6px; }
-.field-label { color: #374151; font-size: 13px; }
-.field-label b { color: #ef4444; margin-left: 3px; }
-.field-control { min-height: 38px; padding: 0 10px; border: 1px solid #d1d5db; border-radius: 6px; font: inherit; }
-.form-consent { display: flex; align-items: center; gap: 6px; color: #6b7280; font-size: 12px; }
-.submit-button { min-height: 40px; border: 0; border-radius: 6px; background: #2563eb; color: #fff; cursor: pointer; }
+.field-label { color: var(--color-text-regular); font-size: 13px; }
+.field-label b { color: var(--color-danger); margin-left: 3px; }
+.field-control { min-height: 38px; padding: 0 10px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); font: inherit; }
+.form-consent { display: flex; align-items: center; gap: 6px; color: var(--color-text-secondary); font-size: 12px; }
+.submit-button { min-height: 40px; border: 0; border-radius: var(--radius-sm); background: var(--color-primary); color: #fff; cursor: pointer; }
 .submit-button:disabled { cursor: wait; opacity: .7; }
 .form-message { margin: 12px 0 0; font-size: 13px; }
-.form-message.success { color: #16a34a; }
-.form-message.error { color: #dc2626; }
+.form-message.success { color: var(--color-success); }
+.form-message.error { color: var(--color-danger); }
 </style>

@@ -187,8 +187,8 @@ const handleSubmit = async () => {
 
 <style scoped>
 .lead-form-block {
-  background: #ffffff;
-  border-radius: 12px;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
   padding: 14px;
   box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
 }
@@ -196,13 +196,13 @@ const handleSubmit = async () => {
 .lead-title {
   margin: 0;
   font-size: 16px;
-  color: #0f172a;
+  color: var(--color-text-primary);
 }
 
 .lead-subtitle {
   margin: 6px 0 12px;
   font-size: 12px;
-  color: #64748b;
+  color: var(--color-text-secondary);
 }
 
 .lead-form {
@@ -213,17 +213,17 @@ const handleSubmit = async () => {
 
 .lead-input,
 .lead-textarea {
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
   padding: 10px 12px;
   font-size: 14px;
 }
 
 .lead-submit {
   border: none;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   padding: 10px 12px;
-  background: #2563eb;
+  background: var(--color-primary);
   color: #fff;
   font-size: 14px;
 }
@@ -238,10 +238,10 @@ const handleSubmit = async () => {
 }
 
 .lead-message.success {
-  color: #16a34a;
+  color: var(--color-success);
 }
 
 .lead-message.error {
-  color: #dc2626;
+  color: var(--color-danger);
 }
 </style>

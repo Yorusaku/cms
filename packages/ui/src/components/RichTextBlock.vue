@@ -28,7 +28,7 @@ const {
 .crs-rich-text {
   position: relative;
   box-sizing: border-box;
-  color: #333;
+  color: var(--color-text-primary);
   font-size: 16px;
   line-height: 1.5;
   text-align: left;

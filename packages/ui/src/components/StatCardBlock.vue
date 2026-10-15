@@ -24,15 +24,15 @@ withDefaults(defineProps<Props>(), {
   value: 12,
   description: "较昨日 +8%",
   icon: "数",
-  accentColor: "#2563eb",
+  accentColor: "#419bf9",
   styles: () => ({}),
 });
 </script>
 
 <style scoped>
-.stat-card-block { display: flex; align-items: center; gap: 14px; padding: 18px; background: #fff; border-radius: 10px; }
-.stat-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 10px; font-size: 14px; font-weight: 600; }
-.stat-content p { margin: 0 0 6px; color: #6b7280; font-size: 13px; }
-.stat-content strong { display: block; color: #111827; font-size: 26px; line-height: 1; }
+.stat-card-block { display: flex; align-items: center; gap: 14px; padding: 18px; background: var(--color-bg-card); border-radius: var(--radius-lg); }
+.stat-icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: var(--radius-lg); font-size: 14px; font-weight: 600; }
+.stat-content p { margin: 0 0 6px; color: var(--color-text-secondary); font-size: 13px; }
+.stat-content strong { display: block; color: var(--color-text-primary); font-size: 26px; line-height: 1; }
 .stat-content small { display: block; margin-top: 7px; font-size: 12px; }
 </style>

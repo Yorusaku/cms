@@ -50,7 +50,7 @@ const {
   columnPadding = 0,
   rowPadding = 0,
   backgroundColor = "#ffffff",
-  textColor = "#333333",
+  textColor = "#303133",
   borderRadius = 0,
   defaultImage = "https://via.placeholder.com/44",
 } = defineProps<IImageNavProps>();
