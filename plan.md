@@ -97,6 +97,35 @@ BusinessForm 从「仅前端校验 + 假成功」改为可落库的业务表单�
 
 **验证**：ui 单测 49/49、ui typecheck + build、三包 lint、mock E2E **30/30**、live E2E **15/15**；构建产物中 `#2563eb` 已清零。
 
+## 业务页面交互闭环与 AI 场景校准（2026-10-16）
+
+把「业务查询页」的交互联动从「能配置」补成「能跑通」，并把 AI 建页的业务场景纳入测试覆盖。
+
+**P0：查询页联动闭环**
+
+链路：`BusinessList 筛选 → emit filter-change → RenderNode 桥接 → LinkageEngine → StatCard.value`
+
+- **物料契约**：`MaterialDefinition` 新增受控字段 `runtimeEventProperties`（组件 emit 出的运行时状态，与静态 props 区分），配套 `getMaterialRuntimeEventProperties()`；BusinessList 登记 `filteredCount` / `keyword`。
+- **BusinessListBlock**：筛选或数据源变化时 `emit("filter-change", { keyword, filteredCount })`，**初次渲染即广播一次**，保证联动目标有初始值。
+- **CRS RenderNode**：把 `filter-change` 桥接为 `linkageEngine.triggerLinkage(listId, "filteredCount" | "keyword", value)`；只桥接登记过的受控事件，不引入通用事件编排。
+- **CMS LinkageRuleDialog**：来源属性按「运行时事件 / 配置属性」分组——此前只列组件原始 props，`filteredCount` 根本选不到。
+- **业务查询页模板**：rows 由 2 条扩到 6 条，预置 `filteredCount → value` 联动规则。
+- 编辑端只负责配置与预览；**CMS 画布本身不运行联动**，真实交互由 CRS 渲染链路承载（预览 iframe 走 CRS，因此同样生效）。
+
+**P1：AI 建页业务场景**
+
+核查结论：**AI 建页已完成业务化，本次不改接口**。已有三场景（内容展示 / 信息登记 / 数据查询）、`pageConfig.scene` 映射 `content|form|list`、form 场景生成 BusinessForm、list 场景生成 BusinessList + StatCard、白名单含三个业务物料、Zod 4 校验 + mock fallback。本次仅补 8 条验证。
+
+**顺带补齐**：`apps/frontend/crs` 此前**没有任何单测能力**，而联动逻辑恰在 CRS 侧。新增最小 vitest 基建（读 workspace 源码），补 7 条联动链路测试。
+
+**本轮验证**：ui 52/52、CRS 7/7（新增）、backend 84/84、全量 typecheck 12 tasks、五包 lint、根 build 7 tasks、mock E2E **32/32**、live E2E **17/17**。
+
+**踩坑记录**：
+- `LinkageEngine.setLinkageEnabled` 会**直接改写传入对象**的 `enabled` 字段——测试里复用同一常量 linkage 会造成用例间污染（改禁用会影响后续用例）。
+- 新文件首次编译时 dev server 会打断导航（`ERR_ABORTED`），表现为一批用例失败；重跑即恢复，不是回归。
+- live E2E 的登录用例偶发 `waitForURL` 超时（登录态竞态），重跑即恢复。
+- Docker Desktop 未运行会导致 live E2E 整体起不来（webServer 连不上 5433）。
+
 ## 收口结论（Action 24）
 
 - `pnpm lint` 逐包（backend / cms / crs / utils / ui）：**0 error**（仅 warning）；期间修复了根 `eslint.config.js` 的 flat config 插件缺失、backend lint 脚本 glob 在 Windows 下的展开失败、utils 与 cms 的既有未使用变量错误。
