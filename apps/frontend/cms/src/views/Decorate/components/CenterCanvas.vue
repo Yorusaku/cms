@@ -406,7 +406,9 @@ watch(
 
 .canvas-dropzone {
   flex: 1;
+  min-width: 0;
   padding: 24px;
+  overflow-x: hidden;
   overflow-y: auto;
   min-height: 500px;
 }
@@ -503,7 +505,8 @@ watch(
 
 .component-drag-handle {
   position: absolute;
-  left: -32px;
+  /* -24px：手柄恰好落在画布左内边距（24px）内，避免超出 wrapper 被裁切半字 */
+  left: -24px;
   top: 50%;
   transform: translateY(-50%);
   width: 24px;

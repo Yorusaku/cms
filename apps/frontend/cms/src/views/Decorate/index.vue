@@ -147,8 +147,26 @@ watch(
 }
 
 .decorate-content {
+  /* 三栏定位上下文：左右面板（absolute）相对本容器定位 */
+  position: relative;
   display: flex;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
+  /* 顶部工具栏为 fixed 定位（不占文档流），此处让位 56px，避免画布顶部被压住 */
+  margin-top: 56px;
+}
+
+/*
+ * LeftMaterial（.component-sidebar，186px）与 RightConfig（.page-right，376px）
+ * 都是 position: absolute 的浮层，不参与 flex 布局。画布需显式避让两侧宽度，
+ * 否则会按整页宽度布局：组件横向铺进左栏 / 右栏区域，造成层叠错乱
+ * （画布内容盖住物料列表、右栏裁掉组件右侧）。
+ */
+.canvas-area {
+  min-width: 0;
+  min-height: 0;
+  margin-left: 186px;
+  margin-right: 376px;
 }
 </style>

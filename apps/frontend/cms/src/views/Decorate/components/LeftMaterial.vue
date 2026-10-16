@@ -4,7 +4,7 @@
     <div class="material-search">
       <el-input
         v-model="keyword"
-        placeholder="搜索物料（名称/type/alias）"
+        placeholder="搜索物料"
         clearable
         size="small"
       />
@@ -108,13 +108,15 @@ const onDragend = () => {
 
 <style scoped>
 .component-sidebar {
+  /* 相对 .decorate-content 定位（该容器已让位顶部工具栏 56px） */
   position: absolute;
-  top: 56px;
+  top: 0;
   left: 0;
+  bottom: 0;
+  z-index: 20;
   width: 186px;
   overflow-x: hidden;
   overflow-y: auto;
-  bottom: 0;
   background: #fff;
   user-select: none;
 }

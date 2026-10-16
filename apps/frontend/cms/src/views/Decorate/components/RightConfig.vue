@@ -209,10 +209,12 @@ watch(batchState, () => {
 
 <style scoped>
 .page-right {
+  /* 相对 .decorate-content 定位（该容器已让位顶部工具栏 56px） */
   position: absolute;
-  top: 56px;
+  top: 0;
   right: 0;
   bottom: 0;
+  z-index: 20;
   width: 376px;
   padding-bottom: 50px;
   overflow-x: hidden;
