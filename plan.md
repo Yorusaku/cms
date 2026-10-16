@@ -105,9 +105,9 @@ BusinessForm 从「仅前端校验 + 假成功」改为可落库的业务表单�
 
 链路：`BusinessList 筛选 → emit filter-change → RenderNode 桥接 → LinkageEngine → StatCard.value`
 
-- **物料契约**：`MaterialDefinition` 新增受控字段 `runtimeEventProperties`（组件 emit 出的运行时状态，与静态 props 区分），配套 `getMaterialRuntimeEventProperties()`；BusinessList 登记 `filteredCount` / `keyword`。
-- **BusinessListBlock**：筛选或数据源变化时 `emit("filter-change", { keyword, filteredCount })`，**初次渲染即广播一次**，保证联动目标有初始值。
-- **CRS RenderNode**：把 `filter-change` 桥接为 `linkageEngine.triggerLinkage(listId, "filteredCount" | "keyword", value)`；只桥接登记过的受控事件，不引入通用事件编排。
+- **物料契约**：`MaterialDefinition` 新增受控字段 `runtimeEventProperties`（组件 emit 出的运行时状态，与静态 props 区分），配套 `getMaterialRuntimeEventProperties()`；BusinessList 登记 `filteredCount` / `keyword`（**keyword 因无消费方已于同日技术收口中移除，见下节**）。
+- **BusinessListBlock**：筛选或数据源变化时 `emit("filter-change", { keyword, filteredCount })`，**初次渲染即广播一次**，保证联动目标有初始值（payload 后续收敛为 `{ filteredCount }`，见下节）。
+- **CRS RenderNode**：把 `filter-change` 桥接为 `linkageEngine.triggerLinkage(listId, "filteredCount" | "keyword", value)`；只桥接登记过的受控事件，不引入通用事件编排（keyword 桥接已于同日移除）。
 - **CMS LinkageRuleDialog**：来源属性按「运行时事件 / 配置属性」分组——此前只列组件原始 props，`filteredCount` 根本选不到。
 - **业务查询页模板**：rows 由 2 条扩到 6 条，预置 `filteredCount → value` 联动规则。
 - 编辑端只负责配置与预览；**CMS 画布本身不运行联动**，真实交互由 CRS 渲染链路承载（预览 iframe 走 CRS，因此同样生效）。
@@ -125,6 +125,37 @@ BusinessForm 从「仅前端校验 + 假成功」改为可落库的业务表单�
 - 新文件首次编译时 dev server 会打断导航（`ERR_ABORTED`），表现为一批用例失败；重跑即恢复，不是回归。
 - live E2E 的登录用例偶发 `waitForURL` 超时（登录态竞态），重跑即恢复。
 - Docker Desktop 未运行会导致 live E2E 整体起不来（webServer 连不上 5433）。
+
+## 技术收口：联动状态隔离与 CMS 单测基线（2026-10-16）
+
+只做技术收口，不新增业务功能。两个 commit：`34279ba`（引擎隔离）、`a3e12c2`（测试基线）。
+
+**一、联动引擎状态隔离（`34279ba`）**
+
+引擎原实现直接持有并改写调用方传入的联动对象：`registerLinkage` 原样入 Map、`setLinkageEnabled` 直接改该对象的 `enabled`、`getAllLinkages` / `getLinkagesForComponent` 返回内部引用。CMS store 因注册前做浅拷贝（`convertToRuntimeLinkage`）恰好掩盖了污染，但**引擎 API 契约本身不安全**——直接注册 Schema 对象即会被 toggle 反噬，影响撤销 / 保存 / 导出；CRS 侧同一实现同一问题。
+
+修复（CMS / CRS 语义一致）：`registerLinkage` 存独立浅拷贝；`setLinkageEnabled` 以新副本替换 Map 项；`getAllLinkages` / `getLinkagesForComponent` 返回拷贝。**不改 Schema 版本、不改联动行为、不新增事件系统**。Schema 的 linkages 只在用户明确操作（store 的 add/update/delete/toggle）时改变。
+
+同期移除 **keyword** 运行时事件能力（上线后无任何消费方）：`runtimeEventProperties` 收敛为 `["filteredCount"]`、RenderNode 删除 keyword 桥接、`filter-change` payload 收敛为 `{ filteredCount }`（类型 / 测试 / 文档同步更新）。
+
+回归测试（任务书 4 点全覆盖）：CMS `linkage-engine` 新增 State Isolation 组 3 条（源对象不被改写 / 重新启用后照常联动 / get* 返回值修改不影响内部）；CRS `business-linkage` 补 2 条同类；`usePageStore` 补 1 条（toggle 后导出正确 + 导入的原始 Schema 不被改写）。
+
+**二、CMS 单测基线清理（`a3e12c2`）**
+
+原始状态：**24 文件 / 33 条失败**。拆解：
+- **17 个文件是误收集**——Playwright 的 `tests/e2e/**`、`tests/e2e-live/**` 被 Vitest 按 `**/*.spec.ts` 收走，`import @playwright/test` 直接抛错。修：vitest include 加 exclude 两个目录。
+- **7 个文件 / 33 条是真实契约漂移**（历史遗留，非本轮回归）：
+  1. `condition-engine`（18 条）：field 解析只支持 `"componentState.x"` 全路径，用例的裸字段名全部静默求值为 false。实现补裸名回退（componentState → pageState → userData），显式路径保留。
+  2. `data-binding-engine`（3 条）：`applyDataBinding` 整体赋值，与契约（数据源含同名键时取该键）不符。改为含同名键取键值、否则整体赋值。
+  3. `page-publish`（3 条）：测试基于**已删除的 localStorage 架构**（`appendLocalPublishLog` / `getPageContentStatus` 已不存在）。按当前服务端契约重写。
+  4. `LinkageConfig`（5 条）：测试 stub 未定义 `name` / `data-test`，`findComponent` 失败。修 stub 定义。
+  5. `generate-material-script`（2 条）：fixture 仍建 `apps/cms/tests` 旧路径（脚本已要求 `apps/frontend/cms/tests`）。
+  6. `performance-benchmark`（1 条）：阈值 100000（十进制）与注释 "< 100KB"（KiB）口径不一致，实际 101671 字节 ≈ 99.3 KiB。
+  7. `linkage-engine`（1 条）：浮点断言 `toBe(110)` → `toBeCloseTo(110)`（`100 * 1.1`）。
+
+**关键环境发现**：Vitest 的 **forks 池在本机会随机抛 EPERM 并静默跳过整个测试文件**（不报失败）——实测三次中两次各丢一个文件（usePageStore 59 条 / condition-engine 31 条），且并行跑出的测试总数每次不同。根因是 worker 间经临时文件传递模块被系统层拦截。修复：CMS 与 ui 的 vitest 显式指定 `pool: "threads"`（实测连续多轮 384/384 稳定，且比 forks 更快：7.8s vs 9.5s；比 `--no-file-parallelism` 的 57s 快 7 倍）。
+
+**修复后测试结果**：CMS 全量 **35 passed / 2 skipped（37 文件）、384 passed / 2 skipped（0 失败、0 错误）**；ui 8/8 文件 52/52；CRS 8/8；backend 84/84；typecheck 12 tasks；lint 六包；mock E2E 32/32。剩余排除项仅 2 个 skip（与基线一致）。
 
 ## 收口结论（Action 24）
 
