@@ -187,6 +187,49 @@ describe("页面 Schema 协议（Zod 4 迁移守卫）", () => {
     expect(safeParsePageSchema(null)).toBeNull();
   });
 
+  it("业务查询页的联动规则能通过页面 Schema 校验", () => {
+    const page = makePage(
+      {
+        stat: makeComponent("StatCard", { title: "匹配记录数", value: 6 }),
+        list: makeComponent("BusinessList", { rows: [] }),
+      },
+      ["stat", "list"],
+    );
+
+    const withLinkage = {
+      ...page,
+      linkages: [
+        {
+          id: "linkage-filtered-count",
+          sourceComponentId: "list",
+          targetComponentId: "stat",
+          sourceProperty: "filteredCount",
+          targetProperty: "value",
+          enabled: true,
+        },
+      ],
+    };
+
+    expect(PageSchemaV2Schema.safeParse(withLinkage).success).toBe(true);
+  });
+
+  it("联动规则缺少必填字段时校验失败", () => {
+    const page = makePage({ stat: makeComponent("StatCard") }, ["stat"]);
+    const withBrokenLinkage = {
+      ...page,
+      linkages: [
+        {
+          id: "broken",
+          sourceComponentId: "list",
+          targetProperty: "value",
+          enabled: true,
+        },
+      ],
+    };
+
+    expect(PageSchemaV2Schema.safeParse(withBrokenLinkage).success).toBe(false);
+  });
+
   it("现有业务物料的 defaultProps 仍能通过校验", () => {
     // 字段与 packages/ui/src/materials/definitions.ts 中 business 分组物料保持一致；
     // 该包为 ESM，Jest 无法直接加载其 src，故在此维护等价快照。

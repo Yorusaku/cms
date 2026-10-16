@@ -72,6 +72,67 @@ describe("business materials", () => {
     expect(wrapper.text()).toContain("暂无数据");
   });
 
+  it("列表筛选会广播 filter-change 运行时状态", async () => {
+    const wrapper = mount(BusinessListBlock, {
+      props: {
+        columns: [{ key: "name", label: "名称" }],
+        rows: [
+          { id: 1, name: "服务申请" },
+          { id: 2, name: "资料补交" },
+          { id: 3, name: "服务评价" },
+        ],
+      },
+    });
+
+    // 初次渲染即广播一次，保证联动目标拿到初始值
+    expect(wrapper.emitted("filter-change")?.[0]?.[0]).toEqual({
+      keyword: "",
+      filteredCount: 3,
+    });
+
+    await wrapper.find(".search-input").setValue("服务");
+
+    const events = wrapper.emitted("filter-change");
+    expect(events?.[events.length - 1]?.[0]).toEqual({
+      keyword: "服务",
+      filteredCount: 2,
+    });
+  });
+
+  it("筛选无结果时广播 0 并展示空态", async () => {
+    const wrapper = mount(BusinessListBlock, {
+      props: {
+        columns: [{ key: "name", label: "名称" }],
+        rows: [{ id: 1, name: "服务申请" }],
+      },
+    });
+
+    await wrapper.find(".search-input").setValue("不存在");
+
+    const events = wrapper.emitted("filter-change");
+    expect(events?.[events.length - 1]?.[0]).toEqual({
+      keyword: "不存在",
+      filteredCount: 0,
+    });
+    expect(wrapper.text()).toContain("暂无数据");
+  });
+
+  it("筛选后页码重置回第一页", async () => {
+    const rows = Array.from({ length: 12 }, (_, index) => ({
+      id: index + 1,
+      name: index < 6 ? `服务-${index + 1}` : `其他-${index + 1}`,
+    }));
+    const wrapper = mount(BusinessListBlock, {
+      props: { columns: [{ key: "name", label: "名称" }], rows, pageSize: 5 },
+    });
+
+    await wrapper.findAll(".pagination button")[1].trigger("click");
+    expect(wrapper.text()).toContain("2 / 3");
+
+    await wrapper.find(".search-input").setValue("服务");
+    expect(wrapper.text()).toContain("1 / 2");
+  });
+
   it("统计卡片展示指标内容", () => {
     const wrapper = mount(StatCardBlock, {
       props: { title: "待审核", value: 8, description: "本周新增" },

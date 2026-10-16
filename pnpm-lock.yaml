@@ -431,6 +431,9 @@ importers:
       '@vitejs/plugin-vue':
         specifier: 'catalog:'
         version: 5.2.1(vite@6.0.11(@types/node@25.8.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.47.1)(yaml@2.8.2))(vue@3.5.13(typescript@5.7.3))
+      '@vue/test-utils':
+        specifier: 'catalog:'
+        version: 2.4.6
       autoprefixer:
         specifier: 'catalog:'
         version: 10.4.20(postcss@8.5.1)
@@ -440,6 +443,9 @@ importers:
       eslint-plugin-vue:
         specifier: 'catalog:'
         version: 9.32.0(eslint@9.18.0(jiti@2.6.1))
+      jsdom:
+        specifier: 'catalog:'
+        version: 26.0.0
       postcss:
         specifier: 'catalog:'
         version: 8.5.1
@@ -461,6 +467,9 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 6.0.11(@types/node@25.8.0)(jiti@2.6.1)(lightningcss@1.30.2)(terser@5.47.1)(yaml@2.8.2)
+      vitest:
+        specifier: 'catalog:'
+        version: 3.0.2(@types/node@25.8.0)(jiti@2.6.1)(jsdom@26.0.0)(lightningcss@1.30.2)(terser@5.47.1)(yaml@2.8.2)
       vue-tsc:
         specifier: 'catalog:'
         version: 2.2.0(typescript@5.7.3)
@@ -8958,7 +8967,7 @@ snapshots:
       '@one-ini/wasm': 0.1.1
       commander: 10.0.1
       minimatch: 9.0.1
-      semver: 7.7.4
+      semver: 7.8.0
 
   ee-first@1.1.1: {}
 

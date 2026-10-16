@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint . --fix",
+    "test": "vitest",
     "typecheck": "vue-tsc --noEmit"
   },
   "dependencies": {
@@ -28,9 +29,11 @@
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
+    "@vue/test-utils": "catalog:",
     "autoprefixer": "catalog:",
     "eslint": "catalog:",
     "eslint-plugin-vue": "catalog:",
+    "jsdom": "catalog:",
     "postcss": "catalog:",
     "postcss-px-to-viewport-8-plugin": "^1.2.5",
     "tailwindcss": "catalog:",
@@ -38,6 +41,7 @@
     "unplugin-auto-import": "catalog:",
     "unplugin-vue-components": "catalog:",
     "vite": "catalog:",
+    "vitest": "catalog:",
     "vue-tsc": "catalog:"
   }
 }
