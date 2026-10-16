@@ -100,7 +100,8 @@ describe("LinkageEngine", () => {
       engine.triggerLinkage("comp-1", "price", 100);
 
       const targetState = engine.getComponentState("comp-2");
-      expect(targetState.totalPrice).toBe(110);
+      // 100 * 1.1 在 IEEE 754 下是 110.00000000000001，用 toBeCloseTo 比较
+      expect(targetState.totalPrice).toBeCloseTo(110);
     });
 
     it("should evaluate condition before triggering linkage", () => {
@@ -354,6 +355,57 @@ describe("LinkageEngine", () => {
 
       const linkages = engine.getLinkagesForComponent("comp-1");
       expect(linkages).toHaveLength(2);
+    });
+  });
+
+  describe("State Isolation", () => {
+    const makeLinkage = (): IComponentLinkage => ({
+      id: "link-1",
+      sourceComponentId: "comp-1",
+      targetComponentId: "comp-2",
+      sourceProperty: "price",
+      targetProperty: "totalPrice",
+      enabled: true,
+    });
+
+    it("switching enabled does not mutate the registered source object", () => {
+      // 模拟页面 Schema 中的 linkages
+      const schemaLinkages = [makeLinkage()];
+
+      engine.registerLinkage(schemaLinkages[0]);
+      engine.setLinkageEnabled("link-1", false);
+
+      // 原始 Schema 对象未被改写（撤销 / 保存 / 导出读取的仍是原值）
+      expect(schemaLinkages[0].enabled).toBe(true);
+      // 引擎内已切换为禁用
+      expect(engine.getAllLinkages()[0].enabled).toBe(false);
+    });
+
+    it("runtime linkage still triggers after enabling again", () => {
+      engine.registerLinkage(makeLinkage());
+
+      engine.setLinkageEnabled("link-1", false);
+      engine.triggerLinkage("comp-1", "price", 100);
+      expect(engine.getComponentState("comp-2").totalPrice).toBeUndefined();
+
+      engine.setLinkageEnabled("link-1", true);
+      engine.triggerLinkage("comp-1", "price", 200);
+      expect(engine.getComponentState("comp-2").totalPrice).toBe(200);
+    });
+
+    it("mutating objects returned by get* does not affect internal state", () => {
+      engine.registerLinkage(makeLinkage());
+
+      const all = engine.getAllLinkages();
+      all[0].enabled = false;
+      all[0].targetProperty = "tampered";
+
+      const forComponent = engine.getLinkagesForComponent("comp-1");
+      forComponent[0].enabled = false;
+
+      expect(engine.getAllLinkages()[0].enabled).toBe(true);
+      expect(engine.getAllLinkages()[0].targetProperty).toBe("totalPrice");
+      expect(engine.getStatistics().enabledLinkages).toBe(1);
     });
   });
 

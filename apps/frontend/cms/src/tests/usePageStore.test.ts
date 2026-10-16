@@ -425,6 +425,34 @@ describe("usePageStore", () => {
       expect(store.activeComponentId).toBeNull();
       expect(store.selectedComponentIds).toEqual([]);
     });
+
+    it("联动启用状态切换后导出正确，且不改写导入的原始 Schema", () => {
+      const store = usePageStore();
+      const input: IPageSchemaV2 = {
+        version: "2.0.0",
+        pageConfig: { name: "联动页" },
+        componentMap: {},
+        rootIds: [],
+        linkages: [
+          {
+            id: "linkage-1",
+            sourceComponentId: "comp-1",
+            sourceProperty: "filteredCount",
+            targetComponentId: "comp-2",
+            targetProperty: "value",
+            enabled: true,
+          },
+        ],
+      };
+
+      store.importPageSchema(input);
+      store.toggleLinkage("linkage-1");
+
+      const exported = store.exportPageSchema();
+      expect(exported.linkages?.[0]?.enabled).toBe(false);
+      // 导入的原始对象未被运行时操作改写（撤销 / 重新保存读取的仍是原值）
+      expect(input.linkages?.[0]?.enabled).toBe(true);
+    });
   });
 
   describe("Drag and Drop", () => {

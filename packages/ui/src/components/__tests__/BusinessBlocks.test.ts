@@ -86,7 +86,6 @@ describe("business materials", () => {
 
     // 初次渲染即广播一次，保证联动目标拿到初始值
     expect(wrapper.emitted("filter-change")?.[0]?.[0]).toEqual({
-      keyword: "",
       filteredCount: 3,
     });
 
@@ -94,7 +93,6 @@ describe("business materials", () => {
 
     const events = wrapper.emitted("filter-change");
     expect(events?.[events.length - 1]?.[0]).toEqual({
-      keyword: "服务",
       filteredCount: 2,
     });
   });
@@ -111,7 +109,6 @@ describe("business materials", () => {
 
     const events = wrapper.emitted("filter-change");
     expect(events?.[events.length - 1]?.[0]).toEqual({
-      keyword: "不存在",
       filteredCount: 0,
     });
     expect(wrapper.text()).toContain("暂无数据");

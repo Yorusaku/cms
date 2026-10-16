@@ -3,6 +3,10 @@
  *
  * Manages relationships and data flow between components in preview mode.
  * Supports component-to-component communication and state synchronization.
+ *
+ * 所有权约定：引擎只持有联动配置的独立副本（注册与查询均拷贝），
+ * 因此 `setLinkageEnabled` 等运行时操作不会反噬调用方传入的对象
+ * （如页面 Schema 中的 linkages，撤销 / 保存 / 导出读取的始终是原值）。
  */
 
 import type { IComponentLinkage as IComponentLinkageSchema } from '@cms/types';
@@ -49,7 +53,9 @@ export class LinkageEngine {
       return;
     }
 
-    this.linkages.set(linkage.id, linkage);
+    // 存独立副本：调用方（页面 Schema / store）保留原对象所有权，
+    // 引擎内的 enabled 切换不会改写来源对象。
+    this.linkages.set(linkage.id, { ...linkage });
     this.initializeComponentState(linkage.sourceComponentId);
     this.initializeComponentState(linkage.targetComponentId);
   }
@@ -63,13 +69,17 @@ export class LinkageEngine {
 
   /**
    * Get all linkages for a component
+   *
+   * 返回拷贝：调用方对结果对象的修改不会影响引擎内部状态。
    */
   getLinkagesForComponent(componentId: string): IComponentLinkage[] {
-    return Array.from(this.linkages.values()).filter(
-      (linkage) =>
-        linkage.sourceComponentId === componentId ||
-        linkage.targetComponentId === componentId
-    );
+    return Array.from(this.linkages.values())
+      .filter(
+        (linkage) =>
+          linkage.sourceComponentId === componentId ||
+          linkage.targetComponentId === componentId
+      )
+      .map((linkage) => ({ ...linkage }));
   }
 
   /**
@@ -278,19 +288,26 @@ export class LinkageEngine {
 
   /**
    * Enable/disable a linkage
+   *
+   * 只修改引擎内的运行时副本；用新副本替换 Map 项，
+   * 使此前经 get* 取出的引用也与内部状态脱钩。
    */
   setLinkageEnabled(linkageId: string, enabled: boolean): void {
     const linkage = this.linkages.get(linkageId);
     if (linkage) {
-      linkage.enabled = enabled;
+      this.linkages.set(linkageId, { ...linkage, enabled });
     }
   }
 
   /**
    * Get all linkages
+   *
+   * 返回拷贝：调用方对结果对象的修改不会影响引擎内部状态。
    */
   getAllLinkages(): IComponentLinkage[] {
-    return Array.from(this.linkages.values());
+    return Array.from(this.linkages.values()).map((linkage) => ({
+      ...linkage,
+    }));
   }
 
   /**

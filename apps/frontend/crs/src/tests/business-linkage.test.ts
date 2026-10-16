@@ -19,10 +19,7 @@ describe("业务查询页联动链路", () => {
   const STAT_ID = "stat-1";
   const LINKAGE_ID = "linkage-filtered-count";
 
-  /**
-   * 每次返回全新对象：引擎的 setLinkageEnabled 会直接改写传入对象的 enabled 字段，
-   * 复用同一个常量会让用例之间互相污染（改一条规则禁用会影响后续用例）。
-   */
+  /** 每次返回全新对象，让各用例的注册状态彼此独立 */
   const makeQueryLinkage = (): IComponentLinkage => ({
     id: LINKAGE_ID,
     sourceComponentId: LIST_ID,
@@ -54,12 +51,6 @@ describe("业务查询页联动链路", () => {
     expect(engine.getComponentState(STAT_ID).value).toBe(0);
   });
 
-  it("源组件的运行时状态也会被记录（keyword）", () => {
-    engine.triggerLinkage(LIST_ID, "keyword", "服务");
-
-    expect(engine.getComponentState(LIST_ID)).toMatchObject({ keyword: "服务" });
-  });
-
   it("目标组件的订阅者能收到联动后的值", () => {
     const received: number[] = [];
     engine.subscribe(STAT_ID, (event) => received.push(event.value));
@@ -74,6 +65,36 @@ describe("业务查询页联动链路", () => {
     engine.triggerLinkage(LIST_ID, "filteredCount", 5);
 
     expect(engine.getComponentState(STAT_ID).value).toBeUndefined();
+  });
+
+  it("切换 enabled 不污染注册时传入的原始对象", () => {
+    const origin = makeQueryLinkage();
+    const isolated = new LinkageEngine();
+    isolated.registerLinkage(origin);
+    isolated.triggerLinkage(LIST_ID, "filteredCount", 4);
+    expect(isolated.getComponentState(STAT_ID).value).toBe(4);
+
+    isolated.setLinkageEnabled(LINKAGE_ID, false);
+
+    // 原始对象（如来自页面 Schema 的 linkages）未被改写
+    expect(origin.enabled).toBe(true);
+    // 引擎内已切换为禁用，不再联动
+    isolated.triggerLinkage(LIST_ID, "filteredCount", 9);
+    expect(isolated.getComponentState(STAT_ID).value).toBe(4);
+  });
+
+  it("经 getAllLinkages 取出的对象修改后不影响引擎内部状态", () => {
+    const [snapshot] = engine.getAllLinkages();
+    snapshot.enabled = false;
+    snapshot.targetProperty = "tampered";
+
+    const [current] = engine.getAllLinkages();
+    expect(current.enabled).toBe(true);
+    expect(current.targetProperty).toBe("value");
+
+    // 内部状态未被影响，联动照常触发
+    engine.triggerLinkage(LIST_ID, "filteredCount", 2);
+    expect(engine.getComponentState(STAT_ID).value).toBe(2);
   });
 
   it("未登记的来源属性不会影响统计卡片", () => {

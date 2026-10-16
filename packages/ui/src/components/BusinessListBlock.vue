@@ -73,12 +73,11 @@ const pageCount = computed(() => Math.max(1, Math.ceil(filteredRows.value.length
 const pagedRows = computed(() => filteredRows.value.slice((page.value - 1) * props.pageSize, page.value * props.pageSize));
 /** 对外暴露的运行时状态，供联动规则消费（见物料定义的 runtimeEventProperties） */
 const emit = defineEmits<{
-  "filter-change": [payload: { keyword: string; filteredCount: number }];
+  "filter-change": [payload: { filteredCount: number }];
 }>();
 
 const emitFilterChange = () => {
   emit("filter-change", {
-    keyword: keyword.value,
     filteredCount: filteredRows.value.length,
   });
 };
