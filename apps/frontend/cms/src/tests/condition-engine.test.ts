@@ -85,6 +85,32 @@ describe("ConditionEngine", () => {
       const result = engine.evaluateCondition(condition, context);
       expect(result).toBe(true);
     });
+
+    it("should support explicit namespace prefix in field", () => {
+      const condition = createSimpleCondition(
+        "componentState.status",
+        "==",
+        "active"
+      );
+      const context: EvaluationContext = {
+        componentState: { status: "active" },
+        pageState: {},
+      };
+
+      const result = engine.evaluateCondition(condition, context);
+      expect(result).toBe(true);
+    });
+
+    it("should fall back to pageState for bare field names", () => {
+      const condition = createSimpleCondition("status", "==", "active");
+      const context: EvaluationContext = {
+        componentState: {},
+        pageState: { status: "active" },
+      };
+
+      const result = engine.evaluateCondition(condition, context);
+      expect(result).toBe(true);
+    });
   });
 
   describe("Complex Conditions", () => {

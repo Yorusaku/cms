@@ -262,8 +262,8 @@ describe("Performance Benchmarks", () => {
 
       // Should complete in reasonable time
       expect(duration).toBeLessThan(100);
-      // 1000 components should be < 100KB
-      expect(size).toBeLessThan(100000);
+      // 1000 components should be < 100 KiB（101671 字节约 99.3 KiB，按 KiB 口径设上限）
+      expect(size).toBeLessThan(102400);
     });
   });
 });

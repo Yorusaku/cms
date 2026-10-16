@@ -223,6 +223,28 @@ describe("DataBindingEngine", () => {
       expect(componentData.items).toEqual([1, 2, 3]);
       expect(componentData.count).toBe(3);
     });
+
+    it("falls back to the whole payload when target property is absent", async () => {
+      const source = createStaticDataSource("source-1", "List Data", {
+        list: [{ id: 1 }],
+      });
+      const binding: IDataBinding = {
+        id: "binding-1",
+        componentId: "comp-1",
+        dataSourceId: "source-1",
+        targetProperty: "rows",
+        enabled: true,
+      };
+
+      engine.registerDataSource(source);
+      engine.registerBinding(binding);
+      await engine.applyDataBinding("binding-1");
+
+      // 数据源结果没有 rows 同名键：整体作为值写入
+      expect(engine.getComponentData("comp-1").rows).toEqual({
+        list: [{ id: 1 }],
+      });
+    });
   });
 
   describe("Event Subscription", () => {

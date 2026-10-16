@@ -22,7 +22,7 @@ function createFixtureRoot() {
   fs.mkdirSync(path.join(root, "packages/ui/src/materials/generated"), {
     recursive: true,
   });
-  fs.mkdirSync(path.join(root, "apps/cms/tests"), { recursive: true });
+  fs.mkdirSync(path.join(root, "apps/frontend/cms/tests"), { recursive: true });
   fs.mkdirSync(path.join(root, "docs"), { recursive: true });
 
   fs.writeFileSync(
@@ -100,7 +100,10 @@ describe("generate-material script", () => {
     ).toBe(true);
     expect(
       fs.existsSync(
-        path.join(root, "apps/cms/tests/material-foo-bar.generated.test.ts"),
+        path.join(
+          root,
+          "apps/frontend/cms/tests/material-foo-bar.generated.test.ts",
+        ),
       ),
     ).toBe(true);
 

@@ -224,6 +224,10 @@ export class DataBindingEngine {
 
   /**
    * Apply data binding
+   *
+   * 取值约定：数据源返回结构化对象且包含与 targetProperty 同名的键时，
+   * 取该键的值写入组件属性（如 { items: [...] } → componentData.items）；
+   * 其余情况（对象无同名键 / 数组 / 标量）整体作为值写入。
    */
   async applyDataBinding(bindingId: string): Promise<void> {
     const binding = this.bindings.get(bindingId);
@@ -233,7 +237,14 @@ export class DataBindingEngine {
 
     try {
       const data = await this.fetchData(binding.dataSourceId);
-      this.updateComponentData(binding.componentId, binding.targetProperty, data);
+      const resolved =
+        data !== null &&
+        typeof data === "object" &&
+        !Array.isArray(data) &&
+        binding.targetProperty in data
+          ? (data as Record<string, unknown>)[binding.targetProperty]
+          : data;
+      this.updateComponentData(binding.componentId, binding.targetProperty, resolved);
     } catch (error) {
       console.error(`Error applying binding ${bindingId}:`, error);
     }

@@ -140,21 +140,47 @@ export class ConditionEngine {
 
   /**
    * Get field value from context
+   *
+   * 支持两种写法：
+   * - 显式命名空间路径："componentState.title" / "pageState.xxx" / "userData.xxx"
+   * - 裸字段名："status" —— 依次在 componentState、pageState、userData 中查找，
+   *   首个有值的命名空间生效。
    */
   private getFieldValue(field: string, context: EvaluationContext): any {
-    // Support nested field access: "componentState.title"
     const parts = field.split(".");
-    let value: any = context;
 
-    for (const part of parts) {
-      if (value && typeof value === "object") {
-        value = value[part];
-      } else {
-        return undefined;
+    const resolve = (root: unknown): unknown => {
+      let value: any = root;
+      for (const part of parts) {
+        if (value && typeof value === "object") {
+          value = value[part];
+        } else {
+          return undefined;
+        }
+      }
+      return value;
+    };
+
+    const direct = resolve(context);
+    if (direct !== undefined) {
+      return direct;
+    }
+
+    const scopes: Array<Record<string, any> | undefined> = [
+      context.componentState,
+      context.pageState,
+      context.userData,
+    ];
+    for (const scope of scopes) {
+      if (scope && typeof scope === "object") {
+        const scoped = resolve(scope);
+        if (scoped !== undefined) {
+          return scoped;
+        }
       }
     }
 
-    return value;
+    return undefined;
   }
 
   /**

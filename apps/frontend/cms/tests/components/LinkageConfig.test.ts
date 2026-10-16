@@ -42,8 +42,14 @@ describe('LinkageConfig.vue', () => {
           'el-button': true,
           'el-empty': true,
           'el-icon': true,
-          'LinkageRuleItem': true,
-          'LinkageRuleDialog': true,
+          'LinkageRuleItem': {
+            name: 'LinkageRuleItem',
+            template: '<div data-test="linkage-rule-item"></div>',
+          },
+          'LinkageRuleDialog': {
+            name: 'LinkageRuleDialog',
+            template: '<div></div>',
+          },
         },
       },
     });
@@ -97,10 +103,14 @@ describe('LinkageConfig.vue', () => {
           'el-empty': true,
           'el-icon': true,
           'LinkageRuleItem': {
+            name: 'LinkageRuleItem',
             template: '<div @delete="$emit(\'delete\', \'linkage-1\')"></div>',
             emits: ['delete'],
           },
-          'LinkageRuleDialog': true,
+          'LinkageRuleDialog': {
+            name: 'LinkageRuleDialog',
+            template: '<div></div>',
+          },
         },
       },
     });
@@ -133,10 +143,14 @@ describe('LinkageConfig.vue', () => {
           'el-empty': true,
           'el-icon': true,
           'LinkageRuleItem': {
+            name: 'LinkageRuleItem',
             template: '<div @toggle="$emit(\'toggle\', \'linkage-1\')"></div>',
             emits: ['toggle'],
           },
-          'LinkageRuleDialog': true,
+          'LinkageRuleDialog': {
+            name: 'LinkageRuleDialog',
+            template: '<div></div>',
+          },
         },
       },
     });
@@ -161,21 +175,10 @@ describe('LinkageConfig.vue', () => {
           'el-icon': true,
           'LinkageRuleItem': true,
           'LinkageRuleDialog': {
-            template: '<div @save="$emit(\'save\', linkage)"></div>',
+            name: 'LinkageRuleDialog',
+            template: '<div></div>',
             props: ['modelValue', 'linkage', 'components'],
             emits: ['save'],
-            data() {
-              return {
-                linkage: {
-                  id: 'linkage-new',
-                  sourceComponentId: 'comp-1',
-                  sourceProperty: 'value',
-                  targetComponentId: 'comp-2',
-                  targetProperty: 'value',
-                  enabled: true,
-                },
-              };
-            },
           },
         },
       },
@@ -214,12 +217,14 @@ describe('LinkageConfig.vue', () => {
           'el-empty': true,
           'el-icon': true,
           'LinkageRuleItem': {
-            template: '<div @edit="$emit(\'edit\', linkage)"></div>',
+            name: 'LinkageRuleItem',
+            template: '<div></div>',
             props: ['linkage'],
             emits: ['edit'],
           },
           'LinkageRuleDialog': {
-            template: '<div @save="$emit(\'save\', linkage)"></div>',
+            name: 'LinkageRuleDialog',
+            template: '<div></div>',
             props: ['modelValue', 'linkage', 'components'],
             emits: ['save'],
           },
