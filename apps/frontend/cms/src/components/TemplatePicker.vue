@@ -7,7 +7,7 @@
   >
     <el-tabs v-model="activeCategory" @tab-change="handleCategoryChange">
       <el-tab-pane label="全部" name="all" />
-      <el-tab-pane label="营销" name="marketing" />
+      <el-tab-pane label="营销活动" name="marketing" />
       <el-tab-pane label="电商" name="ecommerce" />
       <el-tab-pane label="品牌" name="brand" />
       <el-tab-pane label="通用" name="general" />
@@ -171,7 +171,7 @@ const categoryTagType = (cat: string): "primary" | "danger" | "warning" | "succe
 
 const categoryLabel = (cat: string) => {
   const map: Record<string, string> = {
-    marketing: "营销",
+    marketing: "营销活动",
     ecommerce: "电商",
     brand: "品牌",
     general: "通用",

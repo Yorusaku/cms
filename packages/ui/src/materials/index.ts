@@ -17,8 +17,8 @@ const asyncComponentCache = new Map<
 >();
 
 const materialGroupLabels: Record<MaterialGroupKey, string> = {
-  basic: "基础组件",
-  marketing: "营销组件",
+  basic: "基础/内容组件",
+  marketing: "营销活动组件",
   business: "业务组件",
 };
 

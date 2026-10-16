@@ -6,7 +6,7 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Home',
     component: () => import('../views/Home.vue'),
     meta: {
-      title: '活动列表'
+      title: '页面列表'
     }
   },
   {
@@ -22,7 +22,7 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Page',
     component: () => import('../views/Page.vue'),
     meta: {
-      title: '活动页'
+      title: '业务页面'
     }
   }
 ]

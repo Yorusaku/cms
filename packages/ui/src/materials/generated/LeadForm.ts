@@ -74,7 +74,7 @@ const leadFormEditorSchema: MaterialEditorSchema = {
     },
     {
       type: "section",
-      label: "营销与归因",
+      label: "来源与归因",
       fields: [
         {
           type: "number",

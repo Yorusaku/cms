@@ -1,6 +1,6 @@
 <template>
   <div class="home-container min-h-screen bg-gray-100">
-    <van-nav-bar title="活动列表" />
+    <van-nav-bar title="页面列表" />
 
     <van-pull-refresh v-model="refreshing" @refresh="onRefresh">
       <van-list
@@ -72,7 +72,7 @@ const onLoad = async () => {
       finished.value = true
     }
   } catch (error) {
-    console.error('加载活动列表失败:', error)
+    console.error('加载页面列表失败:', error)
     loading.value = false
     finished.value = true
     showToast('加载失败，请稍后重试')

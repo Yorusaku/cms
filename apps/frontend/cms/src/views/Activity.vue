@@ -2,7 +2,7 @@
   <div class="min-h-screen bg-gray-50 p-6">
     <div class="bg-white rounded-lg shadow-sm p-6">
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-800">活动页面管理</h1>
+        <h1 class="text-2xl font-bold text-gray-800">业务页面管理</h1>
         <p class="text-gray-600 mt-1">管理页面、发布状态、版本记录与回滚</p>
       </div>
 

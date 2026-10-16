@@ -29,16 +29,16 @@
       <div class="mb-8">
         <div class="text-3xl text-gray-700 mb-2">欢迎体验</div>
         <div class="text-4xl text-blue-500 font-bold mb-4">
-          CMS 移动端页面配置系统
+          业务页面可视化配置平台
         </div>
         <div class="text-gray-500">
-          一套用于解决小程序活动页面发布问题的低代码平台
+          面向运营团队的业务页面低代码搭建与发布平台，兼容内容展示、信息登记和数据查询场景
         </div>
       </div>
 
       <div class="flex justify-center gap-4">
         <el-button type="primary" size="large" @click="goToActivity"
-          >活动管理</el-button
+          >页面管理</el-button
         >
         <el-button v-if="canEdit" type="success" size="large" @click="openTemplatePicker"
           >新建页面</el-button
