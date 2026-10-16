@@ -249,7 +249,7 @@ export const TEMPLATE_SEEDS: TemplateSeed[] = [
     name: "业务查询页",
     thumbnail: null,
     category: "business",
-    description: "用于展示业务办理记录、状态和统计信息",
+    description: "业务办理记录查询：关键词筛选后统计卡片实时联动",
     schema: (() => {
       const stat = cid("ListStat");
       const list = cid("BusinessList");
@@ -257,10 +257,28 @@ export const TEMPLATE_SEEDS: TemplateSeed[] = [
         version: "2.0.0" as const,
         pageConfig: { name: "业务查询页", scene: "list" as const, shareDesc: "查询业务办理状态", shareImage: "", backgroundColor: "#f8fafc", backgroundImage: "", backgroundPosition: "top", cover: "" },
         componentMap: {
-          [stat]: { id: stat, type: "StatCard", parentId: null, children: [], props: { title: "待处理事项", value: 12, description: "本周新增", icon: "数", accentColor: "#2563eb" }, styles: {} },
-          [list]: { id: list, type: "BusinessList", parentId: null, children: [], props: { title: "办理记录", subtitle: "支持关键词筛选", columns: [{ key: "name", label: "事项" }, { key: "status", label: "状态" }], rows: [{ id: 1, name: "服务申请", status: "处理中" }, { id: 2, name: "资料补交", status: "已完成" }], pageSize: 5 }, styles: {} },
+          [stat]: { id: stat, type: "StatCard", parentId: null, children: [], props: { title: "匹配记录数", value: 6, description: "随筛选实时变化", icon: "数", accentColor: "#419bf9" }, styles: {} },
+          [list]: { id: list, type: "BusinessList", parentId: null, children: [], props: { title: "办理记录", subtitle: "输入关键词筛选，上方统计同步变化", columns: [{ key: "name", label: "事项" }, { key: "status", label: "状态" }], rows: [
+            { id: 1, name: "服务申请", status: "处理中" },
+            { id: 2, name: "资料补交", status: "已完成" },
+            { id: 3, name: "预约办理", status: "处理中" },
+            { id: 4, name: "服务评价", status: "已完成" },
+            { id: 5, name: "资料审核", status: "已驳回" },
+            { id: 6, name: "服务续期", status: "处理中" },
+          ], pageSize: 5 }, styles: {} },
         },
         rootIds: [stat, list],
+        // 预置联动：列表筛选数量 → 统计卡片数值（filteredCount 由 BusinessList 运行时 emit）
+        linkages: [
+          {
+            id: "linkage-filtered-count",
+            sourceComponentId: list,
+            sourceProperty: "filteredCount",
+            targetComponentId: stat,
+            targetProperty: "value",
+            enabled: true,
+          },
+        ],
       };
     })(),
   },

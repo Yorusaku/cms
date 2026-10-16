@@ -59,6 +59,15 @@ export function resolveMaterialRuntimeProps(
   return definition.toRuntimeProps(props);
 }
 
+/**
+ * 取物料的受控运行时事件属性（组件 emit 产出、可供联动消费的属性名）。
+ * 未登记的物料返回空数组——联动配置面板据此把「运行时事件」与「配置属性」分组。
+ */
+export function getMaterialRuntimeEventProperties(type: string): string[] {
+  const definition = resolveMaterialDefinition(type);
+  return definition?.runtimeEventProperties ?? [];
+}
+
 export function getMaterialAsyncComponent(type: string) {
   const normalizedType = normalizeMaterialType(type);
   const cached = asyncComponentCache.get(normalizedType);

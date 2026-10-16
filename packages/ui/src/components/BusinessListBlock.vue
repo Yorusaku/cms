@@ -71,7 +71,27 @@ const filteredRows = computed(() => {
 });
 const pageCount = computed(() => Math.max(1, Math.ceil(filteredRows.value.length / Math.max(1, props.pageSize))));
 const pagedRows = computed(() => filteredRows.value.slice((page.value - 1) * props.pageSize, page.value * props.pageSize));
-watch([keyword, filteredRows], () => { page.value = 1; });
+/** 对外暴露的运行时状态，供联动规则消费（见物料定义的 runtimeEventProperties） */
+const emit = defineEmits<{
+  "filter-change": [payload: { keyword: string; filteredCount: number }];
+}>();
+
+const emitFilterChange = () => {
+  emit("filter-change", {
+    keyword: keyword.value,
+    filteredCount: filteredRows.value.length,
+  });
+};
+
+// 筛选条件或数据源变化时重置页码，并同步一次运行时状态
+watch(
+  [keyword, filteredRows],
+  () => {
+    page.value = 1;
+    emitFilterChange();
+  },
+  { immediate: true },
+);
 watch(pageCount, (value) => { if (page.value > value) page.value = value; });
 </script>
 

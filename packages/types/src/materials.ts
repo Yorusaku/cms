@@ -123,6 +123,15 @@ export interface MaterialDefinition<
   defaultProps: TProps;
   runtimeComponent: TRuntimeComponent;
   editorConfig: MaterialEditorConfig<TLegacyComponent>;
+  /**
+   * 受控的运行时事件属性：组件通过 emits 产出的、可供联动消费的属性名。
+   *
+   * 与 `defaultProps` 的区别：props 是静态配置（编辑端可改，存进 schema），
+   * 这些是运行时状态（由组件在用户交互后 emit，只在渲染端存在）。
+   * 联动配置面板会把它们与 props 分组展示，因此这里只登记明确支持的事件属性，
+   * 不要为「以后可能用到」预先添加。
+   */
+  runtimeEventProperties?: string[];
   normalizeProps?: (props: Record<string, unknown>) => TProps;
   toRuntimeProps?: (
     props: Record<string, unknown>,

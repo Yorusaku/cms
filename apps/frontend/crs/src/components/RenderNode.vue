@@ -106,6 +106,25 @@ const handleClick = async () => {
   }
 };
 
+/**
+ * 列表类物料的运行时事件桥接：组件 emit 的运行时状态 → 联动引擎，
+ * 再由页面 schema 里的 linkages 决定流向哪个目标组件。
+ * 只桥接物料定义中登记的受控事件（runtimeEventProperties），不设计通用事件编排。
+ */
+const handleFilterChange = (payload: {
+  keyword: string;
+  filteredCount: number;
+}) => {
+  if (!currentNode.value) return;
+  const engine = pageStore.linkageEngine;
+  engine.triggerLinkage(
+    currentNode.value.id,
+    "filteredCount",
+    payload.filteredCount,
+  );
+  engine.triggerLinkage(currentNode.value.id, "keyword", payload.keyword);
+};
+
 let unsubscribe: (() => void) | null = null;
 
 onMounted(() => {
@@ -143,6 +162,7 @@ watch(
       v-bind="mergedProps"
       :styles="currentNode.styles"
       @click.stop="handleClick"
+      @filter-change="handleFilterChange"
     >
       <template v-for="childId in currentNode.children" :key="childId">
         <RenderNode

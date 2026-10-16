@@ -30,12 +30,23 @@
           allow-create
           class="w-full"
         >
-          <el-option
-            v-for="prop in sourceProperties"
-            :key="prop"
-            :label="prop"
-            :value="prop"
-          />
+          <!-- 运行时事件与静态配置属性分组，避免把两者混为一谈 -->
+          <el-option-group v-if="runtimeSourceProperties.length" label="运行时事件">
+            <el-option
+              v-for="prop in runtimeSourceProperties"
+              :key="prop"
+              :label="prop"
+              :value="prop"
+            />
+          </el-option-group>
+          <el-option-group v-if="configSourceProperties.length" label="配置属性">
+            <el-option
+              v-for="prop in configSourceProperties"
+              :key="prop"
+              :label="prop"
+              :value="prop"
+            />
+          </el-option-group>
         </el-select>
       </el-form-item>
 
@@ -146,6 +157,7 @@ import { ref, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import type { FormInstance, FormRules } from 'element-plus';
 import type { IComponentLinkage, IComponentSchemaV2 } from '@cms/types';
+import { getMaterialRuntimeEventProperties } from '@cms/ui';
 import type { ILinkageCondition } from '@/utils/linkage-engine';
 import VisualConditionBuilder from '@/components/basic/VisualConditionBuilder.vue';
 
@@ -191,7 +203,19 @@ const rules: FormRules = {
   targetProperty: [{ required: true, message: '请输入目标属性', trigger: 'blur' }],
 };
 
-const sourceProperties = computed(() => {
+/**
+ * 运行时事件属性：来自物料注册表的受控登记，组件交互后 emit，不存进 schema。
+ * 例：BusinessList 的 filteredCount / keyword。
+ */
+const runtimeSourceProperties = computed(() => {
+  if (!form.value.sourceComponentId) return [];
+  const component = props.components.find(c => c.id === form.value.sourceComponentId);
+  if (!component) return [];
+  return getMaterialRuntimeEventProperties(component.type);
+});
+
+/** 配置属性：组件 schema 里的静态 props（编辑端可改、随页面保存） */
+const configSourceProperties = computed(() => {
   if (!form.value.sourceComponentId) return [];
   const component = props.components.find(c => c.id === form.value.sourceComponentId);
   if (!component) return [];

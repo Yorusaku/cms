@@ -1676,6 +1676,8 @@ export const materialRegistry: MaterialRegistryItem[] = [
     label: "业务数据列表",
     icon: "列",
     maxCount: 10,
+    // 列表筛选产生运行时状态，供联动规则消费（如 filteredCount → StatCard.value）
+    runtimeEventProperties: ["filteredCount", "keyword"],
     defaultProps: {
       title: "业务数据",
       subtitle: "支持关键词筛选和分页展示",
