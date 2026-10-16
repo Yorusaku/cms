@@ -157,6 +157,27 @@ BusinessForm 从「仅前端校验 + 假成功」改为可落库的业务表单�
 
 **修复后测试结果**：CMS 全量 **35 passed / 2 skipped（37 文件）、384 passed / 2 skipped（0 失败、0 错误）**；ui 8/8 文件 52/52；CRS 8/8；backend 84/84；typecheck 12 tasks；lint 六包；mock E2E 32/32。剩余排除项仅 2 个 skip（与基线一致）。
 
+## CMS 预览链路修复与实时预览（2026-10-16）
+
+两个 commit：`b4c5cf5`（术语统一，另一会话完成）、`f939dfb`（预览链路修复）。
+
+**根因（两层叠加）**：
+1. `Preview.vue` 从不发送消息——全仓唯一的 `SYNC_SCHEMA` 发送方 `PreviewIframe.vue` 无任何挂载点 → iframe 永远停在空态；
+2. 签名密钥走 sessionStorage 随机生成，CMS(3011) 与 CRS(3010) 跨 origin 不共享，即使发出也会验签失败。
+
+**A（独立预览页）**：`getSharedSecret` 优先取 `VITE_MESSAGE_SECRET`（两端 .env 配同值）；`Preview.vue` 拉取页面草稿（与装修页同源：`getCmsPageById` + `migrateSchema`）经签名消息推送。
+
+**关键坑（READY 握手）**：`PagePreview` 是异步 chunk 组件（`() => import()`），iframe load 后立即推送的消息**早于其监听器注册而丢失**（dev 下 chunk 编译窗口稳定复现，非偶发）。新增 `MESSAGE_TYPE.PREVIEW_READY`：CRS 挂载完成后通知父窗口，CMS 收到 READY 再推送——CRS→CMS 方向无竞态（父窗口监听器早已注册）。`PreviewIframe.vue` 同样改为 READY 触发；另加 8s READY 超时兜底（密钥配错时可感知失败）。
+
+**B（编辑器内实时预览）**：画布「预览页面」按钮 emit `open-live-preview` → 右侧抽屉挂 `PreviewIframe`（订阅 store，编辑即推送）。
+- 抽屉 `direction="ltr"`（不挡右栏配置面板——"边改边看"的关键）、`:modal="false"` + `:lock-scroll="false"`；
+- **el-drawer 无遮罩模式仍渲染全屏定位容器（空 class、z-index 2005）并拦截指针**——CSS `:has()` 放行外层、仅面板接收 `pointer-events: auto`；
+- `PagePreview` 从 URL 读 `pageId` 注入 `SchemaRenderer`，预览态表单物料的 pageId 链路打通。
+
+**验证**：mock E2E 34/34（含 2 条新预览用例：iframe 真实渲染 / 抽屉渲染）、live 17/17、ui 52/52、CRS 8/8、backend 84/84、typecheck 12 tasks、lint 5 包、build 7 tasks；真实浏览器三步全过（独立预览页渲染 / 抽屉渲染 / 删除组件实时同步）。
+
+---
+
 ## 收口结论（Action 24）
 
 - `pnpm lint` 逐包（backend / cms / crs / utils / ui）：**0 error**（仅 warning）；期间修复了根 `eslint.config.js` 的 flat config 插件缺失、backend lint 脚本 glob 在 Windows 下的展开失败、utils 与 cms 的既有未使用变量错误。
