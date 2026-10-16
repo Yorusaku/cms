@@ -68,6 +68,6 @@ describe("publish log flow integration", () => {
     const text = wrapper.text();
     expect(text).toContain("发布状态");
     expect(text).toContain("版本记录与回滚");
-    expect(text).toContain("活动页面管理");
+    expect(text).toContain("业务页面管理");
   });
 });

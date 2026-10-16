@@ -17,8 +17,12 @@ export interface PreflightResult {
   issues: PreflightIssue[];
 }
 
+// 数字值（如统计卡片的默认指标值 12）视为有值——text 校验针对的是字符串空值，
+// 拖入物料时 props 取自物料 defaultProps 原始类型，未经 normalize 转字符串
 const isBlankString = (value: unknown) =>
-  typeof value !== "string" || value.trim() === "";
+  typeof value === "number"
+    ? false
+    : typeof value !== "string" || value.trim() === "";
 
 const toRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" ? (value as Record<string, unknown>) : {};

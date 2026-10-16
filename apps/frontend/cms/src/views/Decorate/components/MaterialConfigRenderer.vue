@@ -126,9 +126,10 @@ watch(
 watch(
   visibleSections,
   (sections) => {
-    if (expandedSections.value.size === 0 && sections.length > 0) {
-      expandedSections.value = new Set(sections.map((section) => section.label!).filter(Boolean));
-    }
+    // sections 变化意味着切换了物料类型（组件被复用、本组件不会重新挂载），
+    // 需重置为新物料的全部 section：否则 expandedSections 残留上一个物料的
+    // label，新物料（如连续拖入多个物料后自动选中）的配置区会整体折叠
+    expandedSections.value = new Set(sections.map((section) => section.label!).filter(Boolean));
   },
   { immediate: true },
 );
