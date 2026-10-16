@@ -28,6 +28,7 @@
           <iframe
             :key="iframeKey"
             id="previewIframe"
+            ref="iframeRef"
             class="preview-iframe"
             :src="previewSrc"
             title="页面预览"
@@ -67,9 +68,28 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import { useEventListener } from '@vueuse/core'
 import { Loading, Picture } from '@element-plus/icons-vue'
+import { MESSAGE_TYPE } from '@cms/types'
+import {
+  MessageSequenceTracker,
+  createSecureMessage,
+  migrateSchema,
+  verifySecureMessage,
+  validateOrigin,
+  type SecureMessagePayload,
+} from '@cms/utils'
+import { normalizePageSchemaMaterials } from '@cms/ui'
+import { getCmsPageById } from '@/api/activity'
+import { adaptPageData } from '@/utils/data-adapter'
 
 const route = useRoute()
+
+interface PageDetailResponse {
+  code: number
+  message?: string
+  data?: Record<string, unknown>
+}
 
 const deviceOptions = [
   { key: 'iphone-se', label: 'iPhone SE', width: 320, height: 568 },
@@ -100,10 +120,108 @@ const buildPreviewUrl = () => {
   return `${previewUrl}?id=${id ?? ''}`
 }
 
+const iframeRef = ref<HTMLIFrameElement | null>(null)
+const outgoingSequenceTracker = new MessageSequenceTracker()
+const incomingSequenceTracker = new MessageSequenceTracker()
+
+const getCrsOrigin = (): string => {
+  const configured = import.meta.env.VITE_CRS_PREVIEW_ORIGIN
+  if (typeof configured === 'string' && configured.trim().length > 0) {
+    return configured
+  }
+  return 'http://127.0.0.1:3010'
+}
+
+/**
+ * 把服务端草稿经签名的 postMessage 推送给预览 iframe。
+ * CRS 的 PagePreview 只接受 SYNC_SCHEMA 消息（本页此前未发送任何消息，
+ * 导致 iframe 永远停在空态）；数据来源与装修页一致：getCmsPageById + migrate。
+ */
+const sendSchemaToIframe = async () => {
+  const id = Number(route.query.id)
+  const contentWindow = iframeRef.value?.contentWindow
+  if (!Number.isFinite(id) || id <= 0 || !contentWindow) {
+    return
+  }
+
+  try {
+    const response = (await getCmsPageById(id)) as PageDetailResponse
+    if (response.code !== 10000 || !response.data) {
+      return
+    }
+
+    const pageData = response.data
+    let rawSchema: unknown = pageData
+    if (pageData.schema) {
+      rawSchema =
+        typeof pageData.schema === 'string'
+          ? JSON.parse(pageData.schema)
+          : pageData.schema
+    } else {
+      rawSchema = adaptPageData(pageData)
+    }
+
+    const schema = normalizePageSchemaMaterials(migrateSchema(rawSchema))
+    const payload = await createSecureMessage(
+      MESSAGE_TYPE.SYNC_SCHEMA,
+      JSON.parse(JSON.stringify(schema)),
+      outgoingSequenceTracker
+    )
+    contentWindow.postMessage(payload, getCrsOrigin())
+  } catch (error) {
+    console.warn('发送 Schema 到预览 iframe 失败:', error)
+  }
+}
+
+// READY 超时兜底：两端密钥不一致或 CRS 异常时给出可见失败，避免永久停在空态
+let readyTimeout: ReturnType<typeof setTimeout> | null = null
+
+const clearReadyTimeout = () => {
+  if (readyTimeout !== null) {
+    clearTimeout(readyTimeout)
+    readyTimeout = null
+  }
+}
+
+const startReadyTimeout = () => {
+  clearReadyTimeout()
+  readyTimeout = setTimeout(() => {
+    loading.value = false
+    loadError.value = true
+  }, 8000)
+}
+
+/**
+ * 推送时机由 CRS 的 PREVIEW_READY 触发（见下方 message 监听）：
+ * 子应用为异步 chunk，iframe load 后立即推送可能早于其监听器注册而丢失。
+ * CRS→CMS 方向无竞态（本页监听器早已注册），READY 到达即代表对端就绪。
+ */
+useEventListener(window, 'message', async (event: MessageEvent) => {
+  if (!validateOrigin(event.origin)) {
+    return
+  }
+
+  try {
+    const payload = event.data as SecureMessagePayload
+    const verification = await verifySecureMessage(payload, incomingSequenceTracker)
+    if (!verification.valid) {
+      return
+    }
+    if (payload.type === MESSAGE_TYPE.PREVIEW_READY) {
+      clearReadyTimeout()
+      void sendSchemaToIframe()
+    }
+  } catch {
+    // 非本项目消息格式，忽略
+  }
+})
+
 const handleLoad = () => {
   loading.value = false
   loadError.value = false
   lastLoadedAt.value = new Date().toLocaleString('zh-CN', { hour12: false })
+  // 等待子应用就绪（PREVIEW_READY），超时则显示失败提示
+  startReadyTimeout()
 }
 
 const handleError = () => {

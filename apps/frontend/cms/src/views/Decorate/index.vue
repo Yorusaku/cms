@@ -4,9 +4,24 @@
 
     <div class="decorate-content">
       <LeftMaterial />
-      <CenterCanvas :page-store="pageStore" />
+      <CenterCanvas
+        :page-store="pageStore"
+        @open-live-preview="livePreviewVisible = true"
+      />
       <RightConfig />
     </div>
+
+    <el-drawer
+      v-model="livePreviewVisible"
+      title="实时预览（含未保存改动）"
+      size="420px"
+      direction="ltr"
+      class="live-preview-drawer"
+      :modal="false"
+      :lock-scroll="false"
+    >
+      <PreviewIframe :preview-url="livePreviewUrl" />
+    </el-drawer>
   </div>
 </template>
 
@@ -26,6 +41,7 @@ import TopHeader from "./components/TopHeader.vue";
 import LeftMaterial from "./components/LeftMaterial.vue";
 import CenterCanvas from "./components/CenterCanvas.vue";
 import RightConfig from "./components/RightConfig.vue";
+import PreviewIframe from "@/components/PreviewIframe.vue";
 
 interface PageDetailResponse {
   code: number;
@@ -36,6 +52,16 @@ interface PageDetailResponse {
 const pageStore = usePageStore();
 const route = useRoute();
 const draftReady = ref(false);
+
+// 编辑器内实时预览：PreviewIframe 订阅 store，改动经 postMessage 实时同步到 CRS
+const livePreviewVisible = ref(false);
+const livePreviewUrl = computed(() => {
+  const base =
+    import.meta.env.VITE_CRS_PREVIEW_URL ||
+    "http://127.0.0.1:3010/crs/#/pagePreview";
+  const id = Number(route.query.id);
+  return Number.isFinite(id) && id > 0 ? `${base}?id=${id}` : base;
+});
 
 const pageId = computed(() => {
   const id = Number(route.query.id);
@@ -168,5 +194,27 @@ watch(
   min-height: 0;
   margin-left: 186px;
   margin-right: 376px;
+}
+</style>
+
+<style>
+/* el-drawer 默认 teleport 到 body 场景下 scoped 样式选不中，用全局类名限定 */
+.live-preview-drawer .el-drawer__body {
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/*
+ * 实时预览为无遮罩模式（:modal="false"）：Element Plus 仍会渲染一个全屏的
+ * 定位容器包裹抽屉面板，且默认拦截指针事件，导致画布无法交互（不能边改边看）。
+ * 放行外层容器、仅面板自身接收事件。
+ */
+.decorate-container > div:has(> .live-preview-drawer) {
+  pointer-events: none;
+}
+
+.decorate-container > div:has(> .live-preview-drawer) > .live-preview-drawer {
+  pointer-events: auto;
 }
 </style>

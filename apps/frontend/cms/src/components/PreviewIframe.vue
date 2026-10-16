@@ -68,7 +68,8 @@ const debouncedSendSchema = useDebounceFn((schema: IPageSchema) => {
 
 const handleIframeLoad = () => {
   iframeLoaded.value = true;
-  sendSchemaToIframe(pageStore.pageSchema);
+  // 首次推送由 CRS 的 PREVIEW_READY 触发（见下方监听）：
+  // 子应用为异步 chunk，load 后立即推送可能早于其监听器注册而丢失
 };
 
 useEventListener(window, "message", async (event: MessageEvent) => {
@@ -89,6 +90,14 @@ useEventListener(window, "message", async (event: MessageEvent) => {
 
     const { type } = payload;
     const data = verification.data;
+
+    if (type === MESSAGE_TYPE.PREVIEW_READY) {
+      // READY 即对端就绪证明（比 load 事件更可靠，且不依赖 CSS/图片加载完成），
+      // 立即推送当前 store 中（含未保存改动）的 schema
+      iframeLoaded.value = true;
+      sendSchemaToIframe(pageStore.pageSchema);
+      return;
+    }
 
     if (
       type === MESSAGE_TYPE.ON_SELECT_BLOCK &&

@@ -77,6 +77,12 @@ export const MESSAGE_TYPE = {
   SYNC_SCHEMA: "SYNC_SCHEMA",
   SCHEMA_UPDATED: "SCHEMA_UPDATED",
   ON_SELECT_BLOCK: "ON_SELECT_BLOCK",
+  /**
+   * 预览子应用（CRS PagePreview）挂载完成后向父窗口发送的就绪通知。
+   * 子应用是异步 chunk，父窗口在 iframe load 后立即推送的 SYNC_SCHEMA
+   * 可能早于子应用监听器注册而丢失；父窗口应在收到本消息后再推送。
+   */
+  PREVIEW_READY: "PREVIEW_READY",
 } as const;
 
 export type MarketingTrackEventType =

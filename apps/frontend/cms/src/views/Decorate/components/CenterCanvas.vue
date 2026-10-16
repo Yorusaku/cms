@@ -145,7 +145,6 @@
 <script setup lang="ts">
 import { computed, defineAsyncComponent, watch } from 'vue'
 import { useEventListener } from '@vueuse/core'
-import { ElMessage } from 'element-plus'
 import { InfoFilled } from '@element-plus/icons-vue'
 import { VueDraggable } from 'vue-draggable-plus'
 import VirtualScroll from '../../../components/VirtualScroll.vue'
@@ -167,6 +166,11 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
+const emit = defineEmits<{
+  /** 请求打开编辑器内实时预览（由 Decorate/index.vue 承载浮层） */
+  (e: "open-live-preview"): void
+}>()
 
 const dragDrop = useDragDrop()
 const measurement = useVirtualScrollMeasurement()
@@ -275,7 +279,7 @@ const handleDuplicateComponent = (id: string) => {
 }
 
 const handlePreview = () => {
-  ElMessage.success('请使用顶部操作栏预览页面')
+  emit('open-live-preview')
 }
 
 const isInputLikeTarget = (target: EventTarget | null) => {

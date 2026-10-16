@@ -55,9 +55,22 @@ export function generateSecret(): string {
 }
 
 /**
- * Get or create shared secret from sessionStorage
+ * Get or create shared secret for message signing
+ *
+ * 优先取构建变量 VITE_MESSAGE_SECRET：CMS（编辑器）与 CRS（预览 iframe）是
+ * 不同 origin，sessionStorage 互不相通，各自随机生成的密钥无法完成验签；
+ * 跨窗口 postMessage 场景必须由两端配置同一密钥。
+ * 未配置时保持旧行为（sessionStorage 随机），同源场景仍可用。
  */
 export function getSharedSecret(): string {
+  const configured =
+    typeof import.meta !== 'undefined' &&
+    (import.meta as any).env?.VITE_MESSAGE_SECRET;
+
+  if (typeof configured === 'string' && configured.trim().length > 0) {
+    return configured.trim();
+  }
+
   const key = '__cms_message_secret__';
   let secret = sessionStorage.getItem(key);
 
