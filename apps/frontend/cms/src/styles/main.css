@@ -1,5 +1,14 @@
 @import "tailwindcss";
 @import "@cms/ui/styles/tokens.css";
+/*
+ * 共享物料（packages/ui/src/components/*.vue）的 Tailwind 工具类来源。
+ * CMS 此前靠自动检测碰巧覆盖到，这里与 CRS 一起显式声明，
+ * 两端使用同一份扫描范围，避免一侧靠巧合、另一侧缺失。
+ *
+ * 注意：@source 必须放在全部 @import 之后——CSS 规范要求 @import 位于其它规则之前，
+ * 插在 @import 中间会让后面的 tokens.css 被整段丢弃（--color-* 全部 undefined）。
+ */
+@source "../../../../../packages/ui/src";
 
 /**
  * Element Plus 主题对齐设计 token（见 packages/ui/src/styles/tokens.css）。

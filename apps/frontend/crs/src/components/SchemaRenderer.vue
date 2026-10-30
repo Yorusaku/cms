@@ -75,8 +75,12 @@ const pageBackgroundStyle = computed(() => {
 <style scoped>
 /* 基础样式已在Tailwind类中定义 */
 
+/* 默认底色由页面配置覆盖；编辑器的辅助边界不属于运行时页面样式。 */
+.schema-renderer {
+  background-color: var(--color-bg-card);
+}
+
 .page-components {
-  /* 组件容器样式 */
   width: 100%;
 }
 

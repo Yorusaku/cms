@@ -15,6 +15,19 @@ export type MaterialRegistryItem = MaterialDefinition<MaterialRuntimeLoader, str
 import { LeadFormMaterialDefinition } from "./generated/LeadForm";
 // MATERIALS_AUTO_IMPORTS_END
 
+/**
+ * 统计卡片指标值归一化。
+ * 数值型的指标值（含 0）按原值转成字符串，避免被只接受字符串的通用工具
+ * 回落成默认值；其余输入沿用原有契约：字符串原样保留（含空串），
+ * 缺失或非法值（null / undefined / NaN / 对象）回落到默认值。
+ */
+const normalizeStatValue = (value: unknown, fallback: string): string => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+  return toStringValue(value, fallback);
+};
+
 const toFiniteNumber = (value: unknown, fallback: number) => {
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -1775,7 +1788,7 @@ export const materialRegistry: MaterialRegistryItem[] = [
       const normalizedProps = toRecord(props);
       return {
         title: toStringValue(normalizedProps.title, "待处理事项"),
-        value: toStringValue(normalizedProps.value, "12"),
+        value: normalizeStatValue(normalizedProps.value, "12"),
         description: toStringValue(normalizedProps.description, "较昨日 +8%"),
         icon: toStringValue(normalizedProps.icon, "数"),
         accentColor: toStringValue(normalizedProps.accentColor, "#2563eb"),

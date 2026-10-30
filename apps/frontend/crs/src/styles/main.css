@@ -1,5 +1,16 @@
 @import "tailwindcss";
 @import "@cms/ui/styles/tokens.css";
+/*
+ * 共享物料（packages/ui/src/components/*.vue）用的是 Tailwind 工具类，
+ * 例如 NoticeBlock 的 w-4 h-4、flex-1、whitespace-nowrap。
+ * 显式声明扫描源，避免依赖 Tailwind 自动检测对 monorepo 目录结构的推断。
+ * 只扫共享物料源码目录，不涉及 node_modules、测试输出或临时目录。
+ *
+ * 注意：@source 必须放在全部 @import 之后——CSS 规范要求 @import 位于其它规则之前，
+ * 插在 @import 中间会让后面的 tokens.css 被整段丢弃（表现为 --color-* 全部 undefined，
+ * 卡片背景/主色/描边失效）。
+ */
+@source "../../../../../packages/ui/src";
 
 /**
  * Vant 主题对齐设计 token（见 packages/ui/src/styles/tokens.css）。
