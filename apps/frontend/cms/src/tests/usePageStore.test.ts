@@ -337,6 +337,40 @@ describe("usePageStore", () => {
       expect(store.pageSchema.rootIds).toEqual([id3, id1, id2]);
     });
 
+    it.each(['drag', 'keyboard'])("%s sorting preserves a pending manual edit as a separate undo step", (mode) => {
+      vi.useFakeTimers();
+      try {
+        const store = usePageStore();
+        const originalOrder = [...store.pageSchema.rootIds];
+        const id = originalOrder[0];
+        store.editComponent({ id, props: { text: '人工修改' } });
+        if (mode === 'drag') {
+          store.reorderRootIds([originalOrder[2], originalOrder[0], originalOrder[1]]);
+        } else {
+          store.moveComponent({ from: 2, to: 0 });
+        }
+        vi.advanceTimersByTime(350);
+        store.undo();
+        expect(store.pageSchema.rootIds).toEqual(originalOrder);
+        expect(store.pageSchema.componentMap[id].props.text).toBe('人工修改');
+        store.undo();
+        expect(store.pageSchema.componentMap[id].props.text).not.toBe('人工修改');
+        store.redo();
+        store.redo();
+        expect(store.pageSchema.rootIds).toEqual([originalOrder[2], originalOrder[0], originalOrder[1]]);
+        expect(store.pageSchema.componentMap[id].props.text).toBe('人工修改');
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
+    it("same-position drag does not add an empty undo step", () => {
+      const store = usePageStore();
+      const historyBefore = JSON.stringify(store.history);
+      store.reorderRootIds([...store.pageSchema.rootIds]);
+      expect(JSON.stringify(store.history)).toBe(historyBefore);
+    });
+
     it("should filter invalid ids in reorder", () => {
       const store = usePageStore();
       const [id1, id2] = store.pageSchema.rootIds;

@@ -62,7 +62,7 @@
                     @click="handleSelectComponent(component.id, $event)"
                   >
                     <div class="component-drag-handle">拖</div>
-                    <div class="component-content">
+                    <div class="component-content" @click.capture="preventLabelForwarding">
                       <component
                         :is="resolveCachedComponent(component.type)"
                         v-bind="resolveCachedRuntimeProps(component.type, component.props)"
@@ -115,7 +115,7 @@
               @click="handleSelectComponent(component.id, $event)"
             >
               <div class="component-drag-handle">拖</div>
-              <div class="component-content">
+              <div class="component-content" @click.capture="preventLabelForwarding">
                 <component
                   :is="resolveComponent(component.type)"
                   v-bind="resolveRuntimeProps(component.type, component.props)"
@@ -231,6 +231,32 @@ const onVirtualMeasure = (id: string, _height: number) => {
 }
 
 // ── Event handlers ──
+
+/**
+ * 画布内点击 BusinessForm 字段区时，label 的激活行为会把同一次点击再转发给内部控件，
+ * 使 .canvas-component 收到两次 click：普通点击因为 setActiveId 幂等看不出问题，
+ * 但 Ctrl/Cmd 多选会 toggle 两次，等于没有选中（多选 AI 目标时漏掉表单）。
+ *
+ * 这里只在捕获阶段取消 label 的默认转发（标签文本/空白处），
+ * 不阻止冒泡、选中逻辑仍由 handleSelectComponent 处理；
+ * 直接点在 input/select/textarea 上保持原行为；CRS 端不经过画布，表单交互不受影响。
+ */
+const preventLabelForwarding = (event: MouseEvent) => {
+  const target = event.target as HTMLElement | null;
+  if (!target || typeof target.closest !== "function") {
+    return;
+  }
+  const label = target.closest("label");
+  if (!label) {
+    return;
+  }
+  const isFormControl = ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName);
+  if (isFormControl) {
+    return;
+  }
+  event.preventDefault();
+};
+
 const handleSelectComponent = (id: string, event: MouseEvent) => {
   if (event.ctrlKey || event.metaKey) {
     props.pageStore.toggleComponentSelection(id)

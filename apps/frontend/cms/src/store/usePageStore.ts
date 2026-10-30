@@ -173,6 +173,14 @@ export const usePageStore = defineStore("page", () => {
       Boolean(pageSchema.value.componentMap[id]),
     );
 
+    if (
+      validOrderedIds.length === pageSchema.value.rootIds.length &&
+      validOrderedIds.every((id, index) => id === pageSchema.value.rootIds[index])
+    ) {
+      return;
+    }
+
+    flushPendingCommit();
     pageSchema.value.rootIds = validOrderedIds;
     selectedComponentIds.value = selectedComponentIds.value.filter((id) =>
       validOrderedIds.includes(id),
@@ -202,6 +210,7 @@ export const usePageStore = defineStore("page", () => {
     const nextRootIds = [...pageSchema.value.rootIds];
     const [moved] = nextRootIds.splice(from, 1);
     nextRootIds.splice(to, 0, moved);
+    flushPendingCommit();
     pageSchema.value.rootIds = nextRootIds;
     commit();
   };

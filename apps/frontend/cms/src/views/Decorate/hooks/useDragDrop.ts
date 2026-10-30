@@ -71,6 +71,8 @@ export function useDragDrop(): UseDragDropReturn {
   };
 
   const handleDragOver = (event: DragEvent): void => {
+    // 仅接管左侧物料拖入；画布内排序的 move 语义由 Sortable 处理。
+    if (!pageStore.dragActive) return;
     event.preventDefault();
     if (event.dataTransfer) {
       event.dataTransfer.dropEffect = "copy";
@@ -82,6 +84,7 @@ export function useDragDrop(): UseDragDropReturn {
   };
 
   const handleDrop = (event: DragEvent): void => {
+    if (!pageStore.dragActive) return;
     event.preventDefault();
 
     const dragComponent = pageStore.dragComponent;
