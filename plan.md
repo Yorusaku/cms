@@ -7,12 +7,222 @@
 ## 当前进度
 
 - 当前阶段：生产补全 Action 19–24 **已全部完成**；Action 0–18 详见下方历史日志。
+- 最新收口复核（2026-10-30）：鼠标排序可写回，纠正此前“不写回”的笼统结论；修复物料拖入逻辑干扰内部 move、排序历史空步骤及人工编辑合并问题；移除 CRS 强加的统一描边与留白。CMS 411 passed / 2 skipped（39 文件通过、2 文件跳过）、mock E2E 43/43、生产 CRS 样式回归 1/1，详情见下方最新记录。
+- 最新验收补修（2026-10-29）：AI 批量内容更新的四处边界问题已修复，新增 8 条回归测试；CMS 全量 408 passed / 2 skipped，内容更新 mock E2E 1/1 通过，详情见下方同日记录。
+- 真实模型抽样（2026-10-29）：使用 deepseek-flash 验证 3 个合成任务，均经实际 provider/service 返回 source=model 并通过协议校验；事实语义仍需人工审阅，见下方记录。
+- 真实模型浏览器验收（2026-10-30）：3 个独立验收草稿上跑通「多选 → 真实生成 → 勾选应用 → 撤销重做 → 保存 → 重进 → CRS 预览」，Schema 断言 25/25 与 22/22 通过；发现 3 个既有缺陷（表单字段区点击不选中、StatCard 数字值被 normalize 重置、CRS 缺 Tailwind 工具类），未改代码，详见下方记录。
+- 业务页面列表布局整理（2026-10-30）：操作列 700px → 240px、行内收敛为「编辑/预览/主动作/更多」、低频操作进菜单、时间统一 YYYY-MM-DD HH:mm、筛选控件恢复可读宽度；mock E2E 40/40，三档宽度与 viewer 视图实测通过，详见下方记录。
+- 上轮验收缺陷修复（2026-10-30）：CRS 共享物料样式（缺 Tailwind 插件 + dist/ui.css 无人引用）、StatCard 数字值被回落、BusinessForm 字段区 Ctrl 多选失效三处已修；ui 单测 57/57、mock E2E 40/40、构建产物实测通过；画布内鼠标拖拽为既有问题（与本轮改动无关），详见下方记录。
+- 预览端卡片边界（2026-10-30）：页面底色与物料同色 + 内容物料统一 `1px solid var(--color-border)` 描边，`.page-components` 补 `gap/padding: 12px`，与编辑器画布观感对齐；dev / 构建产物 / 发布页三处实测，mock E2E 40/40。
 - Action 19：已完成；项目文档已按「公司内部运营生产工具」定位校准，并与实现终检一致。
 - Action 20：已完成；前后端角色矩阵一致（viewer 只读 / editor 建页提交审核 / admin 审核发布回滚），发布日志已落审核人、发布人、回滚人快照与审核备注展示。
 - Action 21：已完成；隐私同意、requestId 去重、手机号脱敏、导出权限与审计已闭环，Blob 导出链路修复并端到端验证，保留期配置（默认 180 天）与超期清理落地。
 - Action 22：已完成；结束日期边界、来源/渠道/版本完整过滤、独立访客去重、每日趋势与看板 CSV 导出均已落地，并修复 CRS 子组件埋点不上报与营销上下文未透传两个真问题。
 - Action 23：已完成；统一存储接口（本地 + S3 兼容 adapter）、生产启动校验、seed 保护、`/health`、结构化错误日志与运维手册均已落地并实测。
 - Action 24：已完成；全量 lint / typecheck / 单测 / 构建 / mock+live E2E 回归通过，Action 19 文档终检与验收清单已更新。
+
+## 鼠标排序、测试基线与运行时样式收口复核（2026-10-30）
+
+Status: done（限定下述范围；既有 UI 治理欠账未处理）。HEAD 保持 `6e84b1e`，本轮未提交 Git。
+
+### 排序的复现与修复
+
+- 真实 Chrome 鼠标从手柄拖动，在列表内部经过目标时，Sortable 会发出 update，Schema 的 rootIds 会同步变化。一次快速越过多项的测试只从索引 2 移到 1；分段移动并等待 220ms 换位动画结束后，索引 2 → 0、保存请求与重新进入均正确。因此此前“松手 rootIds 不变”的记录不足以证明排序实现整体失效，本轮没有重写排序或新增嵌套编排。
+- 浏览器原生事件复现了另一处真实冲突：内部排序的 effectAllowed=move，但外层 useDragDrop.handleDragOver 将其 dropEffect 改为 copy。现在仅在左侧物料拖入的 dragActive=true 时接管 dragover/drop，内部排序交回 Sortable。浏览器回归断言真实 dragstart 为 move，dragover 不再被改成 copy。
+- 新增的三个 store 用例在修复前全部失败：鼠标/键盘排序没有 flush 人工编辑的延迟提交，稍后产生重复快照，撤销一次不能恢复顺序；相同顺序调用 reorderRootIds 也新增历史。现在有效排序前复用 flushPendingCommit，同序直接返回。三个用例修复后通过，覆盖人工编辑独立历史点和排序撤销/重做。
+- 新增 canvas-sort.spec.ts 两条真实鼠标 E2E：排序 → 单次撤销重做 → 保存重进 → CRS 预览；左侧拖入 BusinessForm → 字段 label 点击/Ctrl 多选 → AI 目标清单 → 保存重进。没有直接调用 store、派发排序回调或修改 DOM 来替代拖拽。动画等待仅对应 Sortable 的既有 220ms 换位动画。
+
+### 测试数量核对与修复
+
+- 修改前本轮全量实测：41 个文件，394 passed / 14 failed / 2 skipped，总计 410；没有发现新增 AI 测试漏收集。失败全在 Activity.ai.test.ts：列表改为菜单后 stub 未渲染 dropdown 插槽，且断言仍查旧“装修”“AI 优化”和列表回滚入口。
+- 适配菜单 stub 与现有文案，保留具体版本回滚调用、线索跟进、导出及角色权限断言。菜单显示/定位仍由既有 activity-layout.spec.ts 覆盖；不降低业务断言。
+- 此前 408 passed / 2 skipped 与本轮修改前总计 410 一致；相比首次实现的 400，多出的 8 条为 API 4 条、弹窗 4 条验收补修。当前新增 AI 测试实际收集为 API 4、store 6、弹窗 11，全部通过。
+- 无法从现有历史报告复原上一轮“400/400”的准确运行命令，不能将其作为当前全量通过证据。新增本轮 3 条排序单测后，最终可信基线为 411 passed / 2 skipped，总计 413，39 文件通过 / 2 文件跳过。没有删除或跳过现有用例。
+- JSON 证据：tmp/acceptance/cms-unit-before.json、cms-unit-final.json；两条 skipped 为原 schema-v2 占位用例。
+
+### 运行时样式检查与修复
+
+- 最近新增的 .page-components 统一 12px padding/gap 和五类物料 1px 描边，注释明确以编辑画布边界为依据，属于渲染层额外装饰，非 Schema 或物料自身配置。移除这些规则；保留页面可覆盖的默认白底、物料固有样式和用户设置的边框/间距，未修改 Tailwind 接入修复。
+- 新增 runtime-layout.spec.ts：合成正文、公告、表单、列表、统计卡、图文导航六类物料；检查无强加外框/页边距，页面背景色有效，自定义统计卡 3px 边框与 9px 间距保留，数值 0 正确，公告图标 16px，表单 padding 约 20px（允许 vw 换算舍入），图片加载成功。
+- 开发态通过实际 CMS 签名 postMessage 预览检查；生产态通过本地 4173 的 CRS 构建产物、mock getPublishedPage 检查同一份 Schema，没有实际发布页面或访问数据库。
+- 生产验证首次发现 value=0 显示12：共享 @cms/ui 的旧 dist 未包含已有数字归一化修复。按依赖顺序重建 ui → crs 后同一断言通过；没有因此改写物料归一化代码。
+- 截图：tmp/acceptance/canvas-sort-editor.png、canvas-sort-preview.png、runtime-layout-editor.png、runtime-layout-preview.png、runtime-layout-dev.png、runtime-layout-build.png。历史描边截图仍在 tmp/acceptance/shots-box/；新截图的红色统计卡边框是测试 Schema 明确配置的 3px 边框，用于证明业务样式保留。
+
+### 本轮验证与边界
+
+- CMS：pnpm --filter @cms/cms exec vitest run --reporter=json --outputFile=../../../tmp/acceptance/cms-unit-final.json → 411 passed / 2 skipped。
+- UI：pnpm --filter @cms/ui exec vitest run --reporter=dot → 57/57；CRS 同命令 → 8/8。
+- 浏览器：完整 mock E2E 43/43（原40 + 鼠标排序2 + 运行时样式1），命令为 pnpm --filter @cms/cms exec playwright test --reporter=line --workers=2 --output=../../../tmp/acceptance/mock-final-results。
+- 生产样式：进程内设置 CRS_RUNTIME_ORIGIN=http://127.0.0.1:4173 后运行 runtime-layout.spec.ts → 1/1。
+- 类型：CMS、CRS 的 vue-tsc --noEmit 通过，tsBuildInfoFile 指向系统临时目录；UI build 包含类型检查并通过。
+- 构建：ui → crs、cms 均通过。没有运行后端构建、迁移、seed 或清库。
+- 改动文件只读 ESLint 0 error；store 原有 3 条 any warning 保留。git diff --check 通过。
+- UI 治理仍失败于 HEAD 已有的 Decorate/index.vue 的 .live-preview-drawer .el-drawer__body；本轮无新增违规，不将全仓治理标为通过。
+- 其他既有警告：LinkageRuleDialog 测试 stub 重复键、jsdom 下载导航提示、Browserslist 数据过期、构建 PostCSS from 提示，均未扩展处理。
+- 范围限制：未验证真实数据库保存或真实发布、嵌套/跨容器拖拽、多用户并发和真实模型质量；本轮的保存/发布页读取均为有状态 API mock。
+- 文件边界：在已有 usePageStore.ts、SchemaRenderer.vue、plan.md 改动上继续窄改；另修改 Activity.ai.test.ts、usePageStore.test.ts、useDragDrop.ts，新增 canvas-sort.spec.ts、runtime-layout.spec.ts。其他既有 AI/列表/物料实现未覆盖。
+- 服务：本轮检查时 3011/3010/3300 均无监听，因此仅启动 CMS 3011 与 CRS 3010 完成 mock 验收并保留开发服务；没有启动后端。临时生产预览 4173 已停止。
+
+## AI 内容更新真实模型抽样（2026-10-29）
+
+- 授权与范围：按用户授权使用本地凭据调用 deepseek-flash，仅发送合成案例；凭据只在进程内读取，不写入本文件或持久配置。未修改业务代码、未提交 Git。
+- 调用路径：当前源码 AiProviderService → AiService.suggestContentChanges；运行时转译后直接实例化，不启动数据库。保留现有 temperature=0.2、JSON 响应模式和 30 秒超时，显式关闭 mock。共享协议使用当前已构建的 @cms/types。
+- 可用性：官方 /models 返回 HTTP 200，包含 deepseek-flash。随后真实生成调用 3 次，均 HTTP 200、finish_reason=stop、source=model，全部通过共享协议及目标 ID、类型、公告数量等服务端校验。
+- 资料更新：1.13 秒，682 tokens。正文、公告与表单说明同步改为新日期和地点；保留免费、内部员工、工牌要求和空公告槽位。
+- 表述统一：1.50 秒，798 tokens。三个区块统一为“设备报修登记”，保留原有当天处理和必填要求，未新增办理承诺。
+- 资料缺失：2.58 秒，959 tokens。日期、费用、截止时间改为待定，并返回资料缺失警告；但公告仍将第一期“报名中”沿用到第二期，这一状态未被新资料确认，需人工确认或修改，不能判定完全正确。
+- 合计：3 次生成，2439 tokens；仅为本次小样本，无稳定性、并发或成本结论。统计不含 /models 查询，不保存模型隐藏推理。
+- 验证边界：验证真实模型输出及后端校验链路，未在浏览器完成真实模型的应用、保存和 CRS 预览；此前 mock E2E 不等同于本轮真实模型端到端验收。资料缺失样例明确写了禁止编造要求，不能据此推断模糊需求同样可靠。
+- 结论：已有多区块内容更新能力可返回可用草稿；保留用户对比、勾选和确认，不能自动发布。下一步如需深化，先补“旧事实是否可迁移到新对象”的样例和验收规则，再决定是否调整提示词。
+
+## AI 内容更新真实模型浏览器全链路验收（2026-10-30）
+
+- 范围：只做验收，未修改业务实现、未提交 Git、未运行 migration/seed/清库、未发布任何页面。
+- 模型配置：`AI_MODEL=deepseek-flash`、`AI_BASE_URL=https://api.deepseek.com`、`AI_MOCK_ENABLED=false`，凭据由本地 .env 读入后经进程环境注入 backend，未写入源码、日志、截图或本文件；生成前先用 `GET /models` 确认可用（HTTP 200，返回含 deepseek-flash）。
+- 服务与数据：postgres 容器（5433）+ backend(3300，注入 AI_*)+ CMS(3011)+ CRS(3010)，均为本轮启动；验收草稿 3 个（id 14/15/16，命名 `AI-ACCEPT-20261030-S*`），互不覆盖，未发布。
+- 真实调用 6 次（浏览器 → CMS → backend → 模型 → 后端校验 → 弹窗展示），追加原因已记录：
+  - S1 第 1 次：点 BusinessForm 主体未选中（点击被字段 label 吞掉），只带 2 个目标，warning 也指出缺少表单；判定为交互限制后改点标题区。
+  - S1 第 2 次：目标正确，但对照基线用「建页时写入的 Schema」，被编辑器 normalize 改写（RichText 补默认样式、StatCard 数字值回落 12），差异无法归因；改为「先纯保存一次作为对照」。
+  - S1 第 3 次（有效）：2700ms，source=model，3 项变更 / 2 warnings。
+  - S2：1852ms，source=model，3 项变更 / 0 warnings。
+  - S3 第 1 轮：7180ms，source=model，3 项变更 / 4 warnings。
+  - S3 第 2 轮（追加更明确约束）：3356ms，source=model，3 项变更 / 3 warnings。
+- **场景一（id 14，资料更新 + 部分应用）**：取消勾选公告后应用正文与表单。Schema 断言 25/25：正文日期改 2026年11月10日、地点 B会议室，费用句保留；公告因未勾选完全未变（仍两条、第二条为空、链接保留）；表单仅副标题变化，标题/提交文案/字段/fieldsJson 未变；StatCard 及 styles/rootIds/pageConfig 未变。
+- **场景二（id 15，表述统一 + 历史 + 持久化 + 预览）**：先用属性面板把 StatCard 辅助说明改为「人工改：本周新增设备异常」并等防抖提交；再应用三类区块统一为「设备报修登记」。撤销一次 → 三处名称整批回退且人工编辑保留；重做一次 → 整批恢复；保存 → 重进 → CRS 预览一致。Schema 断言 22/22。
+- **场景三（id 16，资料缺失，只生成不应用）**：第 1 轮把标题改为第二期、公告去掉「报名中」、删除第一期的日期/费用/截止，表单副标题不返回修改并写 warning 提示人工处理，未编造；第 2 轮追加「不要把第一期任何安排或报名状态作为第二期事实；未确定项标注待定」后，四项标为待定、公告为「报名安排待定」、表单说明改为「均待定」，闭环更完整。此前抽样出现的「第二期仍写报名中」本轮未复现。
+- **异常验证（本轮实跑）**：后端 11/11（校验/转义/无变化剔除/mock 标识/不可用报错）、弹窗组件 11/11（迟到响应丢弃、页面切换关闭、应用前冲突、未勾选互不影响、重新生成不扩范围、失败清旧建议保留输入）、store 6/6（批量合并、一次应用一次撤销、人工编辑独立历史点、无空步骤）；浏览器实测：生成期间连点 3 次只发 1 个请求（按钮 loading + disabled）；临时以无 AI 凭据重启 backend 后接口返回 code=-3 明确错误，弹窗顶部提示「AI 内容更新服务不可用（未配置模型或调用失败），请稍后重试」，输入保留、无建议、应用按钮禁用、无保存请求、页面块级内容无差异。
+- **本轮发现（均未改代码）**：
+  1. BusinessForm 字段区被 `<label>` 包裹，点击字段区不冒泡到画布选中逻辑，只能点标题或边缘才选中该组件；影响多选手感，不阻断流程。
+  2. `StatCard.value` 为 number 时被 `toStringValue` 回落默认值（36 → 12），即程序化建页/导入的数字指标值在编辑器加载后被重置；属性面板输入（字符串）不受影响。
+  3. CRS 未生成 `packages/ui` 用到的 Tailwind 工具类（下发 CSS 无 `.w-4`，CMS 有），导致 NoticeBlock 在预览/发布页图标撑满、内边距与横向滚动布局塌陷；文字内容不受影响。
+- **未验证**：发布页渲染（未发布生产页面）、并发与多用户、超时/限流降级、真实 token 用量（接口响应未含 usage，未为统计改 provider）。
+- **结论**：AI 内容更新的浏览器全链路闭环可用；S1/S2 建议可直接采用，S3 在模糊需求下需人工补「待定」表述（模型会给 warning，但不会自动改副标题）。以上为 3 个场景、6 次调用的小样本，不构成准确率、稳定性或成本结论。
+
+## 业务页面列表布局与操作收纳（2026-10-30）
+
+范围：只调整 `apps/frontend/cms/src/views/Activity.vue` 的表格、操作列与筛选区展示；未改后端接口、Schema、权限规则、审核发布流程、`.env` / `.gitignore`，未提交 Git。
+
+改动摘要：
+- **操作列 700px → 240px（固定右侧）**，行内只保留「编辑 / 预览 / 当前流程主动作 / 更多」，全部改为 link 文字按钮；原「装修」文案改「编辑」，导航行为不变。
+- **主动作取值沿用原条件**：`pending_review + canReview → 通过审核`；`draft/rejected + canEdit → 提交审核`；`approved + canPublish → 发布`。其余动作（提交审核、通过审核、驳回、发布、复制、线索、发布记录、优化建议、上线/下线、删除）进「更多」菜单，按业务含义分组，删除置末并用危险色；上线/下线的 `isAbled === 0 && status !== 'offline'` 禁用条件原样保留。
+- **回滚去重**：发布记录抽屉中已有每个版本的「回滚到此版本」，行内重复的「回滚到最新发布」收纳（能力仍在抽屉内），未使用的 `handleRollbackLatest` 一并移除。
+- **「AI 优化」→「优化建议」**：核对调用链 `aiDiagnosePage → AiService.diagnosePage` 为页面 Schema + 漏斗数据 + `buildPageAdvice` 本地规则建议，不调用模型，原文案不准确。
+- **删除入口**：popconfirm 改为同文案的 ElMessageBox 确认——菜单项点击会立即收起浮层，浮层内 popconfirm 无法稳定展示；权限条件与后续处理不变。
+- **时间**：新增 `formatDateTime`，`create_time / update_time` 由 ISO 原样输出改为按浏览器本地时区输出 `YYYY-MM-DD HH:mm`，缺失或无效显示 `-`；发布记录抽屉的 `formatTime` 复用同一函数。
+- **筛选区**：标题框 240px、两个状态下拉 176px。Tailwind 的 `w-*` 对 Element 组件不生效（组件运行时样式覆盖），改用带作用域的 `.filter-control-*` 类。
+- **列宽**：ID 90 / 标题 min-width 240 + 省略 tooltip / 运营 110 / 内容 130 / 创建 160 / 更新 160 / 操作 240。
+
+验证（本轮实跑）：
+- `pnpm --filter @cms/cms typecheck` 通过；改动文件 ESLint 0 error（仅既有的 multi-word 组件名警告）。
+- `pnpm --filter @cms/cms test:e2e`（mock）**40/40**，其中新增 `tests/e2e/activity-layout.spec.ts` 4 条：三状态行内动作组合、操作列 ≤240 且单行、整页不横向溢出、时间格式、菜单项与危险色、菜单不越出视口、1280 下单行与筛选宽度。
+- 更新 `tests/e2e/pages/activity.page.ts`：`clickPublishLogs` / `clickDeletePage` 改走「更多」菜单（删除确认改 MessageBox），`clickEditPage` 适配「编辑」文案；原业务断言未降低（`activity.spec` / `publish-rollback.spec` / `smoke-core.spec` 均通过）。
+- `pnpm check:ui-governance`：本文件已无新增违规；仍剩 `Decorate/index.vue` 的既有欠账（HEAD 版本即含 `.live-preview-drawer .el-drawer__body`）。
+- 浏览器实测（真实数据、只读）：1440 / 1920 / 1280 三档行内元素高度 18、单行、整页 `scrollWidth == clientWidth`、操作列 240、时间 `YYYY-MM-DD HH:mm`；修改前同环境为操作列 700px、行高 63/67 不一致、创建时间被裁成「202…」、筛选下拉只剩箭头。
+- 权限视图：viewer 下行内仅「预览 + 更多」，菜单仅「发布记录 + 优化建议」，观察员提示正常显示。
+
+未验证：
+- 菜单在最后一行向上翻转仅在 1440 mock 用例覆盖，1920/1280 未单独验证翻转。
+- 上线/下线、提交审核、通过审核、发布、回滚、删除的写操作未在真实数据执行（沿用 mock 桩与既有断言）。
+
+## 上轮验收三个缺陷修复（2026-10-30）
+
+范围：只修 CRS 共享物料样式、StatCard 数字值、BusinessForm 字段区选中三个缺陷；未改后端接口、Schema 版本、权限与发布流程，未提交 Git、未跑 migration/seed。
+
+### 问题一：CRS 共享物料样式缺失
+
+**复现**：同一 Schema 在 CMS 画布与 CRS 预览中，公告图标 365.6×365.6、公告条高 437.6px、padding 0，而画布为 16×16 / 40px / 8px 16px。
+
+**根因（两层，都不是"缺 @source"）**：
+1. `apps/frontend/crs/postcss.config.js` 里**没有 `@tailwindcss/postcss`**。CSS 里的 `@import "tailwindcss"` 只带进 preflight，`.w-4 / .flex-1 / .px-4` 等工具类根本没生成。
+2. 生产构建下组件从 `@cms/ui` 的 dist 加载，其 scoped 样式被库构建抽到 `packages/ui/dist/ui.css`，但**全仓无人引用**——dev 走 src alias 由 Vite 处理 SFC 样式，所以只在构建产物暴露（表单/统计卡无内边距、无卡片）。
+
+**修复**：
+- CRS postcss 增加 `@tailwindcss/postcss`（排在 px-to-viewport 之前）。
+- 新增构建期 PostCSS 插件 `inline-cms-ui-dist-css`：仅 `NODE_ENV=production` 时把 `packages/ui/dist/ui.css` 内联进样式入口，dev 不受影响（dist 未入库，不能作为 dev 依赖）。
+- 两端 `main.css` 增加 `@source "../../../../../packages/ui/src"`，显式声明共享物料扫描源。
+- **过程中自引入一次回归**：`@source` 最初插在两个 `@import` 之间，CSS 规范要求 `@import` 在前，导致 `tokens.css` 被整段丢弃、两端 `--color-*` 全部 undefined（画布白底掩盖、预览灰底暴露：卡片透明、按钮无色）。已改为 `@source` 在全部 `@import` 之后，并在两端注释说明。
+
+**验证**：dev 与 build 产物均确认 `.w-4` 与 `.business-form-block` 存在；图标 16×16、公告条 40px、padding 8/16，表单 padding dev 20.31px / build 19.84px（vw 换算差）；tokens 两端 `--color-bg-card #ffffff`、`--color-primary #419bf9`；生产构建用 CMS 作父窗口向 `vite preview`(4173) 推送签名 Schema 实测渲染，无 console 错误。
+
+### 问题二：StatCard 数字值被默认值替换
+
+**复现**：程序化写入 `value: 36`（number），加载后显示 12。
+
+**根因**：`StatCard.normalizeProps` 用 `toStringValue`，该函数只接受 string，number 一律回落默认值 `"12"`（0 也会被丢）。
+
+**修复**：在 `definitions.ts` 增加局部 `normalizeStatValue`：有限数字（含 0）转字符串，其余沿用原字符串契约（字符串原样保留含空串；缺失/NaN/对象回落 "12"）。未改公共 `toStringValue`。
+
+**验证**：新增 `packages/ui/src/materials/__tests__/stat-card-value.test.ts` 5 条（36 / 0 / 3.5 / -7 / 历史字符串 / 空串 / undefined / NaN / Infinity / 对象 / 渲染 0 可见），调用真实 `normalizePageSchemaMaterials`；ui 单测 57/57。浏览器端到端：写入 number 36 → 画布显示 36、保存值 "36"、重进 36、CRS 预览 36；页面 13 列表筛选到 0 时统计卡显示 0（非默认值）。
+
+### 问题三：BusinessForm 字段区难以选中
+
+**复现**：画布中 Ctrl 点击表单字段区不加入多选，AI 目标清单缺表单。
+
+**根因**：不是简单的"label 阻止冒泡"。实测点击字段区时 `.canvas-component` 收到 **2 次 click**——label 原始 click 冒泡一次，浏览器 activation behavior 再把点击转发给内部 input 一次。普通点击因 `setActiveId` 幂等看不出问题；**Ctrl 多选被 toggle 两次等于没选中**。
+
+**修复**：`.component-content` 增加 `@click.capture="preventLabelForwarding"`（两处渲染分支），在捕获阶段对 label 内非控件目标的 click 调 `preventDefault()`，取消转发；不阻止冒泡、直接点 input/select/textarea 不受影响；CRS 端不经过画布。
+
+**验证**：click 次数 2 → 1；Ctrl 依次加入 富文本/公告/表单字段区 = 3 个选中，AI 目标清单显示「处理对象（3 个可更新）」含信息采集表单；Ctrl 再点字段区移出（3 → 2）；直接点输入框可选中；点右侧配置区不改变选择；CRS 表单填写与必填校验正常（提交被"页面版本无效"拦截，属预览态既有设计，未写库）。
+
+### 验证汇总（本轮实跑）
+
+- `pnpm --filter @cms/ui test -- --run`：57/57（含新增 5 条）
+- `pnpm --filter @cms/cms typecheck` / `crs` / `ui`：均通过
+- 改动文件 ESLint：0 error
+- `pnpm --filter @cms/cms test:e2e`（mock）：**40/40**，与上轮基线数量一致（无新增/删除）
+- `pnpm check:ui-governance`：本轮无新增违规，仍剩 `Decorate/index.vue` 的既有欠账（HEAD 版本即存在）
+- `pnpm --filter @cms/crs build` + `vite preview` 实测：产物含 `.w-4` 与组件样式，页面渲染与 dev 一致
+
+### 未修 / 已知限制
+
+- **画布内鼠标拖拽排序不生效**（Sortable 能启动，出现 `sortable-chosen/ghost`，松手后 rootIds 不变）。已通过临时移除本轮改动复测：**移除后同样不生效**，属既有问题，不在本轮三个缺陷范围内。`Alt+↑/↓` 键盘排序正常。
+- 画布与预览的观感差异仍来自容器宽度（画布 891 固定 px，预览 381 走 vw），属产品决策，未改动。
+
+---
+
+## 预览端组件卡片边界修复（2026-10-30）
+
+反馈：CMS「预览」页里各组件没有"框"，四块内容糊成一片；且观感不如编辑器画布——画布是**背景与组件同色、靠边框分隔**，预览是灰底 + 白卡片。
+
+**复现与量化**（id=14，同一 Schema）：
+- `.page-components` 计算样式：`padding: 0px`、`row-gap: normal`，四个根节点 `margin` 均为 0；
+- 子节点 y 坐标 `0 → 108 → 148 → 508`，**首尾完全相接**；
+- 卡片底色：RichText 默认 `backgroundColor = "#ffffff"`、BusinessForm / StatCard 用 `var(--color-bg-card)`（#ffffff），Notice 为 `#fff8e9`；
+- 预览容器 `.page-preview-container` 为 `#f5f7fa`，发布页 `.page-content` 默认 `#ffffff` —— 两端底色本就不一致。
+
+**根因（两层）**：
+1. `SchemaRenderer.vue` 的 `.page-components` 只有 `width: 100%`（与 HEAD 一致，非上轮改动引入）——组件间距这层从未定义过，同色底/白底卡片紧贴后边界消失；
+2. 预览容器用 `--color-bg-page`（#f5f7fa）而画布与发布页用白色，分隔方式也不同（画布靠边框/阴影，预览靠底色反差）。
+
+**修复**（`apps/frontend/crs/src/components/SchemaRenderer.vue`，仅样式）：
+```css
+.schema-renderer { background-color: var(--color-bg-card); }   /* 默认与物料同色，pageConfig.backgroundColor 行内样式可覆盖 */
+.page-components {
+  box-sizing: border-box; display: flex; flex-direction: column;
+  gap: 12px; width: 100%; padding: 12px;
+}
+.page-components > .crs-rich-text,
+.page-components > .notice-bar,
+.page-components > .business-form-block,
+.page-components > .business-list-block,
+.page-components > .stat-card-block { border: 1px solid var(--color-border); }
+```
+- 底色与物料同色 + 描边，与编辑器画布（`.canvas-wrapper` / `.canvas-component` 同为 #fff、靠边框区分）的观感对齐；
+- 描边只列内容物料、不用 `> *` 通配：浮层类（FloatLayer / Dialog / OnlineService）为 `fixed` 定位，通配会给它们画出多余轮廓；
+- 预览页（PagePreview）与发布页（Page）共用该渲染层，两处同步生效；
+- CRS 走 px-to-viewport，构建产物落为 `gap/padding: 3.2vw`，`border: 1px`（minPixelValue 保护，不转 vw）。
+
+**验证**（本轮实跑）：
+- 开发态（CMS 预览 iframe，id=14）：子节点 y `12 → 132 → 184 → 557`，间距 12px，内容宽 381 → 356，四块均有 `1px solid #dcdfe6` 描边；
+- 生产构建（`vite preview` 4173，CMS 推签名 Schema）：产物含 `.schema-renderer{background-color:var(--color-bg-card)}`、`gap:3.2vw`、五条描边选择器；实测表单/公告/统计卡均带描边，公告图标 16×16；
+- 发布页（CRS `/page?id=13`，390 宽）：StatCard y=12、BusinessList y=144，描边 `0.8px solid #dcdfe6`；该页 `pageConfig.backgroundColor=#f8fafc`，行内样式正确覆盖默认白底；
+- `crs typecheck` 通过、改动文件 ESLint 0 error、CRS 单测 8/8、ui 单测 57/57、CMS mock E2E **40/40**；UI 治理无新增（仅剩 `Decorate/index.vue` 既有欠账）。
+
+**过程记录**：首次修复只加了间距与留白（灰底露出），实测后按反馈改为「同色底 + 描边」，与画布观感对齐；`business-materials.spec.ts` 曾在一次全量中失败（popup 打开预览页落在登录页），单跑与复跑均通过，判定为 popup 鉴权时序偶发，与本次样式改动无关。
+
+**未验证**：种子数据里 id=1/2/4 的营销页 `rootIds` 为空，没有轮播/商品/图片导航等自带 padding 的全宽物料可用于真实页面验证；这类物料会额外叠加 12px 页边距与描边（内边距仍由物料属性自控）。画布内鼠标拖拽排序仍是既有问题，与本轮无关。
+
+---
 
 ## 后续动作（非本次收口范围）
 
@@ -175,6 +385,37 @@ BusinessForm 从「仅前端校验 + 假成功」改为可落库的业务表单�
 - `PagePreview` 从 URL 读 `pageId` 注入 `SchemaRenderer`，预览态表单物料的 pageId 链路打通。
 
 **验证**：mock E2E 34/34（含 2 条新预览用例：iframe 真实渲染 / 抽屉渲染）、live 17/17、ui 52/52、CRS 8/8、backend 84/84、typecheck 12 tasks、lint 5 包、build 7 tasks；真实浏览器三步全过（独立预览页渲染 / 抽屉渲染 / 删除组件实时同步）。
+
+---
+
+## AI 辅助批量更新页面内容（2026-10-29）
+
+最小闭环：画布多选内容区块 → 输入业务资料与修改要求 → AI 逐区块建议 → 对比勾选 → 一次应用 → 撤销 / 保存 / CRS 预览。仅支持 RichText 正文、Notice 现有公告文字、BusinessForm 的 title/subtitle/submitText；不调整布局、样式、链接、业务数据与联动规则。
+
+**协议（packages/types/src/ai.ts）**：AiContentTargetType / AiRichTextContentBlock（结构化文本块）/ AiContentTarget / AiContentChange / 请求 / 响应；均带「类型-字段一致性」superRefine、重复目标拒绝、BusinessForm 至少一个字段的约束。
+
+**后端**：`POST /atlas-cms/aiSuggestContentChanges`（admin/editor，不读写页面数据库）。
+- provider：把模型调用泛化为 `callChat(systemPrompt, userContent)`，新增内容更新专用提示词（与营销整页生成提示词完全分离）；返回 null 表示不可用。
+- service：共享 Zod 校验 → 逐项业务校验（未知目标 / 重复 / 类型不匹配 / 公告数量不一致，任一失败整次无效）→ 富文本 blocks 全部转义后按固定标签生成 HTML（忽略模型可能携带的 html）→ 剔除与当前内容无实际差异的建议 → 仅 `AI_MOCK_ENABLED=true` 时返回标注清楚的示例结果（source: mock）→ 否则抛 ServiceUnavailableException，不冒充成功。
+
+**前端**：
+- `store.applyContentChanges`：先准备完整变更再一次性写入、只合并允许字段（Notice 按槽位复制只换 text、保留 link、兼容 noticeList/noticelist 双别名）；应用前 flush 待提交的延迟 commit，再单次 commit → 一次应用 = 一次撤销且保留此前人工编辑为独立历史点。
+- `debouncedCommit` 由 useDebounceFn 改为自管定时器（可 flush/cancel），`importPageSchema` / `setInitPageSchema` 时清理，避免页面切换后产生空历史步骤。
+- `AiContentUpdateDialog`：处理对象清单（含「不参与更新」标注）、请求 loading 防重复提交、逐区块原/建议对比默认勾选、取消勾选、重新生成、应用前基线冲突校验（组件存在/类型/内容未变）、关闭或页面切换后丢弃迟到响应；建议对比只渲染受控纯文本，不用 v-html。
+- 入口在 RightConfig 顶部（跨类型多选可用），目标为打开弹窗时的选择快照。
+
+**首次实现验证**：后端 95/95（含新增 11 条）；CMS 400/400（含新增 store 6 条 + 弹窗 7 条）；mock E2E 36/36（含新增 1 条完整链路：多选三类 → 生成 → 取消一个 → 应用 → 保留属性 → 撤销/重做 → 保存 → 重读 → CRS 预览）；`pnpm typecheck` 12 tasks；只读 lint 通过；`pnpm build` 7 tasks。
+
+**验收补修（2026-10-29，已完成）**：
+- 冲突后重新生成：保持打开弹窗时圈定的组件 ID，每次请求重新读取最新内容并更新冲突基线；生成失败清除旧建议和勾选状态，保留资料输入，错误由弹窗统一提示。
+- 公告空项：请求保留全部文字槽位，不过滤空字符串，避免请求与应用阶段数量不一致或链接关联错位。
+- 勾选范围：仅对本次接受的建议检查冲突，未勾选区块的变化不阻断应用。
+- 响应校验：成功响应必须通过共享 Zod 协议，应用链路只消费解析后的数据；校验失败抛出明确错误，业务和请求错误不重复弹窗。
+- 新增回归：弹窗 4 条（重新生成与固定对象、空公告槽位、未勾选冲突、失败不应用旧结果），API 4 条（解析后数据、非法标题拒绝、业务失败透传、请求异常透传）。先在原实现复现失败，再验证修复通过。
+- 本次实跑：`pnpm --filter @cms/cms exec vitest run` 为 39 文件通过 / 2 文件跳过，408 passed / 2 skipped；`vue-tsc --noEmit` 通过（tsBuildInfoFile 指向系统临时目录，未改已有构建缓存）；5 个改动文件只读 ESLint 通过；`playwright test tests/e2e/ai-content-update.spec.ts --reporter=line --workers=1` 为 1/1 通过（编辑 → 应用 → 撤销/重做 → 保存 → 重读 → CRS 预览）；`git diff --check` 通过。
+- 本次仅修改前端相关实现、测试和此记录，保留既有工作区改动，未提交 Git。未运行清库、迁移或 seed，未调用真实模型；首次实现的后端全量、全量 E2E 和构建结果不作为本次重新执行结果。
+
+**未验证**：真实模型生成质量（未调用收费模型）。后续可用三类任务对照：资料更新、多区块表述统一、资料缺失时的处理。
 
 ---
 
