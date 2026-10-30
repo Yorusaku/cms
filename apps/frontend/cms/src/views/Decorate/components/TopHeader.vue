@@ -6,12 +6,22 @@
     </a>
     <div class="page-operate">
       <el-tooltip content="撤销 (Ctrl+Z)" placement="bottom">
-        <el-button size="default" :disabled="!canEdit || !pageStore.canUndo" @click="handleUndo">
+        <el-button
+          size="default"
+          aria-label="撤销"
+          :disabled="!canEdit || !pageStore.canUndo"
+          @click="handleUndo"
+        >
           <el-icon><RefreshLeft /></el-icon>
         </el-button>
       </el-tooltip>
       <el-tooltip content="重做 (Ctrl+Y)" placement="bottom">
-        <el-button size="default" :disabled="!canEdit || !pageStore.canRedo" @click="handleRedo">
+        <el-button
+          size="default"
+          aria-label="重做"
+          :disabled="!canEdit || !pageStore.canRedo"
+          @click="handleRedo"
+        >
           <el-icon><RefreshRight /></el-icon>
         </el-button>
       </el-tooltip>

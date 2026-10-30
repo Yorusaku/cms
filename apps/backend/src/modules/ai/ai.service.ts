@@ -1,12 +1,18 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable, ServiceUnavailableException } from "@nestjs/common";
 import {
+  AiContentChangeSchema,
   AiGeneratePageRequestSchema,
+  AiSuggestContentChangesRequestSchema,
   PageSchemaV2Schema,
+  type AiContentChange,
   type AiDiagnosePageResponse,
   type AiPageAdvice,
   type AiGeneratePageRequest,
   type AiGeneratePageResponse,
   type AiProductInput,
+  type AiRichTextContentBlock,
+  type AiSuggestContentChangesRequest,
+  type AiSuggestContentChangesResponse,
   type IComponentSchemaV2,
   type IPageSchemaV2,
 } from "@cms/types";
@@ -15,6 +21,7 @@ import { TrackingService } from "../tracking/tracking.service";
 import { AiProviderService } from "./ai-provider.service";
 import { AiDiagnosePageDto } from "./dto/ai-diagnose-page.dto";
 import { AiGeneratePageDto } from "./dto/ai-generate-page.dto";
+import { AiSuggestContentChangesDto } from "./dto/ai-suggest-content-changes.dto";
 
 const DEFAULT_COVER_BG = "#e11d48";
 const DEFAULT_ACCENT_BG = "#f59e0b";
@@ -102,8 +109,223 @@ export class AiService {
     };
   }
 
-  private parseGenerateRequest(dto: AiGeneratePageDto): AiGeneratePageRequest {
-    const result = AiGeneratePageRequestSchema.safeParse({
+  /**
+   * AI 内容更新：把用户资料与修改要求发给模型，返回逐区块建议。
+   * 不读写页面数据库；请求/响应结构由共享 Zod 协议约束。
+   * 模型不可用时：AI_MOCK_ENABLED=true 返回明确标注的示例结果，否则报明确错误。
+   */
+  async suggestContentChanges(
+    dto: AiSuggestContentChangesDto,
+  ): Promise<AiSuggestContentChangesResponse> {
+    const parsed = AiSuggestContentChangesRequestSchema.safeParse(dto);
+    if (!parsed.success) {
+      throw new BadRequestException("AI 内容更新请求不合法");
+    }
+    const request = parsed.data;
+
+    const draft = await this.aiProviderService.suggestContentChanges(request);
+    if (draft) {
+      const validated = this.validateContentChanges(draft.changes, request);
+      const changes = this.dropUnchangedChanges(validated, request);
+      return { source: "model", changes, warnings: draft.warnings };
+    }
+
+    if (this.aiProviderService.isMockMode()) {
+      return {
+        source: "mock",
+        changes: this.createMockContentChanges(request),
+        warnings: [
+          "当前为示例结果（AI_MOCK_ENABLED=true），未调用真实模型，请勿直接作为正式内容。",
+        ],
+      };
+    }
+
+    throw new ServiceUnavailableException(
+      "AI 内容更新服务不可用（未配置模型或调用失败），请稍后重试",
+    );
+  }
+
+  /**
+   * 逐项校验模型输出：协议结构 + 未知目标 / 重复目标 / 类型不匹配 / 公告槽位数量。
+   * 任一项不合法则整次结果无效，不静默应用合法部分。
+   */
+  private validateContentChanges(
+    rawChanges: unknown,
+    request: AiSuggestContentChangesRequest,
+  ): AiContentChange[] {
+    if (!Array.isArray(rawChanges)) {
+      throw new BadRequestException("AI 返回的 changes 不是数组");
+    }
+
+    const targetsById = new Map(
+      request.targets.map((target) => [target.componentId, target]),
+    );
+    const seen = new Set<string>();
+    const result: AiContentChange[] = [];
+
+    for (const rawChange of rawChanges) {
+      const parsedChange = AiContentChangeSchema.safeParse(rawChange);
+      if (!parsedChange.success) {
+        throw new BadRequestException("AI 返回的变更项结构不合法");
+      }
+      const change = parsedChange.data;
+      const target = targetsById.get(change.componentId);
+
+      if (!target) {
+        throw new BadRequestException(
+          `AI 返回了未请求的组件 ${change.componentId}`,
+        );
+      }
+      if (target.type !== change.type) {
+        throw new BadRequestException(
+          `组件 ${change.componentId} 的变更类型与请求不一致`,
+        );
+      }
+      if (seen.has(change.componentId)) {
+        throw new BadRequestException(
+          `组件 ${change.componentId} 返回了多次变更`,
+        );
+      }
+      seen.add(change.componentId);
+
+      if (change.type === "Notice") {
+        const expected = target.noticeTexts?.length ?? 0;
+        if (change.noticeTexts?.length !== expected) {
+          throw new BadRequestException("AI 返回的公告数量与现有不一致");
+        }
+      }
+
+      if (change.type === "RichText") {
+        // 一律使用服务端生成的受控 HTML，忽略模型/客户端可能携带的 html
+        change.html = this.renderRichTextBlocksHtml(change.blocks ?? []);
+      }
+
+      result.push(change);
+    }
+
+    return result;
+  }
+
+  /** 富文本：转义文本后按固定标签生成 HTML，不接受模型提供的标签、属性或 URL */
+  private renderRichTextBlocksHtml(blocks: AiRichTextContentBlock[]): string {
+    return blocks
+      .map((block) => {
+        if (block.type === "heading") {
+          return `<h3>${this.escapeHtml(block.text)}</h3>`;
+        }
+        if (block.type === "paragraph") {
+          return `<p>${this.escapeHtml(block.text)}</p>`;
+        }
+        const tag = block.ordered ? "ol" : "ul";
+        const items = block.items
+          .map((item) => `<li>${this.escapeHtml(item)}</li>`)
+          .join("");
+        return `<${tag}>${items}</${tag}>`;
+      })
+      .join("");
+  }
+
+  /** HTML → 纯文本，仅用于「是否有实际变化」的比较，不用于渲染 */
+  private htmlToPlainText(html: string): string {
+    return html
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(p|h[1-6]|li|ol|ul|div)>/gi, "\n")
+      .replace(/<[^>]+>/g, "")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/&amp;/gi, "&")
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n{2,}/g, "\n")
+      .trim();
+  }
+
+  /** 剔除与当前内容没有实际差异的建议（未返回的目标本身保持不变） */
+  private dropUnchangedChanges(
+    changes: AiContentChange[],
+    request: AiSuggestContentChangesRequest,
+  ): AiContentChange[] {
+    const targetsById = new Map(
+      request.targets.map((target) => [target.componentId, target]),
+    );
+
+    return changes.filter((change) => {
+      const target = targetsById.get(change.componentId);
+      if (!target) {
+        return false;
+      }
+
+      if (change.type === "RichText") {
+        const before = this.htmlToPlainText(target.content ?? "");
+        const after = this.htmlToPlainText(change.html ?? "");
+        return before !== after;
+      }
+
+      if (change.type === "Notice") {
+        const before = target.noticeTexts ?? [];
+        const after = change.noticeTexts ?? [];
+        return (
+          before.length !== after.length ||
+          before.some((text, index) => text !== after[index])
+        );
+      }
+
+      const fields = ["title", "subtitle", "submitText"] as const;
+      return fields.some(
+        (field) =>
+          change[field] !== undefined && change[field] !== target[field],
+      );
+    });
+  }
+
+  /** mock 建议：只在原文前加「（示例）」，不改事实、不改数量与顺序，来源明确标注 */
+  private createMockContentChanges(
+    request: AiSuggestContentChangesRequest,
+  ): AiContentChange[] {
+    const prefix = "（示例）";
+
+    return request.targets.map((target) => {
+      if (target.type === "RichText") {
+        const plain = this.htmlToPlainText(target.content ?? "").slice(0, 200);
+        const text = `${prefix}${plain}`;
+        return {
+          componentId: target.componentId,
+          type: "RichText" as const,
+          blocks: [{ type: "paragraph" as const, text }],
+          html: `<p>${this.escapeHtml(text)}</p>`,
+        };
+      }
+
+      if (target.type === "Notice") {
+        return {
+          componentId: target.componentId,
+          type: "Notice" as const,
+          noticeTexts: (target.noticeTexts ?? []).map(
+            (text) => `${prefix}${text}`,
+          ),
+        };
+      }
+
+      const change: AiContentChange = {
+        componentId: target.componentId,
+        type: "BusinessForm",
+      };
+      if (target.title !== undefined) {
+        change.title = `${prefix}${target.title}`;
+      }
+      if (target.subtitle !== undefined) {
+        change.subtitle = `${prefix}${target.subtitle}`;
+      }
+      if (target.submitText !== undefined) {
+        change.submitText = `${prefix}${target.submitText}`;
+      }
+      return change;
+    });
+  }
+
+  private parseGenerateRequest(dto: AiGeneratePageDto): AiGeneratePageRequest {    const result = AiGeneratePageRequestSchema.safeParse({
       ...dto,
       products: dto.products ?? [],
     });

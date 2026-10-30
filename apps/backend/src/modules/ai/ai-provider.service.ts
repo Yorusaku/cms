@@ -1,11 +1,20 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import type { AiGeneratePageRequest } from "@cms/types";
+import type {
+  AiGeneratePageRequest,
+  AiSuggestContentChangesRequest,
+} from "@cms/types";
 
 export interface AiGeneratedPageDraft {
   schema: unknown;
   summary?: string;
   warnings?: string[];
+}
+
+export interface AiContentSuggestionDraft {
+  /** 模型返回的原始 changes（未校验，交由 AiService 做协议与业务校验） */
+  changes: unknown;
+  warnings: string[];
 }
 
 interface OpenAiChatResponse {
@@ -21,6 +30,11 @@ export class AiProviderService {
   private readonly logger = new Logger(AiProviderService.name);
 
   constructor(private readonly configService: ConfigService) {}
+
+  /** 是否显式开启强制 mock（AI_MOCK_ENABLED=true） */
+  isMockMode(): boolean {
+    return this.shouldForceMock();
+  }
 
   async generatePageDraft(
     request: AiGeneratePageRequest,
@@ -39,12 +53,12 @@ export class AiProviderService {
     }
 
     try {
-      const content = await this.callChatCompletions({
+      const content = await this.callChat({
         apiKey,
         model,
         baseUrl,
-        request,
-        materialContract,
+        systemPrompt: this.createSystemPrompt(materialContract),
+        userContent: JSON.stringify(request),
       });
       const parsed = this.parseJsonContent(content);
       return this.normalizeProviderResult(parsed);
@@ -55,22 +69,70 @@ export class AiProviderService {
     }
   }
 
+  /**
+   * 内容更新建议：沿用整页生成同一套模型配置、超时与 JSON 提取能力，
+   * 但使用独立提示词（只改选定区块的文字，不生成页面结构）。
+   * 返回 null 表示模型不可用（mock 模式、未配置或调用失败），由调用方决定回退或报错。
+   */
+  async suggestContentChanges(
+    request: AiSuggestContentChangesRequest,
+  ): Promise<AiContentSuggestionDraft | null> {
+    if (this.shouldForceMock()) {
+      return null;
+    }
+
+    const apiKey = this.configService.get<string>("AI_API_KEY");
+    const model = this.configService.get<string>("AI_MODEL");
+    const baseUrl = this.configService.get<string>("AI_BASE_URL");
+
+    if (!apiKey || !model || !baseUrl) {
+      return null;
+    }
+
+    try {
+      const content = await this.callChat({
+        apiKey,
+        model,
+        baseUrl,
+        systemPrompt: this.createContentUpdateSystemPrompt(),
+        userContent: JSON.stringify(request),
+      });
+      const parsed = this.parseJsonContent(content);
+      if (!parsed || typeof parsed !== "object") {
+        throw new Error("provider content is not an object");
+      }
+      const record = parsed as Record<string, unknown>;
+      return {
+        changes: record.changes,
+        warnings: Array.isArray(record.warnings)
+          ? record.warnings.filter(
+              (item): item is string => typeof item === "string",
+            )
+          : [],
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "unknown error";
+      this.logger.warn(`AI content suggest unavailable: ${message}`);
+      return null;
+    }
+  }
+
   private shouldForceMock(): boolean {
     return this.configService.get<string>("AI_MOCK_ENABLED") === "true";
   }
 
-  private async callChatCompletions({
+  private async callChat({
     apiKey,
     model,
     baseUrl,
-    request,
-    materialContract,
+    systemPrompt,
+    userContent,
   }: {
     apiKey: string;
     model: string;
     baseUrl: string;
-    request: AiGeneratePageRequest;
-    materialContract: string;
+    systemPrompt: string;
+    userContent: string;
   }): Promise<string> {
     const controller = new AbortController();
     const timeoutMs = this.getTimeoutMs();
@@ -90,11 +152,11 @@ export class AiProviderService {
           messages: [
             {
               role: "system",
-              content: this.createSystemPrompt(materialContract),
+              content: systemPrompt,
             },
             {
               role: "user",
-              content: JSON.stringify(request),
+              content: userContent,
             },
           ],
         }),
@@ -127,6 +189,24 @@ export class AiProviderService {
       "页面必须包含首屏价值主张、促销提示、商品区、线索表单和清晰 CTA。",
       "所有图片字段如果用户未提供，请使用非空 data:image/svg+xml 占位图。",
       "富文本只允许基础 HTML 标签，不允许 script、iframe、事件属性或 javascript: 链接。",
+    ].join("\n");
+  }
+
+  /** 内容更新专用提示词：与整页生成的营销提示词完全分离 */
+  private createContentUpdateSystemPrompt(): string {
+    return [
+      "你是内部运营平台的内容编辑助手，只负责按用户提供的新资料修改已有页面区块的文字内容，不生成页面结构。",
+      "只能输出 JSON，不要输出 Markdown。输出结构：",
+      '{"changes": [{"componentId": "组件ID", "type": "RichText|Notice|BusinessForm", "...": "该类型允许的字段"}], "warnings": ["可选说明"]}',
+      "规则：",
+      "1. 只处理输入 targets 中列出的组件；componentId 必须原样来自输入，不得新增、不得重复；",
+      '2. RichText 只返回 blocks 数组（元素为 {"type":"heading"|"paragraph","text":"..."} 或 {"type":"list","ordered":true|false,"items":["..."]}），不要输出 HTML、标签、属性或链接；',
+      "3. Notice 必须返回与输入 noticeTexts 相同数量、相同顺序的文字数组，不得增删公告项，不得修改或新增链接；",
+      "4. BusinessForm 只允许修改 title、subtitle、submitText 三个文字属性，可只返回需要变化的字段；",
+      "5. 严格依据用户提供的资料修改；资料中未要求修改的事实保持不变；",
+      "6. 不得自行补充日期、费用、办理时限、联系方式或其他承诺，资料未提供就保持原文或不修改；",
+      "7. 无法满足的要求写入 warnings 说明原因，不要编造；",
+      "8. 某个目标不需要修改时不要返回该项。",
     ].join("\n");
   }
 

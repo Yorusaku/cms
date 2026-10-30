@@ -1,8 +1,13 @@
 import { defineStore } from "pinia";
 import { ref, shallowRef } from "vue";
-import { useRefHistory, useDebounceFn } from "@vueuse/core";
+import { useRefHistory } from "@vueuse/core";
 import { deepClone, migrateSchema } from "@cms/utils";
-import type { IPageSchemaV2, IComponentSchemaV2, IComponentLinkage } from "@cms/types";
+import type {
+  AiContentChange,
+  IPageSchemaV2,
+  IComponentSchemaV2,
+  IComponentLinkage,
+} from "@cms/types";
 import { normalizeMaterialType, normalizePageSchemaMaterials } from "@cms/ui";
 import { LinkageEngine } from "@/utils/linkage-engine";
 
@@ -56,9 +61,42 @@ export const usePageStore = defineStore("page", () => {
     },
   );
 
-  const debouncedCommit = useDebounceFn(commit, 300);
+  /*
+   * 延迟提交（300ms 防抖）。用自管理定时器而非 useDebounceFn，
+   * 以便「应用 AI 修改前 flush」「页面切换时 cancel」两个场景可控——
+   * 待执行的 commit 若晚于下一次显式提交，会产生与最新快照相同的空历史步骤。
+   */
+  let pendingCommitTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const debouncedCommit = () => {
+    if (pendingCommitTimer !== null) {
+      clearTimeout(pendingCommitTimer);
+    }
+    pendingCommitTimer = setTimeout(() => {
+      pendingCommitTimer = null;
+      commit();
+    }, 300);
+  };
+
+  /** 立即执行待提交的延迟 commit：让此前的人工编辑形成独立历史点 */
+  const flushPendingCommit = () => {
+    if (pendingCommitTimer !== null) {
+      clearTimeout(pendingCommitTimer);
+      pendingCommitTimer = null;
+      commit();
+    }
+  };
+
+  /** 丢弃待提交的延迟 commit：页面整体切换时避免污染新页面的历史 */
+  const cancelPendingCommit = () => {
+    if (pendingCommitTimer !== null) {
+      clearTimeout(pendingCommitTimer);
+      pendingCommitTimer = null;
+    }
+  };
 
   const setInitPageSchema = () => {
+    cancelPendingCommit();
     pageSchema.value = deepClone(emptyPageSchema);
     activeComponentId.value = null;
     selectedComponentIds.value = [];
@@ -360,6 +398,95 @@ export const usePageStore = defineStore("page", () => {
     commit();
   };
 
+  /**
+   * 应用 AI 内容更新（不同组件、不同内容类型的批量更新）。
+   * 先准备完整变更再一次性写入，只合并允许字段；任一项校验失败则整批不应用。
+   * 一次应用只产生一次历史：先落定待提交的人工编辑，再提交本次变更。
+   */
+  const applyContentChanges = (
+    changes: AiContentChange[],
+  ): { ok: true; applied: number } | { ok: false; reason: string } => {
+    if (!Array.isArray(changes) || changes.length === 0) {
+      return { ok: false, reason: "没有可应用的修改" };
+    }
+
+    const prepared: Array<{
+      component: IComponentSchemaV2;
+      nextProps: Record<string, unknown>;
+    }> = [];
+
+    for (const change of changes) {
+      const component = pageSchema.value.componentMap[change.componentId];
+      if (!component) {
+        return { ok: false, reason: "目标区块已不存在，请重新生成" };
+      }
+      if (component.type !== change.type) {
+        return { ok: false, reason: "目标区块类型已变化，请重新生成" };
+      }
+
+      const nextProps: Record<string, unknown> = { ...component.props };
+
+      if (change.type === "RichText") {
+        if (typeof change.html !== "string") {
+          return { ok: false, reason: "富文本建议缺少受控内容" };
+        }
+        nextProps.content = change.html;
+      } else if (change.type === "Notice") {
+        const props = component.props;
+        const key = Array.isArray(props.noticeList)
+          ? "noticeList"
+          : Array.isArray(props.noticelist)
+            ? "noticelist"
+            : "noticeList";
+        const current = Array.isArray(props[key])
+          ? (props[key] as Array<Record<string, unknown>>)
+          : [];
+        const texts = change.noticeTexts ?? [];
+        if (texts.length !== current.length) {
+          return { ok: false, reason: "公告项数量已变化，请重新生成" };
+        }
+
+        // 保留每项 link 等关联字段，只替换文字
+        const nextList = current.map((item, index) => ({
+          ...item,
+          text: texts[index],
+        }));
+        nextProps[key] = nextList;
+        // 两个字段别名同时存在时保持同步（渲染端读取 noticeList 优先）
+        if (key === "noticeList" && Array.isArray(props.noticelist)) {
+          nextProps.noticelist = nextList;
+        }
+        if (key === "noticelist" && Array.isArray(props.noticeList)) {
+          nextProps.noticeList = nextList;
+        }
+      } else {
+        if (change.title !== undefined) {
+          nextProps.title = change.title;
+        }
+        if (change.subtitle !== undefined) {
+          nextProps.subtitle = change.subtitle;
+        }
+        if (change.submitText !== undefined) {
+          nextProps.submitText = change.submitText;
+        }
+      }
+
+      prepared.push({ component, nextProps });
+    }
+
+    // 先把待提交的人工编辑落定为独立历史点（此时 schema 仍是人工编辑后的状态），
+    // 再一次性写入 AI 变更并提交 → 一次应用只多一个撤销步骤
+    flushPendingCommit();
+
+    prepared.forEach(({ component, nextProps }) => {
+      component.props = nextProps;
+    });
+
+    commit();
+
+    return { ok: true, applied: prepared.length };
+  };
+
   const updatePageSchema = ({ data }: { data?: Partial<IPageSchemaV2> }) => {
     if (!data) {
       return;
@@ -445,6 +572,7 @@ export const usePageStore = defineStore("page", () => {
   };
 
   const importPageSchema = (schema: unknown) => {
+    cancelPendingCommit();
     const migratedSchema = normalizePageSchemaMaterials(migrateSchema(schema));
     pageSchema.value = deepClone(migratedSchema);
     activeComponentId.value = null;
@@ -501,6 +629,7 @@ export const usePageStore = defineStore("page", () => {
     duplicateComponent,
     editComponent,
     batchEditComponents,
+    applyContentChanges,
     updatePageSchema,
     updatePageHeight,
     exportPageSchema,

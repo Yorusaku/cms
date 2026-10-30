@@ -1,4 +1,20 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("vue-router", () => ({
+  useRoute: () => ({
+    query: { id: "1" },
+    path: "/decorate",
+    params: {},
+    name: "Decorate",
+  }),
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    go: vi.fn(),
+    back: vi.fn(),
+    resolve: vi.fn(),
+  }),
+}));
 import { mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { defineComponent, h } from "vue";

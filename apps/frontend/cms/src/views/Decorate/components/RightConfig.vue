@@ -13,6 +13,20 @@
         </h3>
       </div>
 
+      <div class="ai-update-entry">
+        <el-button
+          size="small"
+          :disabled="aiTargetIds.length === 0"
+          @click="openAiUpdate"
+        >
+          <el-icon><MagicStick /></el-icon>
+          <span>AI 更新内容</span>
+        </el-button>
+        <span class="ai-update-hint">
+          {{ aiEntryHint }}
+        </span>
+      </div>
+
       <el-tabs v-model="activeTab" class="config-tabs">
         <el-tab-pane label="基础配置" name="basic">
           <div class="config-body">
@@ -87,11 +101,18 @@
     </el-tab-pane>
   </el-tabs>
     </div>
+
+    <AiContentUpdateDialog
+      v-model="aiUpdateVisible"
+      :target-ids="aiTargetIds"
+      :page-id="currentPageId"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, reactive, watch, ref } from "vue";
+import { useRoute } from "vue-router";
 import { useDebounceFn } from "@vueuse/core";
 import { usePageStore } from "@/store/usePageStore";
 import { resolveMaterialDefinition } from "@cms/ui";
@@ -99,9 +120,18 @@ import MaterialConfigRenderer from "./MaterialConfigRenderer.vue";
 import SetPageInfo from "./SetPageInfo.vue";
 import LinkageConfig from "./LinkageConfig.vue";
 import LinkageDebugPanel from "./LinkageDebugPanel.vue";
+import AiContentUpdateDialog from "@/components/AiContentUpdateDialog.vue";
+import { MagicStick } from "@element-plus/icons-vue";
 
 const pageStore = usePageStore();
+const route = useRoute();
 const activeTab = ref('basic');
+
+/** 当前装修页 ID：变化时 AI 弹窗会自动关闭 */
+const currentPageId = computed(() => {
+  const id = Number(route.query.id);
+  return Number.isFinite(id) && id > 0 ? id : null;
+});
 
 const activeComponent = computed(() => {
   if (!pageStore.activeComponentId) {
@@ -146,6 +176,32 @@ const activeDefinition = computed(() => {
 
   return resolveMaterialDefinition(activeComponent.value.type) ?? null;
 });
+
+// ── AI 更新内容入口：多选（跨类型）优先，其次当前选中组件 ──
+const aiUpdateVisible = ref(false);
+
+const aiTargetIds = computed(() =>
+  pageStore.selectedComponentIds.length > 0
+    ? [...pageStore.selectedComponentIds]
+    : pageStore.activeComponentId
+      ? [pageStore.activeComponentId]
+      : [],
+);
+
+const aiEntryHint = computed(() => {
+  const count = aiTargetIds.value.length;
+  if (count === 0) {
+    return "先在画布选择内容区块";
+  }
+  return `已选 ${count} 个区块，支持富文本 / 公告 / 业务表单`;
+});
+
+const openAiUpdate = () => {
+  if (aiTargetIds.value.length === 0) {
+    return;
+  }
+  aiUpdateVisible.value = true;
+};
 
 const handleConfigUpdate = (newProps: Record<string, unknown>) => {
   if (!activeComponent.value) {
@@ -290,5 +346,22 @@ watch(batchState, () => {
   margin: 0;
   font-size: 16px;
   color: #606266;
+}
+
+.ai-update-entry {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--color-border-light, #e5e7eb);
+  background: var(--color-bg-card, #fff);
+}
+
+.ai-update-hint {
+  font-size: 12px;
+  color: var(--color-text-tertiary, #9ca3af);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

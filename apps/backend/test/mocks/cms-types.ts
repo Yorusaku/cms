@@ -42,3 +42,25 @@ export const PageSchemaV2Schema = z.object({
     })
     .optional(),
 }).loose();
+
+/*
+ * AI 内容更新协议：直接复用 @cms/types 的 CJS 构建产物，
+ * 避免在 mock 中手写副本与共享协议分叉（该组 schema 是本次新增，
+ * 旧的手写 schema 保持不变以不影响既有测试）。
+ */
+export {
+  AiContentTargetTypeSchema,
+  AiRichTextContentBlockSchema,
+  AiContentTargetSchema,
+  AiSuggestContentChangesRequestSchema,
+  AiContentChangeSchema,
+  AiSuggestContentChangesResponseSchema,
+} from "../../../../packages/types/dist/cjs/ai";
+export type {
+  AiContentTargetType,
+  AiRichTextContentBlock,
+  AiContentTarget,
+  AiSuggestContentChangesRequest,
+  AiContentChange,
+  AiSuggestContentChangesResponse,
+} from "../../../../packages/types/dist/cjs/ai";
