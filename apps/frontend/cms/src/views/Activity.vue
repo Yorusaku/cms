@@ -15,16 +15,21 @@
       />
 
       <el-card class="mb-6 shadow-none border border-gray-200">
-        <el-form :model="searchForm" inline class="w-full">
+        <el-form :model="searchForm" inline class="w-full filter-form">
           <el-form-item label="页面标题">
-            <el-input v-model="searchForm.name" placeholder="请输入页面标题" clearable class="w-64" />
+            <el-input
+              v-model="searchForm.name"
+              placeholder="请输入页面标题"
+              clearable
+              class="filter-control filter-control-name"
+            />
           </el-form-item>
           <el-form-item label="运营状态">
             <el-select
               v-model="searchForm.isAbled"
               placeholder="请选择运营状态"
               clearable
-              class="w-36"
+              class="filter-control filter-control-status"
             >
               <el-option label="下线" :value="0" />
               <el-option label="上线" :value="1" />
@@ -35,7 +40,7 @@
               v-model="searchForm.contentStatus"
               placeholder="请选择内容状态"
               clearable
-              class="w-40"
+              class="filter-control filter-control-status"
             >
             <el-option label="草稿" value="draft" />
             <el-option label="待审核" value="pending_review" />
@@ -72,9 +77,9 @@
       </div>
 
       <el-table v-loading="loading" :data="filteredTableData" border stripe class="w-full">
-        <el-table-column prop="id" label="页面ID" width="100" align="center" />
-        <el-table-column prop="name" label="页面标题" min-width="200" />
-        <el-table-column label="运营状态" width="120" align="center">
+        <el-table-column prop="id" label="页面ID" width="90" align="center" />
+        <el-table-column prop="name" label="页面标题" min-width="240" show-overflow-tooltip />
+        <el-table-column label="运营状态" width="110" align="center">
           <template #default="{ row }">
             <el-tag :type="row.isAbled === 1 ? 'success' : 'info'" size="small">
               {{ row.onlineStatusLabel }}
@@ -97,55 +102,142 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="create_time" label="创建时间" width="180" align="center" />
-        <el-table-column prop="update_time" label="更新时间" width="180" align="center" />
-        <el-table-column label="操作" fixed="right" width="700" align="center">
+        <el-table-column label="创建时间" width="160" align="center">
+          <template #default="{ row }">{{ formatDateTime(row.create_time) }}</template>
+        </el-table-column>
+        <el-table-column label="更新时间" width="160" align="center">
+          <template #default="{ row }">{{ formatDateTime(row.update_time) }}</template>
+        </el-table-column>
+        <el-table-column label="操作" fixed="right" width="240" align="center">
           <template #default="{ row }">
-            <el-button v-if="canEdit" type="primary" size="small" @click="handleEdit(row.id)">装修</el-button>
-            <el-button
-              v-if="canPublish"
-              type="success"
-              size="small"
-              :loading="row.loading"
-              :disabled="row.isAbled === 0 && row.status !== 'offline'"
-              @click="handleToggleActivity(row)"
-            >
-              {{ row.isAbled === 0 ? "上线" : "下线" }}
-            </el-button>
-            <el-button
-              v-if="canEdit && ['draft', 'rejected'].includes(row.status)"
-              size="small"
-              type="warning"
-              @click="handleSubmitReview(row)"
-            >提交审核</el-button>
-            <el-button
-              v-if="canReview && row.status === 'pending_review'"
-              size="small"
-              type="primary"
-              @click="handleReview(row, 'approved')"
-            >通过审核</el-button>
-            <el-button
-              v-if="canReview && row.status === 'pending_review'"
-              size="small"
-              @click="handleReview(row, 'rejected')"
-            >驳回</el-button>
-            <el-button v-if="canPublish && row.status === 'approved'" size="small" type="success" @click="handlePublishApproved(row)">发布</el-button>
-            <el-button v-if="canEdit" size="small" :loading="duplicateLoadingId === row.id" @click="handleDuplicate(row.id)">
-              复制
-            </el-button>
-            <el-button type="info" size="small" @click="handlePreview(row.id)">预览</el-button>
-            <el-button size="small" @click="openPublishLogs(row.id)">发布记录</el-button>
-            <el-button v-if="canEdit" size="small" @click="openLeadDrawer(row.id)">线索</el-button>
-            <el-button size="small" type="warning" @click="openAiDiagnosis(row)">
-              <el-icon><TrendCharts /></el-icon>
-              AI 优化
-            </el-button>
-            <el-button v-if="canPublish" size="small" type="warning" @click="handleRollbackLatest(row)">回滚到最新发布</el-button>
-            <el-popconfirm v-if="canPublish" title="确定要删除这个页面吗？" @confirm="handleDelete(row.id)">
-              <template #reference>
-                <el-button type="danger" size="small">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <div class="row-actions">
+              <el-button v-if="canEdit" link type="primary" size="small" @click="handleEdit(row.id)">
+                编辑
+              </el-button>
+              <el-button link type="primary" size="small" @click="handlePreview(row.id)">
+                预览
+              </el-button>
+
+              <!-- 当前流程的主要动作：沿用原有状态与权限分支，只调整展示位置 -->
+              <el-button
+                v-if="getPrimaryAction(row) === 'submit-review'"
+                link
+                type="primary"
+                size="small"
+                @click="handleSubmitReview(row)"
+              >
+                提交审核
+              </el-button>
+              <el-button
+                v-else-if="getPrimaryAction(row) === 'approve'"
+                link
+                type="primary"
+                size="small"
+                @click="handleReview(row, 'approved')"
+              >
+                通过审核
+              </el-button>
+              <el-button
+                v-else-if="getPrimaryAction(row) === 'publish'"
+                link
+                type="primary"
+                size="small"
+                @click="handlePublishApproved(row)"
+              >
+                发布
+              </el-button>
+
+              <el-dropdown
+                trigger="click"
+                placement="bottom-end"
+                popper-class="activity-more-menu"
+                class="row-more"
+              >
+                <el-button link size="small" class="more-trigger" aria-label="更多操作">
+                  更多
+                  <el-icon class="more-icon"><ArrowDown /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <!-- 流程动作：成为行内主动作时不再重复出现 -->
+                    <el-dropdown-item
+                      v-if="
+                        canEdit &&
+                        ['draft', 'rejected'].includes(row.status) &&
+                        getPrimaryAction(row) !== 'submit-review'
+                      "
+                      @click="handleSubmitReview(row)"
+                    >
+                      提交审核
+                    </el-dropdown-item>
+                    <el-dropdown-item
+                      v-if="
+                        canReview &&
+                        row.status === 'pending_review' &&
+                        getPrimaryAction(row) !== 'approve'
+                      "
+                      @click="handleReview(row, 'approved')"
+                    >
+                      通过审核
+                    </el-dropdown-item>
+                    <el-dropdown-item
+                      v-if="canReview && row.status === 'pending_review'"
+                      @click="handleReview(row, 'rejected')"
+                    >
+                      驳回
+                    </el-dropdown-item>
+                    <el-dropdown-item
+                      v-if="
+                        canPublish &&
+                        row.status === 'approved' &&
+                        getPrimaryAction(row) !== 'publish'
+                      "
+                      @click="handlePublishApproved(row)"
+                    >
+                      发布
+                    </el-dropdown-item>
+
+                    <el-dropdown-item
+                      v-if="canEdit"
+                      :disabled="duplicateLoadingId === row.id"
+                      divided
+                      @click="handleDuplicate(row.id)"
+                    >
+                      复制
+                    </el-dropdown-item>
+                    <el-dropdown-item v-if="canEdit" @click="openLeadDrawer(row.id)">
+                      线索
+                    </el-dropdown-item>
+
+                    <el-dropdown-item divided @click="openPublishLogs(row.id)">
+                      发布记录
+                    </el-dropdown-item>
+                    <el-dropdown-item @click="openAiDiagnosis(row)">
+                      优化建议
+                    </el-dropdown-item>
+
+                    <!-- 上线/下线：保留原有禁用条件（已下线且内容状态非 offline 时禁用） -->
+                    <el-dropdown-item
+                      v-if="canPublish"
+                      divided
+                      :disabled="row.isAbled === 0 && row.status !== 'offline'"
+                      @click="handleToggleActivity(row)"
+                    >
+                      {{ row.isAbled === 0 ? "上线" : "下线" }}
+                    </el-dropdown-item>
+
+                    <el-dropdown-item
+                      v-if="canPublish"
+                      divided
+                      style="color: var(--el-color-danger)"
+                      @click="confirmAndDelete(row)"
+                    >
+                      删除
+                    </el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -428,7 +520,7 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import TemplatePicker from "@/components/TemplatePicker.vue";
 import { useRoute, useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
-import { Plus, Refresh, Search, TrendCharts } from "@element-plus/icons-vue";
+import { ArrowDown, Plus, Refresh, Search } from "@element-plus/icons-vue";
 import type {
   AiAdviceCategory,
   AiAdviceSeverity,
@@ -615,6 +707,28 @@ const getRowReviewNote = (row: ActivityRow): string => {
   return typeof note === "string" && note.trim() ? note : "";
 };
 
+type RowPrimaryAction = "submit-review" | "approve" | "publish" | null;
+
+/**
+ * 行内展示的「当前流程动作」。
+ * 分支与改造前的散落按钮条件一一对应，只决定谁出现在行内，不新增业务规则：
+ * - 待审核且可审核 → 通过审核（驳回留在更多菜单）
+ * - 草稿/已驳回且可编辑 → 提交审核
+ * - 审核通过且可发布 → 发布
+ */
+const getPrimaryAction = (row: ActivityRow): RowPrimaryAction => {
+  if (canReview.value && row.status === "pending_review") {
+    return "approve";
+  }
+  if (canEdit.value && ["draft", "rejected"].includes(row.status)) {
+    return "submit-review";
+  }
+  if (canPublish.value && row.status === "approved") {
+    return "publish";
+  }
+  return null;
+};
+
 const handleSubmitReview = async (row: ActivityRow) => {
   try {
     const { value } = await ElMessageBox.prompt("可填写给审核人的说明", "提交审核", { inputType: "textarea", confirmButtonText: "提交", cancelButtonText: "取消" });
@@ -771,6 +885,24 @@ const handleDelete = async (id: number) => {
     const errorMessage = error instanceof Error ? error.message : "删除失败";
     ElMessage.error(errorMessage);
   }
+};
+
+/**
+ * 删除入口收进「更多」菜单后，把原来的 popconfirm 换成同文案的确认弹窗：
+ * 菜单项点击会立即关闭下拉层，浮层内的 popconfirm 无法稳定展示。
+ * 确认文案、权限条件与后续处理均保持原样。
+ */
+const confirmAndDelete = async (row: ActivityRow) => {
+  try {
+    await ElMessageBox.confirm("确定要删除这个页面吗？", "删除确认", {
+      confirmButtonText: "删除",
+      cancelButtonText: "取消",
+      type: "warning",
+    });
+  } catch {
+    return;
+  }
+  await handleDelete(row.id);
 };
 
 const handleDuplicate = async (id: number) => {
@@ -1246,17 +1378,6 @@ const rollbackVersion = async (versionId: string) => {
   }
 };
 
-const handleRollbackLatest = async (row: ActivityRow) => {
-  const response = await getPagePublishLogs(row.id);
-  const logs = response.data ?? [];
-  if (logs.length === 0) {
-    ElMessage.info("暂无可回滚的发布记录");
-    return;
-  }
-  activeLogPageId.value = row.id;
-  await rollbackVersion(String(logs[0].versionId));
-};
-
 const previewVersion = (versionId: string) => {
   if (!activeLogPageId.value) {
     return;
@@ -1271,9 +1392,30 @@ const previewVersion = (versionId: string) => {
   window.open(url.href, "_blank");
 };
 
-const formatTime = (timestamp: number) => {
-  return new Date(timestamp).toLocaleString("zh-CN", { hour12: false });
+const pad2 = (value: number) => String(value).padStart(2, "0");
+
+/**
+ * 时间统一展示为 YYYY-MM-DD HH:mm。
+ * 后端 create_time / update_time 为 timestamptz 序列化的 ISO 字符串，
+ * 这里交给 Date 解析后按浏览器本地时区输出（不是截取 ISO 字符串）。
+ * 缺失或无法解析的值统一显示占位符，避免出现 Invalid Date。
+ */
+const formatDateTime = (value: string | number | null | undefined): string => {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+  const timestamp = typeof value === "number" ? value : Date.parse(String(value));
+  if (!Number.isFinite(timestamp)) {
+    return "-";
+  }
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) {
+    return "-";
+  }
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 };
+
+const formatTime = (timestamp: number) => formatDateTime(timestamp);
 
 const formatMap = (map: Record<string, string> | null) => {
   if (!map) {
@@ -1310,6 +1452,37 @@ watch(
 </script>
 
 <style scoped>
+/*
+ * 筛选控件宽度：Element Plus 的组件样式在运行时注入，会覆盖 Tailwind 的 w-* 工具类，
+ * 这里用带作用域的类给出可读宽度（scoped 属性选择器特异性更高）。
+ */
+.filter-control-name {
+  width: 240px;
+}
+
+.filter-control-status {
+  width: 176px;
+}
+
+/* 操作列：文字按钮单行排列，避免换行导致行高不一致 */
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.more-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.more-icon {
+  font-size: 12px;
+}
+
 .log-card {
   border: 1px solid #ebeef5;
   border-radius: 8px;
@@ -1419,5 +1592,12 @@ watch(
     align-items: flex-start;
     flex-direction: column;
   }
+}
+</style>
+
+<style>
+/* 下拉浮层挂到 body 下，scoped 选不到；只作用于本页指定的 popper 类 */
+.activity-more-menu {
+  min-width: 128px;
 }
 </style>

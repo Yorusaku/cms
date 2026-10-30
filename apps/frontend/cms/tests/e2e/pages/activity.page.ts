@@ -63,27 +63,60 @@ export class ActivityPage {
     await rows
       .nth(rowIndex)
       .getByRole("button")
-      .filter({ hasText: /装修|编辑/i })
+      .filter({ hasText: /编辑/i })
+      .first()
+      .click();
+  }
+
+  /** 收起已展开的「更多」菜单：点页面左侧空白区（远离表格与浮层） */
+  async closeRowMoreMenu() {
+    if ((await this.page.locator(".activity-more-menu:visible").count()) === 0) return;
+    await this.page.mouse.click(12, 400);
+    await expect(this.page.locator(".activity-more-menu:visible")).toHaveCount(0, {
+      timeout: 5000,
+    });
+  }
+
+  /**
+   * 展开行内「更多」下拉（低频操作入口）。
+   * 展开前先收起上一次的菜单：菜单浮层会覆盖下方行，
+   * 直接点被覆盖行的「更多」会命中浮层而不是按钮。
+   */
+  async openRowMoreMenu(rowIndex: number) {
+    await this.closeRowMoreMenu();
+    await this.getTableRows()
+      .nth(rowIndex)
+      .locator(".more-trigger")
+      .first()
+      .click();
+    await expect(this.page.locator(".activity-more-menu:visible")).toHaveCount(1, {
+      timeout: 5000,
+    });
+  }
+
+  /** 点击「更多」菜单中的指定项（按可见菜单文本匹配） */
+  async clickRowMenuItem(rowIndex: number, label: string) {
+    await this.openRowMoreMenu(rowIndex);
+    await this.page
+      .locator(".activity-more-menu:visible")
+      .last()
+      .locator(".el-dropdown-menu__item")
+      .filter({ hasText: label })
       .first()
       .click();
   }
 
   async clickDeletePage(rowIndex: number) {
-    const rows = this.getTableRows();
-    await rows
-      .nth(rowIndex)
-      .getByRole("button")
-      .filter({ hasText: /删除|delete/i })
+    await this.clickRowMenuItem(rowIndex, "删除");
+
+    // 删除入口移入「更多」后，确认改用 MessageBox（文案与原 popconfirm 一致）
+    const box = this.page.locator(".el-message-box:visible").last();
+    await expect(box).toBeVisible({ timeout: 5000 });
+    await box
+      .locator(".el-message-box__btns button")
+      .filter({ hasText: "删除" })
       .first()
       .click();
-
-    const confirmBtn = this.page
-      .getByRole("button")
-      .filter({ hasText: /确定|确认|ok/i })
-      .first();
-    if (await confirmBtn.isVisible({ timeout: 1000 }).catch(() => false)) {
-      await confirmBtn.click();
-    }
   }
 
   async clickToggleOnline(rowIndex: number) {
@@ -93,13 +126,7 @@ export class ActivityPage {
   }
 
   async clickPublishLogs(rowIndex: number) {
-    const rows = this.getTableRows();
-    await rows
-      .nth(rowIndex)
-      .getByRole("button")
-      .filter({ hasText: /发布记录|publish/i })
-      .first()
-      .click();
+    await this.clickRowMenuItem(rowIndex, "发布记录");
   }
 
   /** 按页面名定位行下标（用于审核/发布后表格刷新导致的行序变化），找不到返回 -1 */

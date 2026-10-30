@@ -265,6 +265,15 @@ const mountActivity = async () => {
         ElDrawer: ElDrawerStub,
         ElTable: ElTableStub,
         ElTableColumn: ElTableColumnStub,
+        // 菜单项保留为可点击按钮，业务断言覆盖菜单内的权限与处理逻辑；
+        // 下拉浮层的开关、定位由 activity-layout.spec.ts 验证。
+        ElDropdown: defineComponent({
+          setup(_props, { slots }) {
+            return () => h('div', [slots.default?.(), slots.dropdown?.()]);
+          },
+        }),
+        ElDropdownMenu: simpleWrap(),
+        ElDropdownItem: ElButtonStub,
         ElCard: simpleWrap(),
         ElForm: simpleWrap("form"),
         ElFormItem: simpleWrap(),
@@ -448,7 +457,7 @@ describe("Activity AI 交互", () => {
     });
     const wrapper = await mountActivity();
 
-    await clickButtonByText(wrapper, "AI 优化");
+    await clickButtonByText(wrapper, "优化建议");
 
     expect(mocks.aiDiagnosePage).toHaveBeenCalledWith({ pageId: 7 });
     expect(wrapper.text()).toContain("AI 优化建议");
@@ -475,7 +484,7 @@ describe("Activity AI 交互", () => {
     });
     const wrapper = await mountActivity();
 
-    await clickButtonByText(wrapper, "AI 优化");
+    await clickButtonByText(wrapper, "优化建议");
 
     expect(mocks.messageError).toHaveBeenCalledWith("诊断失败");
     expect(wrapper.text()).toContain("暂无优化建议");
@@ -819,7 +828,7 @@ describe("Activity 角色门禁", () => {
     [
       "新增页面",
       "AI 新建",
-      "装修",
+      "编辑",
       "复制",
       "删除",
       "提交审核",
@@ -831,7 +840,7 @@ describe("Activity 角色门禁", () => {
       "下线",
     ].forEach((label) => expect(labels).not.toContain(label));
     // 只读入口保留
-    ["发布记录", "预览", "AI 优化"].forEach((label) =>
+    ["发布记录", "预览", "优化建议"].forEach((label) =>
       expect(labels).toContain(label),
     );
   });
@@ -844,7 +853,7 @@ describe("Activity 角色门禁", () => {
     ]);
 
     const labels = buttonTexts(wrapper);
-    ["新增页面", "AI 新建", "装修", "复制", "提交审核", "线索"].forEach((label) =>
+    ["新增页面", "AI 新建", "编辑", "复制", "提交审核", "线索"].forEach((label) =>
       expect(labels).toContain(label),
     );
     // 审核 / 发布 / 回滚 / 删除 / 上下线仍为管理员专属
@@ -859,9 +868,11 @@ describe("Activity 角色门禁", () => {
     ]);
 
     const labels = buttonTexts(wrapper);
-    ["通过审核", "驳回", "回滚到最新发布", "删除"].forEach((label) =>
+    ["通过审核", "驳回", "发布记录", "删除"].forEach((label) =>
       expect(labels).toContain(label),
     );
+    // 回滚已收纳到发布记录；具体版本的服务端回滚断言见上方用例。
+    expect(labels).not.toContain("回滚到最新发布");
   });
 
   it("本地角色缺失时按 viewer 最小权限处理", async () => {
