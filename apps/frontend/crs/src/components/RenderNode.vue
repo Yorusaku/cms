@@ -1,76 +1,75 @@
 <script setup lang="ts">
-import { computed, defineComponent, h, inject, onMounted, onUnmounted, ref, watch } from "vue";
-import type { IComponentSchemaV2 } from "@cms/types";
-import { getMaterialAsyncComponent, resolveMaterialRuntimeProps } from "@cms/ui";
-import { usePageStore } from "@/store/usePageStore";
-import { trackEvent } from "@/utils/tracking";
+import { computed, defineComponent, h, inject, onMounted, onUnmounted, ref, watch } from 'vue'
+import type { IComponentSchemaV2 } from '@cms/types'
+import { getMaterialAsyncComponent, resolveMaterialRuntimeProps } from '@cms/ui'
+import { usePageStore } from '@/store/usePageStore'
+import { trackEvent } from '@/utils/tracking'
 
 const FallbackComponent = defineComponent({
-  name: "CrsMaterialFallback",
+  name: 'CrsMaterialFallback',
   setup() {
     return () =>
       h(
-        "div",
+        'div',
         {
-          class: "material-fallback",
+          class: 'material-fallback'
         },
-        "未找到对应物料组件",
-      );
-  },
-});
+        '未找到对应物料组件'
+      )
+  }
+})
 
 interface Props {
-  nodeId: string;
-  componentMap: Record<string, IComponentSchemaV2>;
-  pageId?: number;
-  publishedVersionId?: string;
+  nodeId: string
+  componentMap: Record<string, IComponentSchemaV2>
+  pageId?: number
+  publishedVersionId?: string
   /** 祖先组件链（自顶向下，格式 `type:id`），供埋点携带上下文 */
-  ancestorPath?: string[];
+  ancestorPath?: string[]
 }
 
-const props = defineProps<Props>();
-const pageStore = usePageStore();
+const props = defineProps<Props>()
+const pageStore = usePageStore()
 const sendSelectEvent = inject<(componentId: string) => Promise<void> | void>(
-  "sendSelectEvent",
-  () => {},
-);
+  'sendSelectEvent',
+  () => {}
+)
 
-const currentNode = computed(() => props.componentMap[props.nodeId]);
+const currentNode = computed(() => props.componentMap[props.nodeId])
 
 /** 子节点继承的祖先链：当前节点追加到父链尾部 */
 const childAncestorPath = computed(() => {
-  const node = currentNode.value;
-  return node ? [...(props.ancestorPath ?? []), `${node.type}:${node.id}`] : props.ancestorPath ?? [];
-});
+  const node = currentNode.value
+  return node
+    ? [...(props.ancestorPath ?? []), `${node.type}:${node.id}`]
+    : (props.ancestorPath ?? [])
+})
 
 const resolveComponent = (type: string) => {
-  return getMaterialAsyncComponent(type) || FallbackComponent;
-};
+  return getMaterialAsyncComponent(type) || FallbackComponent
+}
 
 /**
  * 需要页面上下文才能完成提交的物料：线索表单与业务表单。
  * 发布页/预览页都必须拿到真实 pageId 与 publishedVersionId。
  */
-const FORM_MATERIAL_TYPES = ["LeadForm", "BusinessForm"];
+const FORM_MATERIAL_TYPES = ['LeadForm', 'BusinessForm']
 
 const shouldRender = computed(() => {
-  if (!currentNode.value) return false;
-  if (typeof currentNode.value.condition === "boolean") {
-    return currentNode.value.condition;
+  if (!currentNode.value) return false
+  if (typeof currentNode.value.condition === 'boolean') {
+    return currentNode.value.condition
   }
-  return true;
-});
+  return true
+})
 
-const mergedProps = ref<Record<string, unknown>>({});
+const mergedProps = ref<Record<string, unknown>>({})
 
 const updateMergedProps = () => {
-  if (!currentNode.value) return;
+  if (!currentNode.value) return
 
-  const baseProps = resolveMaterialRuntimeProps(
-    currentNode.value.type,
-    currentNode.value.props,
-  );
-  const linkageState = pageStore.linkageEngine.getComponentState(props.nodeId);
+  const baseProps = resolveMaterialRuntimeProps(currentNode.value.type, currentNode.value.props)
+  const linkageState = pageStore.linkageEngine.getComponentState(props.nodeId)
 
   mergedProps.value = {
     ...baseProps,
@@ -78,33 +77,39 @@ const updateMergedProps = () => {
     ...(FORM_MATERIAL_TYPES.includes(currentNode.value.type)
       ? {
           pageId: props.pageId,
-          publishedVersionId: props.publishedVersionId,
+          publishedVersionId: props.publishedVersionId
         }
-      : {}),
-  };
-};
+      : {})
+  }
+}
 
 const handleClick = async () => {
   if (currentNode.value && props.pageId) {
-    const isCta = ["Button", "LeadForm", "FloatLayer"].includes(currentNode.value.type);
+    const isCta = ['Button', 'LeadForm', 'FloatLayer'].includes(currentNode.value.type)
     void trackEvent({
-      eventType: isCta ? "cta_click" : "component_click",
+      eventType: isCta ? 'cta_click' : 'component_click',
       pageId: props.pageId,
       publishedVersionId: props.publishedVersionId,
       componentId: currentNode.value.id,
       componentType: currentNode.value.type,
-      ctaText: isCta ? String(currentNode.value.props?.text ?? currentNode.value.props?.title ?? currentNode.value.type) : undefined,
+      ctaText: isCta
+        ? String(
+            currentNode.value.props?.text ??
+              currentNode.value.props?.title ??
+              currentNode.value.type
+          )
+        : undefined,
       payload: {
-        source: "crs_component",
+        source: 'crs_component',
         // 递归埋点上下文：带上祖先链，便于区分「哪个容器里的按钮被点」
-        ancestorPath: props.ancestorPath ?? [],
-      },
-    });
+        ancestorPath: props.ancestorPath ?? []
+      }
+    })
   }
   if (sendSelectEvent) {
-    await sendSelectEvent(props.nodeId);
+    await sendSelectEvent(props.nodeId)
   }
-};
+}
 
 /**
  * 列表类物料的运行时事件桥接：组件 emit 的运行时状态 → 联动引擎，
@@ -112,41 +117,41 @@ const handleClick = async () => {
  * 只桥接物料定义中登记的受控事件（runtimeEventProperties），不设计通用事件编排。
  */
 const handleFilterChange = (payload: { filteredCount: number }) => {
-  if (!currentNode.value) return;
+  if (!currentNode.value) return
   pageStore.linkageEngine.triggerLinkage(
     currentNode.value.id,
-    "filteredCount",
-    payload.filteredCount,
-  );
-};
+    'filteredCount',
+    payload.filteredCount
+  )
+}
 
-let unsubscribe: (() => void) | null = null;
+let unsubscribe: (() => void) | null = null
 
 onMounted(() => {
-  updateMergedProps();
+  updateMergedProps()
   unsubscribe = pageStore.linkageEngine.subscribe(props.nodeId, () => {
-    updateMergedProps();
-  });
-});
+    updateMergedProps()
+  })
+})
 
 onUnmounted(() => {
   if (unsubscribe) {
-    unsubscribe();
+    unsubscribe()
   }
-});
+})
 
 watch(
   () => currentNode.value?.props,
   (newProps, oldProps) => {
-    if (!newProps || !oldProps) return;
-    Object.keys(newProps).forEach((key) => {
+    if (!newProps || !oldProps) return
+    Object.keys(newProps).forEach(key => {
       if (newProps[key] !== oldProps[key]) {
-        pageStore.linkageEngine.triggerLinkage(props.nodeId, key, newProps[key]);
+        pageStore.linkageEngine.triggerLinkage(props.nodeId, key, newProps[key])
       }
-    });
+    })
   },
-  { deep: true },
-);
+  { deep: true }
+)
 </script>
 
 <template>

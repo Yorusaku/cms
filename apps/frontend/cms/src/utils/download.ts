@@ -1,22 +1,22 @@
-import http from "@/utils/http";
+import http from '@/utils/http'
 
 export interface DownloadFile {
-  blob: Blob;
-  filename: string;
+  blob: Blob
+  filename: string
 }
 
 /** 现代浏览器支持 blob.text()，jsdom（单测环境）没有该 API，回退 FileReader */
 const readBlobText = (blob: Blob): Promise<string> => {
-  if (typeof blob.text === "function") {
-    return blob.text();
+  if (typeof blob.text === 'function') {
+    return blob.text()
   }
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(reader.error);
-    reader.readAsText(blob);
-  });
-};
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result ?? ''))
+    reader.onerror = () => reject(reader.error)
+    reader.readAsText(blob)
+  })
+}
 
 /**
  * 下载后端文件流（CSV 导出等）。
@@ -32,43 +32,43 @@ const readBlobText = (blob: Blob): Promise<string> => {
 export const downloadFile = async (
   url: string,
   params: Record<string, unknown>,
-  filename: string,
+  filename: string
 ): Promise<DownloadFile> => {
-  const blob = await http.download(url, { params } as never);
+  const blob = await http.download(url, { params } as never)
 
-  if (blob.type.includes("application/json")) {
-    const text = await readBlobText(blob);
-    let message = "下载失败";
+  if (blob.type.includes('application/json')) {
+    const text = await readBlobText(blob)
+    let message = '下载失败'
     try {
-      const body = JSON.parse(text) as { message?: string };
+      const body = JSON.parse(text) as { message?: string }
       if (body.message) {
-        message = body.message;
+        message = body.message
       }
     } catch {
       // 解析失败时保留默认文案
     }
-    throw new Error(message);
+    throw new Error(message)
   }
 
-  return { blob, filename };
-};
+  return { blob, filename }
+}
 
 /** 触发浏览器保存文件 */
 export const saveBlob = (blob: Blob, filename: string) => {
-  const objectUrl = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = objectUrl;
-  link.download = filename;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
-  URL.revokeObjectURL(objectUrl);
-};
+  const objectUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(objectUrl)
+}
 
 /** 生成带时间戳的导出文件名，如 `线索导出-20260930-2119.csv` */
-export const buildExportFilename = (prefix: string, extension = "csv") => {
-  const now = new Date();
-  const pad = (value: number) => String(value).padStart(2, "0");
-  const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
-  return `${prefix}-${stamp}.${extension}`;
-};
+export const buildExportFilename = (prefix: string, extension = 'csv') => {
+  const now = new Date()
+  const pad = (value: number) => String(value).padStart(2, '0')
+  const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`
+  return `${prefix}-${stamp}.${extension}`
+}

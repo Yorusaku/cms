@@ -1,80 +1,80 @@
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from 'vitest'
 
-vi.mock("vue-router", () => ({
+vi.mock('vue-router', () => ({
   useRoute: () => ({
-    query: { id: "1" },
-    path: "/decorate",
+    query: { id: '1' },
+    path: '/decorate',
     params: {},
-    name: "Decorate",
+    name: 'Decorate'
   }),
   useRouter: () => ({
     push: vi.fn(),
     replace: vi.fn(),
     go: vi.fn(),
     back: vi.fn(),
-    resolve: vi.fn(),
-  }),
-}));
-import { mount } from "@vue/test-utils";
-import { createPinia, setActivePinia } from "pinia";
-import { defineComponent, h } from "vue";
-import { getMaterialDefaults } from "@cms/ui";
-import { usePageStore } from "../src/store/usePageStore";
-import RightConfig from "../src/views/Decorate/components/RightConfig.vue";
+    resolve: vi.fn()
+  })
+}))
+import { mount } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
+import { defineComponent, h } from 'vue'
+import { getMaterialDefaults } from '@cms/ui'
+import { usePageStore } from '../src/store/usePageStore'
+import RightConfig from '../src/views/Decorate/components/RightConfig.vue'
 
 const MaterialConfigRendererStub = defineComponent({
-  name: "MaterialConfigRenderer",
+  name: 'MaterialConfigRenderer',
   props: {
     materialType: {
       type: String,
-      required: true,
-    },
+      required: true
+    }
   },
-  emits: ["update"],
+  emits: ['update'],
   setup(props, { emit }) {
     return () =>
       h(
-        "button",
+        'button',
         {
-          type: "button",
-          class: "material-config-renderer-stub",
-          onClick: () => emit("update", { height: "360px" }),
+          type: 'button',
+          class: 'material-config-renderer-stub',
+          onClick: () => emit('update', { height: '360px' })
         },
-        props.materialType,
-      );
-  },
-});
+        props.materialType
+      )
+  }
+})
 
-describe("RightConfig", () => {
-  it("should update active component props through the shared config renderer", async () => {
-    const pinia = createPinia();
-    setActivePinia(pinia);
+describe('RightConfig', () => {
+  it('should update active component props through the shared config renderer', async () => {
+    const pinia = createPinia()
+    setActivePinia(pinia)
 
-    const pageStore = usePageStore(pinia);
+    const pageStore = usePageStore(pinia)
     pageStore.addComponent({
       index: 0,
-      type: "carousel",
-      props: getMaterialDefaults("Carousel"),
-    });
+      type: 'carousel',
+      props: getMaterialDefaults('Carousel')
+    })
 
-    const activeId = pageStore.activeComponentId;
-    expect(activeId).toBeTruthy();
+    const activeId = pageStore.activeComponentId
+    expect(activeId).toBeTruthy()
 
     const wrapper = mount(RightConfig, {
       global: {
         plugins: [pinia],
         stubs: {
           MaterialConfigRenderer: MaterialConfigRendererStub,
-          SetPageInfo: true,
-        },
-      },
-    });
+          SetPageInfo: true
+        }
+      }
+    })
 
-    await wrapper.find(".material-config-renderer-stub").trigger("click");
+    await wrapper.find('.material-config-renderer-stub').trigger('click')
 
-    expect(pageStore.pageSchema.componentMap[activeId!].type).toBe("Carousel");
+    expect(pageStore.pageSchema.componentMap[activeId!].type).toBe('Carousel')
     expect(pageStore.pageSchema.componentMap[activeId!].props).toMatchObject({
-      height: "360px",
-    });
-  });
-});
+      height: '360px'
+    })
+  })
+})

@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod'
 
 // ==================== API 响应 Schema ====================
 
@@ -8,58 +8,62 @@ export const PaginatedDataSchema = <T extends z.ZodType>(itemSchema: T) =>
     list: z.array(itemSchema),
     total: z.number(),
     pageNum: z.number(),
-    pageSize: z.number(),
-  });
+    pageSize: z.number()
+  })
 
 /** 统一 API 响应 */
 export const ApiResponseSchema = <T extends z.ZodType>(dataSchema: T) =>
   z.object({
     code: z.number(),
     message: z.string(),
-    data: dataSchema,
-  });
+    data: dataSchema
+  })
 
 /** 页面列表项 */
-export const PageItemSchema = z.object({
-  id: z.number(),
-  name: z.string(),
-  isAbled: z.number(),
-  create_time: z.string(),
-  update_time: z.string(),
-}).loose();
+export const PageItemSchema = z
+  .object({
+    id: z.number(),
+    name: z.string(),
+    isAbled: z.number(),
+    create_time: z.string(),
+    update_time: z.string()
+  })
+  .loose()
 
 /** 页面列表响应 */
-export const PageListResponseSchema = ApiResponseSchema(
-  PaginatedDataSchema(PageItemSchema)
-);
+export const PageListResponseSchema = ApiResponseSchema(PaginatedDataSchema(PageItemSchema))
 
 /** 页面详情响应 */
 export const PageDetailResponseSchema = ApiResponseSchema(
-  z.object({
-    id: z.number(),
-    name: z.string(),
-    schema: z.string(),
-    isAbled: z.number(),
-    create_time: z.string(),
-    update_time: z.string(),
-  }).loose()
-);
+  z
+    .object({
+      id: z.number(),
+      name: z.string(),
+      schema: z.string(),
+      isAbled: z.number(),
+      create_time: z.string(),
+      update_time: z.string()
+    })
+    .loose()
+)
 
 /** 登录响应 */
 export const LoginResponseSchema = ApiResponseSchema(
   z.object({
-    token: z.string(),
+    token: z.string()
   })
-);
+)
 
 // ==================== Schema V2 核心协议 Schema ====================
 
 /** 组件行为 */
-export const ActionSchemaSchema = z.object({
-  type: z.string(),
-  config: z.record(z.string(), z.unknown()),
-  condition: z.union([z.boolean(), z.string()]).optional(),
-}).loose();
+export const ActionSchemaSchema = z
+  .object({
+    type: z.string(),
+    config: z.record(z.string(), z.unknown()),
+    condition: z.union([z.boolean(), z.string()]).optional()
+  })
+  .loose()
 
 /** 组件联动配置 */
 export const ComponentLinkageSchema = z.object({
@@ -71,44 +75,48 @@ export const ComponentLinkageSchema = z.object({
   transformFn: z.string().optional(),
   condition: z
     .object({
-      type: z.enum(["simple", "complex"]),
+      type: z.enum(['simple', 'complex']),
       expression: z.string().optional(),
-      operator: z.enum(["AND", "OR"]).optional(),
+      operator: z.enum(['AND', 'OR']).optional()
     })
     .loose()
     .optional(),
-  enabled: z.boolean(),
-});
+  enabled: z.boolean()
+})
 
 /** V2 组件 Schema */
-export const ComponentSchemaV2Schema = z.object({
-  id: z.string(),
-  type: z.string(),
-  props: z.record(z.string(), z.unknown()),
-  parentId: z.string().nullable(),
-  children: z.array(z.string()),
-  styles: z.record(z.string(), z.string()).optional(),
-  events: z.record(z.string(), z.array(ActionSchemaSchema)).optional(),
-  condition: z.union([z.boolean(), z.string()]).optional(),
-  track: z.record(z.string(), z.unknown()).optional(),
-  state: z.record(z.string(), z.unknown()).optional(),
-}).loose();
+export const ComponentSchemaV2Schema = z
+  .object({
+    id: z.string(),
+    type: z.string(),
+    props: z.record(z.string(), z.unknown()),
+    parentId: z.string().nullable(),
+    children: z.array(z.string()),
+    styles: z.record(z.string(), z.string()).optional(),
+    events: z.record(z.string(), z.array(ActionSchemaSchema)).optional(),
+    condition: z.union([z.boolean(), z.string()]).optional(),
+    track: z.record(z.string(), z.unknown()).optional(),
+    state: z.record(z.string(), z.unknown()).optional()
+  })
+  .loose()
 
 /** V2 页面 Schema */
-export const PageSchemaV2Schema = z.object({
-  version: z.literal("2.0.0"),
-  pageConfig: z.record(z.string(), z.unknown()),
-  componentMap: z.record(z.string(), ComponentSchemaV2Schema),
-  rootIds: z.array(z.string()),
-  state: z.record(z.string(), z.unknown()).optional(),
-  linkages: z.array(ComponentLinkageSchema).optional(),
-  tracking: z
-    .object({
-      enabled: z.boolean().optional(),
-      context: z.record(z.string(), z.unknown()).optional(),
-    })
-    .optional(),
-}).loose();
+export const PageSchemaV2Schema = z
+  .object({
+    version: z.literal('2.0.0'),
+    pageConfig: z.record(z.string(), z.unknown()),
+    componentMap: z.record(z.string(), ComponentSchemaV2Schema),
+    rootIds: z.array(z.string()),
+    state: z.record(z.string(), z.unknown()).optional(),
+    linkages: z.array(ComponentLinkageSchema).optional(),
+    tracking: z
+      .object({
+        enabled: z.boolean().optional(),
+        context: z.record(z.string(), z.unknown()).optional()
+      })
+      .optional()
+  })
+  .loose()
 
 // ==================== 物料定义 Schema ====================
 
@@ -118,53 +126,50 @@ export const MaterialVisibilityRuleSchema = z.object({
   equals: z.unknown().optional(),
   notEquals: z.unknown().optional(),
   in: z.array(z.unknown()).optional(),
-  truthy: z.boolean().optional(),
-});
+  truthy: z.boolean().optional()
+})
 
 /** 字段选项 */
 export const MaterialFieldOptionSchema = z.object({
   label: z.string(),
-  value: z.union([z.string(), z.number(), z.boolean()]),
-});
+  value: z.union([z.string(), z.number(), z.boolean()])
+})
 
 // 由于物料编辑器配置的联合类型比较复杂，使用宽松的 loose schema
 export const MaterialEditorConfigSchema = z
   .object({
-    mode: z.enum(["schema", "legacy"]),
+    mode: z.enum(['schema', 'legacy'])
   })
-  .loose();
+  .loose()
 
 /** 物料定义（宽松校验） */
-export const MaterialDefinitionSchema = z.object({
-  type: z.string(),
-  group: z.enum(["basic", "marketing", "business"]),
-  label: z.string(),
-  icon: z.string(),
-  maxCount: z.number(),
-  defaultProps: z.record(z.string(), z.unknown()),
-}).loose();
+export const MaterialDefinitionSchema = z
+  .object({
+    type: z.string(),
+    group: z.enum(['basic', 'marketing', 'business']),
+    label: z.string(),
+    icon: z.string(),
+    maxCount: z.number(),
+    defaultProps: z.record(z.string(), z.unknown())
+  })
+  .loose()
 
 // ==================== 辅助校验函数 ====================
 
 /** 安全解析页面 Schema，失败时返回 null */
-export function safeParsePageSchema(
-  data: unknown
-): z.infer<typeof PageSchemaV2Schema> | null {
-  const result = PageSchemaV2Schema.safeParse(data);
+export function safeParsePageSchema(data: unknown): z.infer<typeof PageSchemaV2Schema> | null {
+  const result = PageSchemaV2Schema.safeParse(data)
   if (result.success) {
-    return result.data;
+    return result.data
   }
-  return null;
+  return null
 }
 
 /** 安全解析 API 响应 */
-export function safeParseApiResponse<T>(
-  schema: z.ZodType<T>,
-  data: unknown
-): T | null {
-  const result = schema.safeParse(data);
+export function safeParseApiResponse<T>(schema: z.ZodType<T>, data: unknown): T | null {
+  const result = schema.safeParse(data)
   if (result.success) {
-    return result.data;
+    return result.data
   }
-  return null;
+  return null
 }

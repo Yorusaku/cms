@@ -5,11 +5,11 @@ import {
   HttpException,
   HttpStatus,
   Logger,
-  UnauthorizedException,
-} from "@nestjs/common";
-import type { Request, Response } from "express";
-import type { ApiResponse } from "@cms/types";
-import { ApiCode } from "@cms/types";
+  UnauthorizedException
+} from '@nestjs/common'
+import type { Request, Response } from 'express'
+import type { ApiResponse } from '@cms/types'
+import { ApiCode } from '@cms/types'
 
 /**
  * 全局异常过滤器。
@@ -25,39 +25,37 @@ import { ApiCode } from "@cms/types";
  */
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  private readonly logger = new Logger("HttpException");
+  private readonly logger = new Logger('HttpException')
 
   catch(exception: unknown, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+    const ctx = host.switchToHttp()
+    const response = ctx.getResponse<Response>()
+    const request = ctx.getRequest<Request>()
 
     const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR
 
     const message =
       exception instanceof UnauthorizedException
-        ? "登录失效，请重新登录"
+        ? '登录失效，请重新登录'
         : exception instanceof HttpException
           ? exception.message
-          : "服务器内部错误";
+          : '服务器内部错误'
 
     const code =
       exception instanceof UnauthorizedException
         ? ApiCode.AUTH_FAILED
         : status === HttpStatus.BAD_REQUEST
           ? ApiCode.VALIDATION_ERROR
-          : ApiCode.SERVER_ERROR;
+          : ApiCode.SERVER_ERROR
 
-    this.writeLog(request, status, code, message, exception);
+    this.writeLog(request, status, code, message, exception)
 
     response.status(HttpStatus.OK).json({
       code,
       message,
-      data: null,
-    } satisfies ApiResponse<null>);
+      data: null
+    } satisfies ApiResponse<null>)
   }
 
   private writeLog(
@@ -65,23 +63,23 @@ export class AllExceptionsFilter implements ExceptionFilter {
     status: number,
     code: number,
     message: string,
-    exception: unknown,
+    exception: unknown
   ): void {
     const payload: Record<string, unknown> = {
       timestamp: new Date().toISOString(),
-      method: request?.method ?? "-",
-      path: request?.originalUrl ?? request?.url ?? "-",
+      method: request?.method ?? '-',
+      path: request?.originalUrl ?? request?.url ?? '-',
       status,
       code,
-      message,
-    };
-
-    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
-      payload.stack = exception instanceof Error ? exception.stack : String(exception);
-      this.logger.error(JSON.stringify(payload));
-      return;
+      message
     }
 
-    this.logger.warn(JSON.stringify(payload));
+    if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
+      payload.stack = exception instanceof Error ? exception.stack : String(exception)
+      this.logger.error(JSON.stringify(payload))
+      return
+    }
+
+    this.logger.warn(JSON.stringify(payload))
   }
 }

@@ -17,18 +17,18 @@ const props = defineProps<Props>()
 const pageBackgroundStyle = computed(() => {
   const config = props.pageSchema.pageConfig || {}
   const styles: Record<string, string> = {}
-  
+
   // 背景颜色
   if (config.backgroundColor && typeof config.backgroundColor === 'string') {
     styles.backgroundColor = config.backgroundColor
   }
-  
+
   // 背景图片
   if (config.backgroundImage && typeof config.backgroundImage === 'string') {
     styles.backgroundImage = `url(${config.backgroundImage})`
     styles.backgroundRepeat = 'no-repeat'
     styles.backgroundSize = 'cover'
-    
+
     // 背景位置
     if (config.backgroundPosition && typeof config.backgroundPosition === 'string') {
       styles.backgroundPosition = config.backgroundPosition
@@ -36,31 +36,28 @@ const pageBackgroundStyle = computed(() => {
       styles.backgroundPosition = 'center top'
     }
   }
-  
+
   return styles
 })
 </script>
 
 <template>
-  <div 
-    class="schema-renderer min-h-screen w-full"
-    :style="pageBackgroundStyle"
-  >
+  <div class="schema-renderer min-h-screen w-full" :style="pageBackgroundStyle">
     <!-- 渲染页面组件 -->
     <div class="page-components">
       <template v-for="nodeId in pageSchema.rootIds" :key="nodeId">
-        <RenderNode 
-          :node-id="nodeId" 
-          :component-map="pageSchema.componentMap" 
+        <RenderNode
+          :node-id="nodeId"
+          :component-map="pageSchema.componentMap"
           :page-id="pageId"
           :published-version-id="publishedVersionId"
         />
       </template>
     </div>
-    
+
     <!-- 空状态提示 -->
-    <div 
-      v-if="pageSchema.rootIds.length === 0" 
+    <div
+      v-if="pageSchema.rootIds.length === 0"
       class="empty-state flex items-center justify-center min-h-screen"
     >
       <div class="text-center text-gray-500">

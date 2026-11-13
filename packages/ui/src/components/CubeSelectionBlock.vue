@@ -3,7 +3,7 @@
     <div
       :style="{
         paddingLeft: `${pageMargin}px`,
-        paddingRight: `${pageMargin}px`,
+        paddingRight: `${pageMargin}px`
       }"
     >
       <div
@@ -14,11 +14,7 @@
           <p>暂无图片</p>
         </div>
       </div>
-      <div
-        v-else
-        class="magic-box relative w-full flex box-border"
-        :class="template"
-      >
+      <div v-else class="magic-box relative w-full flex box-border" :class="template">
         <div
           v-for="(item, index) in imageList"
           :key="index"
@@ -44,33 +40,33 @@
 
 <script setup lang="ts">
 export interface ICubeItem {
-  imageUrl?: string;
-  link?: string;
+  imageUrl?: string
+  link?: string
 }
 
 export interface ICubeSelectionProps {
-  imageList?: ICubeItem[];
-  template?: string;
-  pageMargin?: number;
-  imgMargin?: number;
-  radius?: number;
-  defaultImg?: string;
+  imageList?: ICubeItem[]
+  template?: string
+  pageMargin?: number
+  imgMargin?: number
+  radius?: number
+  defaultImg?: string
 }
 
 const {
   imageList = [],
-  template = "oneLine2",
+  template = 'oneLine2',
   pageMargin = 0,
   imgMargin = 4,
   radius = 4,
-  defaultImg = "",
-} = defineProps<ICubeSelectionProps>();
+  defaultImg = ''
+} = defineProps<ICubeSelectionProps>()
 
-const emit = defineEmits<{ click: [item: ICubeItem, index: number] }>();
+const emit = defineEmits<{ click: [item: ICubeItem, index: number] }>()
 
 const handleClick = (item: ICubeItem, index: number) => {
-  emit("click", item, index);
-};
+  emit('click', item, index)
+}
 </script>
 
 <style scoped>

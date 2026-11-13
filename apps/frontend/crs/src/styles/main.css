@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "@cms/ui/styles/tokens.css";
+@import 'tailwindcss';
+@import '@cms/ui/styles/tokens.css';
 /*
  * 共享物料（packages/ui/src/components/*.vue）用的是 Tailwind 工具类，
  * 例如 NoticeBlock 的 w-4 h-4、flex-1、whitespace-nowrap。

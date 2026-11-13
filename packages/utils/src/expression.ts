@@ -1,7 +1,7 @@
 /**
  * 表达式求值器
  * 安全地执行表达式，支持变量引用和基本运算
- * 
+ *
  * 安全特性：
  * 1. 使用手动解析而非 eval/Function
  * 2. 只允许访问 $state, $props 中的属性
@@ -15,7 +15,7 @@ const DANGEROUS_PROPERTIES = [
   'prototype',
   'caller',
   'callee',
-  'arguments',
+  'arguments'
 ]
 
 /**
@@ -38,11 +38,11 @@ function safeGetProp(obj: unknown, key: string): unknown {
   if (obj === null || obj === undefined) {
     return undefined
   }
-  
+
   if (!isSafeProperty(key)) {
     return undefined
   }
-  
+
   try {
     return (obj as Record<string, unknown>)[key]
   } catch {
@@ -112,8 +112,10 @@ function getVariableValue(path: string, context: ExpressionContext): unknown {
  * 解析字面量值
  */
 function parseLiteral(trimmed: string): unknown {
-  if ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-      (trimmed.startsWith("'") && trimmed.endsWith("'"))) {
+  if (
+    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+    (trimmed.startsWith("'") && trimmed.endsWith("'"))
+  ) {
     return trimmed.slice(1, -1)
   }
 
@@ -155,10 +157,7 @@ function parseVariableReference(trimmed: string, context: ExpressionContext): un
  * - 属性访问: obj.property
  * - 数组访问: array[0]
  */
-function evaluateExpressionInternal(
-  expression: string,
-  context: ExpressionContext,
-): unknown {
+function evaluateExpressionInternal(expression: string, context: ExpressionContext): unknown {
   // 卫语句：处理无效输入
   if (!expression || typeof expression !== 'string') {
     return undefined
@@ -197,31 +196,31 @@ function evaluateExpressionInternal(
     const questionIdx = trimmed.indexOf('?')
     let colonIdx = -1
     let depth = 0
-    
+
     // 寻找匹配的 :（考虑嵌套）
     for (let i = questionIdx + 1; i < trimmed.length; i++) {
       const char = trimmed[i]
       if (char === '?') depth++
       else if (char === ':') depth--
-      
+
       if (depth === -1) {
         colonIdx = i
         break
       }
     }
-    
+
     if (colonIdx > 0) {
       const condExpr = trimmed.slice(0, questionIdx).trim()
       const trueExpr = trimmed.slice(questionIdx + 1, colonIdx).trim()
       const falseExpr = trimmed.slice(colonIdx + 1).trim()
-      
+
       const condValue = evaluateExpressionInternal(condExpr, context)
-      return condValue ?
-        evaluateExpressionInternal(trueExpr, context) :
-        evaluateExpressionInternal(falseExpr, context)
+      return condValue
+        ? evaluateExpressionInternal(trueExpr, context)
+        : evaluateExpressionInternal(falseExpr, context)
     }
   }
-  
+
   // 比较运算: a === b, a > b, etc.
   const compareMatch = trimmed.match(/^(\S+)\s*(===|!==|>|<|>=|<=)\s*(\S+)$/)
   if (compareMatch) {
@@ -232,28 +231,40 @@ function evaluateExpressionInternal(
     // 类型断言：确保是可比较的值
     if (typeof leftVal === 'number' && typeof rightVal === 'number') {
       switch (op) {
-        case '===': return leftVal === rightVal
-        case '!==': return leftVal !== rightVal
-        case '>': return leftVal > rightVal
-        case '<': return leftVal < rightVal
-        case '>=': return leftVal >= rightVal
-        case '<=': return leftVal <= rightVal
+        case '===':
+          return leftVal === rightVal
+        case '!==':
+          return leftVal !== rightVal
+        case '>':
+          return leftVal > rightVal
+        case '<':
+          return leftVal < rightVal
+        case '>=':
+          return leftVal >= rightVal
+        case '<=':
+          return leftVal <= rightVal
       }
     } else if (typeof leftVal === 'string' && typeof rightVal === 'string') {
       // 字符串比较
       switch (op) {
-        case '===': return leftVal === rightVal
-        case '!==': return leftVal !== rightVal
-        case '>': return leftVal > rightVal
-        case '<': return leftVal < rightVal
-        case '>=': return leftVal >= rightVal
-        case '<=': return leftVal <= rightVal
+        case '===':
+          return leftVal === rightVal
+        case '!==':
+          return leftVal !== rightVal
+        case '>':
+          return leftVal > rightVal
+        case '<':
+          return leftVal < rightVal
+        case '>=':
+          return leftVal >= rightVal
+        case '<=':
+          return leftVal <= rightVal
       }
     }
 
     return undefined
   }
-  
+
   // 逻辑运算: a && b, a || b
   // 注意：右侧表达式可能包含运算符（如 $state.count > 5）
   // 使用非贪婪匹配直到遇到 && 或 ||
@@ -270,7 +281,7 @@ function evaluateExpressionInternal(
       return Boolean(leftVal || rightVal)
     }
   }
-  
+
   // 算术运算: a + b, a - b, etc.
   const arithmeticMatch = trimmed.match(/^(\S+)\s*([+\-*/])\s*(\S+)$/)
   if (arithmeticMatch) {
@@ -281,20 +292,25 @@ function evaluateExpressionInternal(
     // 支持数字和字符串的加法（字符串连接）
     if (typeof leftVal === 'number' && typeof rightVal === 'number') {
       switch (op) {
-        case '+': return leftVal + rightVal
-        case '-': return leftVal - rightVal
-        case '*': return leftVal * rightVal
-        case '/': return leftVal / rightVal
+        case '+':
+          return leftVal + rightVal
+        case '-':
+          return leftVal - rightVal
+        case '*':
+          return leftVal * rightVal
+        case '/':
+          return leftVal / rightVal
       }
     } else if (typeof leftVal === 'string' && typeof rightVal === 'string') {
       // 字符串连接
       switch (op) {
-        case '+': return leftVal + rightVal
+        case '+':
+          return leftVal + rightVal
       }
     }
     return undefined
   }
-  
+
   // 属性访问: obj.property
   const propMatch = trimmed.match(/^(\S+)\.([a-zA-Z_$][a-zA-Z0-9_$]*)$/)
   if (propMatch) {
@@ -302,7 +318,7 @@ function evaluateExpressionInternal(
     const obj = evaluateExpressionInternal(objExpr, context)
     return safeGetProp(obj, prop)
   }
-  
+
   // 数组访问: array[0]
   const arrayMatch = trimmed.match(/^(\S+)\[(\d+)\]$/)
   if (arrayMatch) {
@@ -313,7 +329,7 @@ function evaluateExpressionInternal(
     }
     return undefined
   }
-  
+
   // 属性访问 (带长度): array.length
   if (trimmed.endsWith('.length')) {
     const arrExpr = trimmed.slice(0, -7)
@@ -323,7 +339,7 @@ function evaluateExpressionInternal(
     }
     return undefined
   }
-  
+
   // 其他情况返回 undefined
   return undefined
 }
@@ -335,13 +351,13 @@ export function isValidExpression(expression: string): boolean {
   if (!expression || typeof expression !== 'string') {
     return false
   }
-  
+
   const trimmed = expression.trim()
-  
+
   if (trimmed === '') {
     return false
   }
-  
+
   // 禁止危险函数调用
   const dangerousPatterns = [
     /eval\s*\(/i,
@@ -358,15 +374,15 @@ export function isValidExpression(expression: string): boolean {
     /console\.(log|error|warn)/i,
     /require\s*\(/i,
     /setTimeout\s*\(/i,
-    /setInterval\s*\(/i,
+    /setInterval\s*\(/i
   ]
-  
+
   for (const pattern of dangerousPatterns) {
     if (pattern.test(trimmed)) {
       return false
     }
   }
-  
+
   return true
 }
 
@@ -377,7 +393,7 @@ export function sanitizeExpression(expression: string): string {
   if (!expression || typeof expression !== 'string') {
     return ''
   }
-  
+
   return expression
     .replace(/;/g, '')
     .replace(/alert\s*\(/gi, 'alert_blocked(')
@@ -393,19 +409,19 @@ export function sanitizeExpression(expression: string): string {
  */
 export function evaluateExpression(
   expression: string | undefined | null,
-  context: ExpressionContext = {},
+  context: ExpressionContext = {}
 ): unknown {
   // 输入验证
   if (!expression || typeof expression !== 'string') {
     return undefined
   }
-  
+
   // 安全检查
   if (!isValidExpression(expression)) {
     console.warn(`[Expression Engine] 安全检查失败: ${expression}`)
     return undefined
   }
-  
+
   try {
     return evaluateExpressionInternal(expression, context)
   } catch (error) {
@@ -420,10 +436,7 @@ export function evaluateExpression(
  * @param context 包含 state, props, event, api 的上下文
  * @returns 执行结果
  */
-export function executeExpression(
-  expression: string,
-  context: ExpressionContext,
-): unknown {
+export function executeExpression(expression: string, context: ExpressionContext): unknown {
   return evaluateExpression(expression, context)
 }
 
@@ -435,16 +448,16 @@ export function executeExpression(
  */
 export function checkCondition(
   condition: boolean | string | undefined,
-  context: ExpressionContext,
+  context: ExpressionContext
 ): boolean {
   if (typeof condition === 'boolean') {
     return condition
   }
-  
+
   if (typeof condition === 'string') {
     const result = evaluateExpression(condition, context)
     return Boolean(result)
   }
-  
+
   return false
 }

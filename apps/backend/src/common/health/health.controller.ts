@@ -1,25 +1,25 @@
-import { Controller, Get, Inject, Res } from "@nestjs/common";
-import { InjectDataSource } from "@nestjs/typeorm";
-import type { Response } from "express";
-import { DataSource } from "typeorm";
-import { Public } from "../decorators/public.decorator";
-import { STORAGE_ADAPTER, type StorageAdapter } from "../../modules/upload/storage/storage.adapter";
+import { Controller, Get, Inject, Res } from '@nestjs/common'
+import { InjectDataSource } from '@nestjs/typeorm'
+import type { Response } from 'express'
+import { DataSource } from 'typeorm'
+import { Public } from '../decorators/public.decorator'
+import { STORAGE_ADAPTER, type StorageAdapter } from '../../modules/upload/storage/storage.adapter'
 
 interface HealthCheckResult {
-  status: "up" | "down";
-  durationMs: number;
-  reason?: string;
+  status: 'up' | 'down'
+  durationMs: number
+  reason?: string
 }
 
 interface HealthPayload {
-  status: "ok" | "degraded";
-  uptimeSeconds: number;
-  timestamp: string;
-  storageDriver: string;
+  status: 'ok' | 'degraded'
+  uptimeSeconds: number
+  timestamp: string
+  storageDriver: string
   checks: {
-    database: HealthCheckResult;
-    storage: HealthCheckResult;
-  };
+    database: HealthCheckResult
+    storage: HealthCheckResult
+  }
 }
 
 /**
@@ -37,39 +37,39 @@ export class HealthController {
     @InjectDataSource()
     private readonly dataSource: DataSource,
     @Inject(STORAGE_ADAPTER)
-    private readonly storage: StorageAdapter,
+    private readonly storage: StorageAdapter
   ) {}
 
   @Public()
-  @Get("health")
+  @Get('health')
   async check(@Res() res: Response): Promise<void> {
     const [database, storage] = await Promise.all([
-      this.measure(() => this.dataSource.query("SELECT 1")),
-      this.measure(() => this.storage.healthCheck()),
-    ]);
+      this.measure(() => this.dataSource.query('SELECT 1')),
+      this.measure(() => this.storage.healthCheck())
+    ])
 
     const payload: HealthPayload = {
-      status: database.status === "up" && storage.status === "up" ? "ok" : "degraded",
+      status: database.status === 'up' && storage.status === 'up' ? 'ok' : 'degraded',
       uptimeSeconds: Math.round(process.uptime()),
       timestamp: new Date().toISOString(),
       storageDriver: this.storage.driver,
-      checks: { database, storage },
-    };
+      checks: { database, storage }
+    }
 
-    res.status(payload.status === "ok" ? 200 : 503).json(payload);
+    res.status(payload.status === 'ok' ? 200 : 503).json(payload)
   }
 
   private async measure(task: () => Promise<unknown>): Promise<HealthCheckResult> {
-    const startedAt = Date.now();
+    const startedAt = Date.now()
     try {
-      await task();
-      return { status: "up", durationMs: Date.now() - startedAt };
+      await task()
+      return { status: 'up', durationMs: Date.now() - startedAt }
     } catch (error) {
       return {
-        status: "down",
+        status: 'down',
         durationMs: Date.now() - startedAt,
-        reason: error instanceof Error ? error.message : String(error),
-      };
+        reason: error instanceof Error ? error.message : String(error)
+      }
     }
   }
 }

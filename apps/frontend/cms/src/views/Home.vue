@@ -19,15 +19,8 @@
         </p>
         <p class="hero-date">{{ todayText }}</p>
         <div class="hero-actions">
-          <el-button size="large" class="btn-light" @click="goToActivity">
-            进入页面管理
-          </el-button>
-          <el-button
-            v-if="canEdit"
-            size="large"
-            class="btn-ghost"
-            @click="openTemplatePicker"
-          >
+          <el-button size="large" class="btn-light" @click="goToActivity"> 进入页面管理 </el-button>
+          <el-button v-if="canEdit" size="large" class="btn-ghost" @click="openTemplatePicker">
             新建页面
           </el-button>
         </div>
@@ -43,7 +36,9 @@
       <h2 class="section-title">快捷入口</h2>
       <div class="entry-grid">
         <div class="entry-card" role="button" tabindex="0" @click="goToActivity">
-          <div class="entry-icon icon-primary"><el-icon :size="22"><Document /></el-icon></div>
+          <div class="entry-icon icon-primary">
+            <el-icon :size="22"><Document /></el-icon>
+          </div>
           <div class="entry-body">
             <p class="entry-name">页面管理</p>
             <p class="entry-desc">查看、搭建与发布业务页面</p>
@@ -57,7 +52,9 @@
           tabindex="0"
           @click="openTemplatePicker"
         >
-          <div class="entry-icon icon-success"><el-icon :size="22"><Plus /></el-icon></div>
+          <div class="entry-icon icon-success">
+            <el-icon :size="22"><Plus /></el-icon>
+          </div>
           <div class="entry-body">
             <p class="entry-name">新建页面</p>
             <p class="entry-desc">从模板或空白画布开始搭建</p>
@@ -65,21 +62,19 @@
         </div>
 
         <div class="entry-card" role="button" tabindex="0" @click="router.push('/performance')">
-          <div class="entry-icon icon-warning"><el-icon :size="22"><TrendCharts /></el-icon></div>
+          <div class="entry-icon icon-warning">
+            <el-icon :size="22"><TrendCharts /></el-icon>
+          </div>
           <div class="entry-body">
             <p class="entry-name">效果看板</p>
             <p class="entry-desc">访问、转化与线索数据分析</p>
           </div>
         </div>
 
-        <div
-          v-if="isAdmin"
-          class="entry-card"
-          role="button"
-          tabindex="0"
-          @click="goToUsers"
-        >
-          <div class="entry-icon icon-info"><el-icon :size="22"><Setting /></el-icon></div>
+        <div v-if="isAdmin" class="entry-card" role="button" tabindex="0" @click="goToUsers">
+          <div class="entry-icon icon-info">
+            <el-icon :size="22"><Setting /></el-icon>
+          </div>
           <div class="entry-body">
             <p class="entry-name">用户管理</p>
             <p class="entry-desc">成员账号与角色权限管理</p>
@@ -93,17 +88,23 @@
       <h2 class="section-title">平台能力</h2>
       <div class="feature-grid">
         <div class="feature-card">
-          <div class="feature-icon icon-primary"><el-icon :size="24"><Monitor /></el-icon></div>
+          <div class="feature-icon icon-primary">
+            <el-icon :size="24"><Monitor /></el-icon>
+          </div>
           <h3 class="feature-name">内容展示</h3>
           <p class="feature-desc">富文本、轮播、图片导航等物料自由编排，所见即所得的装修画布</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon icon-success"><el-icon :size="24"><Tickets /></el-icon></div>
+          <div class="feature-icon icon-success">
+            <el-icon :size="24"><Tickets /></el-icon>
+          </div>
           <h3 class="feature-name">信息登记</h3>
           <p class="feature-desc">业务表单收集线索，隐私同意、幂等去重与线索治理全链路合规</p>
         </div>
         <div class="feature-card">
-          <div class="feature-icon icon-warning"><el-icon :size="24"><DataBoard /></el-icon></div>
+          <div class="feature-icon icon-warning">
+            <el-icon :size="24"><DataBoard /></el-icon>
+          </div>
           <h3 class="feature-name">数据查询</h3>
           <p class="feature-desc">列表关键词筛选与统计卡片实时联动，筛选结果一目了然</p>
         </div>
@@ -122,10 +123,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from "vue";
-import { useRouter } from "vue-router";
-import { usePageStore } from "../store/usePageStore";
-import { ElMessageBox } from "element-plus";
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { usePageStore } from '../store/usePageStore'
+import { ElMessageBox } from 'element-plus'
 import {
   Setting,
   Document,
@@ -133,87 +134,87 @@ import {
   TrendCharts,
   Monitor,
   Tickets,
-  DataBoard,
-} from "@element-plus/icons-vue";
-import TemplatePicker from "../components/TemplatePicker.vue";
-import { getEffectiveRole, type UserRole } from "@/utils/auth";
+  DataBoard
+} from '@element-plus/icons-vue'
+import TemplatePicker from '../components/TemplatePicker.vue'
+import { getEffectiveRole, type UserRole } from '@/utils/auth'
 
-const router = useRouter();
-const pageStore = usePageStore();
-const username = ref("");
-const userRole = ref<UserRole>(getEffectiveRole());
-const templatePickerVisible = ref(false);
+const router = useRouter()
+const pageStore = usePageStore()
+const username = ref('')
+const userRole = ref<UserRole>(getEffectiveRole())
+const templatePickerVisible = ref(false)
 
-const isAdmin = computed(() => userRole.value === "admin");
+const isAdmin = computed(() => userRole.value === 'admin')
 /** 建页入口：管理员与编辑员可见，观察员只读 */
-const canEdit = computed(() => ["admin", "editor"].includes(userRole.value));
+const canEdit = computed(() => ['admin', 'editor'].includes(userRole.value))
 
 const roleLabel = computed(() => {
-  const map: Record<string, string> = { admin: "管理员", editor: "编辑员", viewer: "观察员" };
-  return map[userRole.value] || "未知";
-});
+  const map: Record<string, string> = { admin: '管理员', editor: '编辑员', viewer: '观察员' }
+  return map[userRole.value] || '未知'
+})
 
 const roleTagType = computed(() => {
-  const map: Record<string, string> = { admin: "danger", editor: "warning", viewer: "info" };
-  return map[userRole.value] || "info";
-});
+  const map: Record<string, string> = { admin: 'danger', editor: 'warning', viewer: 'info' }
+  return map[userRole.value] || 'info'
+})
 
 const greeting = computed(() => {
-  const hour = new Date().getHours();
-  if (hour < 6) return "夜深了";
-  if (hour < 11) return "早上好";
-  if (hour < 13) return "中午好";
-  if (hour < 18) return "下午好";
-  return "晚上好";
-});
+  const hour = new Date().getHours()
+  if (hour < 6) return '夜深了'
+  if (hour < 11) return '早上好'
+  if (hour < 13) return '中午好'
+  if (hour < 18) return '下午好'
+  return '晚上好'
+})
 
-const todayText = new Intl.DateTimeFormat("zh-CN", {
-  year: "numeric",
-  month: "long",
-  day: "numeric",
-  weekday: "long",
-}).format(new Date());
+const todayText = new Intl.DateTimeFormat('zh-CN', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+  weekday: 'long'
+}).format(new Date())
 
 const goToActivity = () => {
-  router.push("/activity");
-};
+  router.push('/activity')
+}
 
 const goToUsers = () => {
-  router.push("/users");
-};
+  router.push('/users')
+}
 
 const openTemplatePicker = () => {
-  templatePickerVisible.value = true;
-};
+  templatePickerVisible.value = true
+}
 
 const handleTemplateCreated = (pageId: number) => {
-  router.push({ path: "/decorate", query: { id: pageId } });
-};
+  router.push({ path: '/decorate', query: { id: pageId } })
+}
 
 const handleSkipTemplate = () => {
-  pageStore.setInitPageSchema();
-  router.push("/decorate");
-};
+  pageStore.setInitPageSchema()
+  router.push('/decorate')
+}
 
 const handleLogout = () => {
-  ElMessageBox.confirm("确定要退出登录吗？", "提示", {
-    confirmButtonText: "确定",
-    cancelButtonText: "取消",
-    type: "warning",
+  ElMessageBox.confirm('确定要退出登录吗？', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
   })
     .then(() => {
-      localStorage.removeItem("token");
-      localStorage.removeItem("username");
-      localStorage.removeItem("role");
-      router.push("/login");
+      localStorage.removeItem('token')
+      localStorage.removeItem('username')
+      localStorage.removeItem('role')
+      router.push('/login')
     })
-    .catch(() => {});
-};
+    .catch(() => {})
+}
 
 onMounted(() => {
-  username.value = localStorage.getItem("username") || "管理员";
-  userRole.value = getEffectiveRole();
-});
+  username.value = localStorage.getItem('username') || '管理员'
+  userRole.value = getEffectiveRole()
+})
 </script>
 
 <style scoped>
@@ -377,7 +378,7 @@ onMounted(() => {
 }
 
 .section-title::before {
-  content: "";
+  content: '';
   width: 4px;
   height: 16px;
   border-radius: 2px;

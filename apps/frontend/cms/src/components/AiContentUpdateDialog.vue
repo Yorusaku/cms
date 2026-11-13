@@ -25,9 +25,7 @@
           :class="{ 'is-disabled': !target.supported }"
         >
           <span class="ai-target-label">{{ target.materialLabel }}</span>
-          <el-tag v-if="!target.supported" size="small" type="info">
-            不参与更新
-          </el-tag>
+          <el-tag v-if="!target.supported" size="small" type="info"> 不参与更新 </el-tag>
         </div>
       </div>
       <p v-else class="ai-empty-tip">当前没有选中的区块，请先在画布中选择内容区块。</p>
@@ -113,13 +111,9 @@
       <div class="ai-dialog-footer">
         <el-button @click="visible = false">取消</el-button>
         <el-button :loading="loading" :disabled="!canGenerate" @click="generate">
-          {{ suggestions.length ? "重新生成" : "生成建议" }}
+          {{ suggestions.length ? '重新生成' : '生成建议' }}
         </el-button>
-        <el-button
-          type="primary"
-          :disabled="accepted.size === 0 || loading"
-          @click="applySelected"
-        >
+        <el-button type="primary" :disabled="accepted.size === 0 || loading" @click="applySelected">
           应用选中修改（{{ accepted.size }}）
         </el-button>
       </div>
@@ -128,263 +122,250 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { ElMessage } from "element-plus";
-import type { AiContentChange, AiContentTarget } from "@cms/types";
-import { aiSuggestContentChanges } from "@/api/ai";
-import { usePageStore } from "@/store/usePageStore";
+import { computed, ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import type { AiContentChange, AiContentTarget } from '@cms/types'
+import { aiSuggestContentChanges } from '@/api/ai'
+import { usePageStore } from '@/store/usePageStore'
 import {
   buildContentTargetSnapshot,
   formatChangePreview,
   formatSnapshotPreview,
   isTargetUnchanged,
   snapshotToRequestTarget,
-  type AiContentTargetSnapshot,
-} from "@/utils/ai-content";
+  type AiContentTargetSnapshot
+} from '@/utils/ai-content'
 
 const props = defineProps<{
-  modelValue: boolean;
+  modelValue: boolean
   /** 打开弹窗时选中的组件 ID 快照（不随之后画布选择变化） */
-  targetIds: string[];
+  targetIds: string[]
   /** 当前装修页的页面 ID：变化（切换页面）时弹窗自动关闭 */
-  pageId: number | null;
-}>();
+  pageId: number | null
+}>()
 
 const emit = defineEmits<{
-  (e: "update:modelValue", value: boolean): void;
-}>();
+  (e: 'update:modelValue', value: boolean): void
+}>()
 
-const pageStore = usePageStore();
+const pageStore = usePageStore()
 
 const visible = computed({
   get: () => props.modelValue,
-  set: (value: boolean) => emit("update:modelValue", value),
-});
+  set: (value: boolean) => emit('update:modelValue', value)
+})
 
 interface SuggestionItem {
-  change: AiContentChange;
-  label: string;
-  before: string;
-  after: string;
+  change: AiContentChange
+  label: string
+  before: string
+  after: string
 }
 
-const loading = ref(false);
-const instruction = ref("");
-const snapshots = ref<AiContentTargetSnapshot[]>([]);
-const suggestions = ref<SuggestionItem[]>([]);
-const accepted = ref<Set<string>>(new Set());
-const generated = ref(false);
-const source = ref<"model" | "mock" | null>(null);
-const warnings = ref<string[]>([]);
+const loading = ref(false)
+const instruction = ref('')
+const snapshots = ref<AiContentTargetSnapshot[]>([])
+const suggestions = ref<SuggestionItem[]>([])
+const accepted = ref<Set<string>>(new Set())
+const generated = ref(false)
+const source = ref<'model' | 'mock' | null>(null)
+const warnings = ref<string[]>([])
 
 /** 当前弹窗会话代号：关闭/重新生成/切换页面后，旧响应一律丢弃 */
-let requestToken = 0;
-let openedPageId: number | null = null;
-let openedTargetIds: string[] = [];
+let requestToken = 0
+let openedPageId: number | null = null
+let openedTargetIds: string[] = []
 
 const targets = computed(() =>
-  snapshots.value.map((snapshot) => ({
+  snapshots.value.map(snapshot => ({
     componentId: snapshot.componentId,
     materialLabel: snapshot.materialLabel,
-    supported: snapshot.supported,
-  })),
-);
+    supported: snapshot.supported
+  }))
+)
 
-const supportedCount = computed(
-  () => snapshots.value.filter((item) => item.supported).length,
-);
+const supportedCount = computed(() => snapshots.value.filter(item => item.supported).length)
 
-const canGenerate = computed(
-  () => supportedCount.value > 0 && instruction.value.trim().length > 0,
-);
+const canGenerate = computed(() => supportedCount.value > 0 && instruction.value.trim().length > 0)
 
-const currentPageId = (): number | null => props.pageId;
+const currentPageId = (): number | null => props.pageId
 
 /** 固定圈定对象，每次生成重新读取这些组件的内容与基线。 */
 const rebuildTargets = () => {
   snapshots.value = openedTargetIds
-    .map((id) => pageStore.pageSchema.componentMap[id])
-    .filter((component): component is NonNullable<typeof component> =>
-      Boolean(component),
-    )
-    .map((component) => buildContentTargetSnapshot(component));
-};
+    .map(id => pageStore.pageSchema.componentMap[id])
+    .filter((component): component is NonNullable<typeof component> => Boolean(component))
+    .map(component => buildContentTargetSnapshot(component))
+}
 
 const resetSuggestions = () => {
-  suggestions.value = [];
-  accepted.value = new Set();
-  generated.value = false;
-  source.value = null;
-  warnings.value = [];
-};
+  suggestions.value = []
+  accepted.value = new Set()
+  generated.value = false
+  source.value = null
+  warnings.value = []
+}
 
 watch(
   () => props.modelValue,
-  (open) => {
+  open => {
     if (open) {
-      openedPageId = currentPageId();
-      openedTargetIds = [...props.targetIds];
-      rebuildTargets();
-      instruction.value = "";
-      resetSuggestions();
+      openedPageId = currentPageId()
+      openedTargetIds = [...props.targetIds]
+      rebuildTargets()
+      instruction.value = ''
+      resetSuggestions()
     } else {
       // 关闭后不再接收在途请求的结果
-      requestToken += 1;
-      loading.value = false;
+      requestToken += 1
+      loading.value = false
     }
   },
-  { immediate: true },
-);
+  { immediate: true }
+)
 
 // 页面切换（装修页换了 id）时关闭弹窗，避免把结果应用到另一页
 watch(
   () => props.pageId,
   () => {
     if (props.modelValue) {
-      visible.value = false;
+      visible.value = false
     }
-  },
-);
+  }
+)
 
 const handleClosed = () => {
-  requestToken += 1;
-  loading.value = false;
-};
+  requestToken += 1
+  loading.value = false
+}
 
 const toggleAccepted = (componentId: string) => {
-  const next = new Set(accepted.value);
+  const next = new Set(accepted.value)
   if (next.has(componentId)) {
-    next.delete(componentId);
+    next.delete(componentId)
   } else {
-    next.add(componentId);
+    next.add(componentId)
   }
-  accepted.value = next;
-};
+  accepted.value = next
+}
 
 const generate = async () => {
   if (!canGenerate.value || loading.value) {
-    return;
+    return
   }
 
-  resetSuggestions();
-  rebuildTargets();
+  resetSuggestions()
+  rebuildTargets()
   const requestTargets = snapshots.value
     .map(snapshotToRequestTarget)
-    .filter((target): target is AiContentTarget => Boolean(target));
+    .filter((target): target is AiContentTarget => Boolean(target))
 
   if (requestTargets.length === 0) {
-    ElMessage.warning("没有可参与更新的内容区块");
-    return;
+    ElMessage.warning('没有可参与更新的内容区块')
+    return
   }
 
-  const token = ++requestToken;
-  loading.value = true;
+  const token = ++requestToken
+  loading.value = true
 
   try {
     const response = await aiSuggestContentChanges({
       instruction: instruction.value.trim(),
-      targets: requestTargets,
-    });
+      targets: requestTargets
+    })
 
     // 关闭弹窗、重新生成或页面切换后，丢弃迟到响应
     if (token !== requestToken) {
-      return;
+      return
     }
     if (response.code !== 10000 || !response.data) {
-      return;
+      return
     }
 
-    const data = response.data;
-    source.value = data.source;
-    warnings.value = data.warnings ?? [];
+    const data = response.data
+    source.value = data.source
+    warnings.value = data.warnings ?? []
 
-    const snapshotById = new Map(
-      snapshots.value.map((snapshot) => [snapshot.componentId, snapshot]),
-    );
-    const items: SuggestionItem[] = [];
+    const snapshotById = new Map(snapshots.value.map(snapshot => [snapshot.componentId, snapshot]))
+    const items: SuggestionItem[] = []
     for (const change of data.changes ?? []) {
-      const snapshot = snapshotById.get(change.componentId);
+      const snapshot = snapshotById.get(change.componentId)
       if (!snapshot) {
-        continue;
+        continue
       }
       items.push({
         change,
         label: snapshot.materialLabel,
         before: formatSnapshotPreview(snapshot),
-        after: formatChangePreview(change),
-      });
+        after: formatChangePreview(change)
+      })
     }
 
-    suggestions.value = items;
-    accepted.value = new Set(items.map((item) => item.change.componentId));
-    generated.value = true;
+    suggestions.value = items
+    accepted.value = new Set(items.map(item => item.change.componentId))
+    generated.value = true
 
     if (items.length === 0) {
-      ElMessage.info("AI 未给出与当前内容不同的建议（无需修改）");
+      ElMessage.info('AI 未给出与当前内容不同的建议（无需修改）')
     }
   } catch (error: unknown) {
     if (token !== requestToken) {
-      return;
+      return
     }
     const message =
       error !== null &&
-      typeof error === "object" &&
-      "message" in error &&
-      typeof error.message === "string"
+      typeof error === 'object' &&
+      'message' in error &&
+      typeof error.message === 'string'
         ? error.message
-        : "生成建议失败，请稍后重试";
-    ElMessage.error(message);
+        : '生成建议失败，请稍后重试'
+    ElMessage.error(message)
   } finally {
     if (token === requestToken) {
-      loading.value = false;
+      loading.value = false
     }
   }
-};
+}
 
 const applySelected = () => {
   if (accepted.value.size === 0) {
-    return;
+    return
   }
 
   // 页面切换检查
   if (currentPageId() !== openedPageId) {
-    ElMessage.error("页面已切换，请重新生成建议");
-    return;
+    ElMessage.error('页面已切换，请重新生成建议')
+    return
   }
 
-  const selectedSuggestions = suggestions.value.filter((item) =>
-    accepted.value.has(item.change.componentId),
-  );
+  const selectedSuggestions = suggestions.value.filter(item =>
+    accepted.value.has(item.change.componentId)
+  )
 
   // 只检查本次接受的区块；未勾选的建议不会写入，也不应阻断其他修改。
-  const hasConflict = selectedSuggestions.some((item) => {
-    const snapshot = snapshots.value.find(
-      (entry) => entry.componentId === item.change.componentId,
-    );
+  const hasConflict = selectedSuggestions.some(item => {
+    const snapshot = snapshots.value.find(entry => entry.componentId === item.change.componentId)
     if (!snapshot) {
-      return true;
+      return true
     }
-    return !isTargetUnchanged(
-      snapshot,
-      pageStore.pageSchema.componentMap[item.change.componentId],
-    );
-  });
+    return !isTargetUnchanged(snapshot, pageStore.pageSchema.componentMap[item.change.componentId])
+  })
   if (hasConflict) {
-    ElMessage.error("页面内容已变化，请重新生成建议后再应用");
-    return;
+    ElMessage.error('页面内容已变化，请重新生成建议后再应用')
+    return
   }
 
-  const changes = selectedSuggestions.map((item) => item.change);
+  const changes = selectedSuggestions.map(item => item.change)
 
-  const result = pageStore.applyContentChanges(changes);
+  const result = pageStore.applyContentChanges(changes)
   if (!result.ok) {
-    ElMessage.error(result.reason);
-    return;
+    ElMessage.error(result.reason)
+    return
   }
 
-  ElMessage.success(`已应用 ${result.applied} 个区块的内容更新`);
-  visible.value = false;
-};
+  ElMessage.success(`已应用 ${result.applied} 个区块的内容更新`)
+  visible.value = false
+}
 </script>
 
 <style scoped>

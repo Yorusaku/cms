@@ -5,6 +5,7 @@
 ### 问题描述
 
 编辑器中添加 100+ 组件时出现严重卡顿：
+
 - 渲染时间：300ms
 - 内存占用：200MB
 - 拖拽响应时间：100ms
@@ -22,30 +23,28 @@
 ### 解决方案
 
 **实现虚拟滚动：**
+
 ```typescript
 // VirtualScroll.vue
 export default {
   props: {
     items: Array,
     itemHeight: Number,
-    bufferSize: { type: Number, default: 5 },
+    bufferSize: { type: Number, default: 5 }
   },
   computed: {
     visibleItems() {
-      const startIndex = Math.max(
-        0,
-        Math.floor(this.scrollTop / this.itemHeight) - this.bufferSize
-      );
-      const endIndex = Math.ceil(
-        (this.scrollTop + this.containerHeight) / this.itemHeight
-      ) + this.bufferSize;
-      return this.items.slice(startIndex, endIndex);
-    },
-  },
-};
+      const startIndex = Math.max(0, Math.floor(this.scrollTop / this.itemHeight) - this.bufferSize)
+      const endIndex =
+        Math.ceil((this.scrollTop + this.containerHeight) / this.itemHeight) + this.bufferSize
+      return this.items.slice(startIndex, endIndex)
+    }
+  }
+}
 ```
 
 **集成到编辑器：**
+
 ```typescript
 // CenterCanvas.vue
 <VirtualScroll
@@ -80,14 +79,14 @@ export default {
 
 ### 性能对比
 
-| 指标 | 优化前 | 优化后 | 提升 |
-|------|--------|--------|------|
-| 渲染时间 | 300ms | 100ms | 67% |
-| 内存占用 | 200MB | 50MB | 75% |
-| 拖拽响应时间 | 100ms | 30ms | 70% |
-| 滚动帧率 | 20fps | 60fps | 200% |
-| 100 个组件 | 卡顿 | 流畅 | ✅ |
-| 1000 个组件 | 超时 | 500ms | ✅ |
+| 指标         | 优化前 | 优化后 | 提升 |
+| ------------ | ------ | ------ | ---- |
+| 渲染时间     | 300ms  | 100ms  | 67%  |
+| 内存占用     | 200MB  | 50MB   | 75%  |
+| 拖拽响应时间 | 100ms  | 30ms   | 70%  |
+| 滚动帧率     | 20fps  | 60fps  | 200% |
+| 100 个组件   | 卡顿   | 流畅   | ✅   |
+| 1000 个组件  | 超时   | 500ms  | ✅   |
 
 ### 关键代码
 
@@ -99,34 +98,34 @@ function calculateVisibleRange(
   itemHeight: number,
   bufferSize: number = 5
 ) {
-  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - bufferSize);
-  const endIndex = Math.ceil((scrollTop + containerHeight) / itemHeight) + bufferSize;
-  return { startIndex, endIndex };
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - bufferSize)
+  const endIndex = Math.ceil((scrollTop + containerHeight) / itemHeight) + bufferSize
+  return { startIndex, endIndex }
 }
 
 // 性能优化技巧
 // 1. 使用 transform 而不是 top/left
-const offsetY = computed(() => startIndex.value * itemHeight);
+const offsetY = computed(() => startIndex.value * itemHeight)
 // <div :style="{ transform: `translateY(${offsetY}px)` }">
 
 // 2. 使用 requestAnimationFrame 处理滚动
-const handleScroll = createRAFThrottle((event) => {
-  scrollTop.value = event.target.scrollTop;
-});
+const handleScroll = createRAFThrottle(event => {
+  scrollTop.value = event.target.scrollTop
+})
 
 // 3. 使用 IntersectionObserver 检测可见性
-const observer = new IntersectionObserver((entries) => {
-  entries.forEach((entry) => {
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
     if (entry.isIntersecting) {
       // 组件进入可见区域
     }
-  });
-});
+  })
+})
 
 // 4. 缓存计算结果
 const visibleItems = computed(() => {
-  return items.slice(startIndex.value, endIndex.value);
-});
+  return items.slice(startIndex.value, endIndex.value)
+})
 ```
 
 ### 学到的经验
@@ -150,6 +149,7 @@ const visibleItems = computed(() => {
 ### 问题描述
 
 编辑器在频繁操作时出现性能问题：
+
 - 保存草稿频繁触发（每次属性修改都保存）
 - 拖拽事件处理不及时
 - 滚动事件导致频繁重新渲染
@@ -167,50 +167,57 @@ const visibleItems = computed(() => {
 ### 解决方案
 
 **使用防抖保存草稿：**
+
 ```typescript
 // 原始代码
-watch(() => pageStore.pageSchema, () => {
-  savePageDraft(pageId, pageStore.pageSchema);
-}, { deep: true });
+watch(
+  () => pageStore.pageSchema,
+  () => {
+    savePageDraft(pageId, pageStore.pageSchema)
+  },
+  { deep: true }
+)
 
 // 优化后
-const debouncedSave = createDebounce(
-  () => savePageDraft(pageId, pageStore.pageSchema),
-  { wait: 300, trailing: true }
-);
+const debouncedSave = createDebounce(() => savePageDraft(pageId, pageStore.pageSchema), {
+  wait: 300,
+  trailing: true
+})
 
-watch(() => pageStore.pageSchema, debouncedSave, { deep: true });
+watch(() => pageStore.pageSchema, debouncedSave, { deep: true })
 ```
 
 **使用节流处理拖拽事件：**
+
 ```typescript
 // 原始代码
-const handleDragMove = (event) => {
-  updateComponentPosition(event.clientX, event.clientY);
-};
-document.addEventListener("dragmove", handleDragMove);
+const handleDragMove = event => {
+  updateComponentPosition(event.clientX, event.clientY)
+}
+document.addEventListener('dragmove', handleDragMove)
 
 // 优化后
 const throttledDragMove = createThrottle(
-  (event) => updateComponentPosition(event.clientX, event.clientY),
+  event => updateComponentPosition(event.clientX, event.clientY),
   { wait: 16 } // 60fps
-);
-document.addEventListener("dragmove", throttledDragMove);
+)
+document.addEventListener('dragmove', throttledDragMove)
 ```
 
 **使用 RAF 节流处理滚动事件：**
+
 ```typescript
 // 原始代码
-const handleScroll = (event) => {
-  updateVisibleComponents(event.target.scrollTop);
-};
-container.addEventListener("scroll", handleScroll);
+const handleScroll = event => {
+  updateVisibleComponents(event.target.scrollTop)
+}
+container.addEventListener('scroll', handleScroll)
 
 // 优化后
-const rafThrottledScroll = createRAFThrottle(
-  (event) => updateVisibleComponents(event.target.scrollTop)
-);
-container.addEventListener("scroll", rafThrottledScroll);
+const rafThrottledScroll = createRAFThrottle(event =>
+  updateVisibleComponents(event.target.scrollTop)
+)
+container.addEventListener('scroll', rafThrottledScroll)
 ```
 
 ### 实现步骤
@@ -232,71 +239,71 @@ container.addEventListener("scroll", rafThrottledScroll);
 
 ### 性能对比
 
-| 指标 | 优化前 | 优化后 | 提升 |
-|------|--------|--------|------|
-| 保存频率 | 100 次/秒 | 3 次/秒 | 97% |
-| 拖拽响应时间 | 100ms | 30ms | 70% |
-| 滚动帧率 | 30fps | 60fps | 100% |
-| CPU 占用率 | 80% | 30% | 62% |
-| 内存占用 | 150MB | 100MB | 33% |
+| 指标         | 优化前    | 优化后  | 提升 |
+| ------------ | --------- | ------- | ---- |
+| 保存频率     | 100 次/秒 | 3 次/秒 | 97%  |
+| 拖拽响应时间 | 100ms     | 30ms    | 70%  |
+| 滚动帧率     | 30fps     | 60fps   | 100% |
+| CPU 占用率   | 80%       | 30%     | 62%  |
+| 内存占用     | 150MB     | 100MB   | 33%  |
 
 ### 关键代码
 
 ```typescript
 // 防抖实现
 export function createDebounce(fn, { wait, trailing = true }) {
-  let timeoutId = null;
+  let timeoutId = null
   return function debounced(...args) {
     if (timeoutId !== null) {
-      clearTimeout(timeoutId);
+      clearTimeout(timeoutId)
     }
     if (trailing) {
       timeoutId = setTimeout(() => {
-        fn(...args);
-        timeoutId = null;
-      }, wait);
+        fn(...args)
+        timeoutId = null
+      }, wait)
     }
-  };
+  }
 }
 
 // 节流实现
 export function createThrottle(fn, { wait, leading = true }) {
-  let timeoutId = null;
-  let lastCallTime = 0;
+  let timeoutId = null
+  let lastCallTime = 0
   return function throttled(...args) {
-    const now = Date.now();
+    const now = Date.now()
     if (leading && !lastCallTime) {
-      fn(...args);
-      lastCallTime = now;
+      fn(...args)
+      lastCallTime = now
     } else {
       if (timeoutId !== null) {
-        clearTimeout(timeoutId);
+        clearTimeout(timeoutId)
       }
-      const remaining = wait - (now - lastCallTime);
+      const remaining = wait - (now - lastCallTime)
       timeoutId = setTimeout(() => {
-        fn(...args);
-        lastCallTime = Date.now();
-        timeoutId = null;
-      }, remaining);
+        fn(...args)
+        lastCallTime = Date.now()
+        timeoutId = null
+      }, remaining)
     }
-  };
+  }
 }
 
 // RAF 节流实现
 export function createRAFThrottle(fn) {
-  let rafId = null;
-  let lastArgs = null;
+  let rafId = null
+  let lastArgs = null
   return function throttled(...args) {
-    lastArgs = args;
+    lastArgs = args
     if (rafId === null) {
       rafId = requestAnimationFrame(() => {
         if (lastArgs) {
-          fn(...lastArgs);
+          fn(...lastArgs)
         }
-        rafId = null;
-      });
+        rafId = null
+      })
     }
-  };
+  }
 }
 ```
 
@@ -321,6 +328,7 @@ export function createRAFThrottle(fn) {
 ### 问题描述
 
 编辑器应用的包体积过大，首屏加载时间长：
+
 - 包体积：500KB
 - 首屏加载时间：3.2s
 - 构建时间：45s
@@ -338,6 +346,7 @@ export function createRAFThrottle(fn) {
 ### 解决方案
 
 **代码分割：**
+
 ```typescript
 // vite.config.ts
 export default defineConfig({
@@ -345,57 +354,60 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vue: ["vue"],
-          "element-plus": ["element-plus"],
-          editor: ["./src/views/Decorate"],
-          activity: ["./src/views/Activity"],
-        },
-      },
-    },
-  },
-});
+          vue: ['vue'],
+          'element-plus': ['element-plus'],
+          editor: ['./src/views/Decorate'],
+          activity: ['./src/views/Activity']
+        }
+      }
+    }
+  }
+})
 ```
 
 **路由级别分割：**
+
 ```typescript
 // router.ts
 const routes = [
   {
-    path: "/decorate",
-    component: () => import("./views/Decorate.vue"),
+    path: '/decorate',
+    component: () => import('./views/Decorate.vue')
   },
   {
-    path: "/activity",
-    component: () => import("./views/Activity.vue"),
-  },
-];
+    path: '/activity',
+    component: () => import('./views/Activity.vue')
+  }
+]
 ```
 
 **依赖优化：**
+
 ```typescript
 // 按需导入 Element Plus
-import { ElButton, ElInput } from "element-plus";
+import { ElButton, ElInput } from 'element-plus'
 
 // 按需导入 VueUse
-import { useEventListener } from "@vueuse/core";
+import { useEventListener } from '@vueuse/core'
 
 // 使用 lodash-es 替代 lodash
-import { debounce } from "lodash-es";
+import { debounce } from 'lodash-es'
 ```
 
 **压缩优化：**
+
 ```typescript
 // vite.config.ts
 export default defineConfig({
   build: {
-    minify: "esbuild",
+    minify: 'esbuild',
     terserOptions: {
       compress: {
-        drop_console: true,
-      },
-    },
-  },
-});
+        drop_console: true
+      }
+    }
+  }
+})
 ```
 
 ### 实现步骤
@@ -421,23 +433,23 @@ export default defineConfig({
 
 ### 性能对比
 
-| 指标 | 优化前 | 优化后 | 提升 |
-|------|--------|--------|------|
-| 包体积 | 500KB | 300KB | 40% |
-| 首屏加载时间 | 3.2s | 1.5s | 53% |
-| LCP | 3.2s | 1.5s | 53% |
-| 构建时间 | 45s | 28s | 38% |
-| 初始 JS | 500KB | 150KB | 70% |
-| 编辑器 chunk | - | 120KB | - |
-| 活动 chunk | - | 80KB | - |
+| 指标         | 优化前 | 优化后 | 提升 |
+| ------------ | ------ | ------ | ---- |
+| 包体积       | 500KB  | 300KB  | 40%  |
+| 首屏加载时间 | 3.2s   | 1.5s   | 53%  |
+| LCP          | 3.2s   | 1.5s   | 53%  |
+| 构建时间     | 45s    | 28s    | 38%  |
+| 初始 JS      | 500KB  | 150KB  | 70%  |
+| 编辑器 chunk | -      | 120KB  | -    |
+| 活动 chunk   | -      | 80KB   | -    |
 
 ### 关键代码
 
 ```typescript
 // vite.config.ts
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-import { visualizer } from "rollup-plugin-visualizer";
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 export default defineConfig({
   plugins: [
@@ -445,29 +457,29 @@ export default defineConfig({
     visualizer({
       open: true,
       gzipSize: true,
-      brotliSize: true,
-    }),
+      brotliSize: true
+    })
   ],
   build: {
-    minify: "esbuild",
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         manualChunks: {
-          vue: ["vue"],
-          "element-plus": ["element-plus"],
-          "@vueuse/core": ["@vueuse/core"],
-          editor: ["./src/views/Decorate"],
-          activity: ["./src/views/Activity"],
-        },
-      },
+          vue: ['vue'],
+          'element-plus': ['element-plus'],
+          '@vueuse/core': ['@vueuse/core'],
+          editor: ['./src/views/Decorate'],
+          activity: ['./src/views/Activity']
+        }
+      }
     },
     terserOptions: {
       compress: {
-        drop_console: true,
-      },
-    },
-  },
-});
+        drop_console: true
+      }
+    }
+  }
+})
 ```
 
 ### 学到的经验
@@ -491,6 +503,7 @@ export default defineConfig({
 ### 问题描述
 
 Undo/Redo 功能导致内存占用过高：
+
 - 历史记录容量：50
 - 每条记录大小：4MB（深拷贝整个 schema）
 - 总内存占用：200MB
@@ -508,54 +521,53 @@ Undo/Redo 功能导致内存占用过高：
 ### 解决方案
 
 **增量保存：**
+
 ```typescript
 // 原始代码
-history.push(JSON.parse(JSON.stringify(schema)));
+history.push(JSON.parse(JSON.stringify(schema)))
 
 // 优化后 - 只保存变化的部分
 const delta = {
-  type: "updateComponent",
-  componentId: "comp-1",
+  type: 'updateComponent',
+  componentId: 'comp-1',
   changes: {
-    props: { title: "New Title" },
-  },
-};
-history.push(delta);
+    props: { title: 'New Title' }
+  }
+}
+history.push(delta)
 ```
 
 **压缩历史记录：**
+
 ```typescript
 // 合并相似操作
 function compressHistory(history) {
-  const compressed = [];
+  const compressed = []
   for (const operation of history) {
-    const lastOp = compressed[compressed.length - 1];
-    if (
-      lastOp &&
-      lastOp.type === operation.type &&
-      lastOp.componentId === operation.componentId
-    ) {
+    const lastOp = compressed[compressed.length - 1]
+    if (lastOp && lastOp.type === operation.type && lastOp.componentId === operation.componentId) {
       // 合并操作
-      lastOp.changes = { ...lastOp.changes, ...operation.changes };
+      lastOp.changes = { ...lastOp.changes, ...operation.changes }
     } else {
-      compressed.push(operation);
+      compressed.push(operation)
     }
   }
-  return compressed;
+  return compressed
 }
 ```
 
 **异步保存：**
+
 ```typescript
 // 原始代码
-history.push(operation);
-saveHistoryToStorage(history);
+history.push(operation)
+saveHistoryToStorage(history)
 
 // 优化后 - 异步保存
-history.push(operation);
+history.push(operation)
 queueMicrotask(() => {
-  saveHistoryToStorage(history);
-});
+  saveHistoryToStorage(history)
+})
 ```
 
 ### 实现步骤
@@ -578,61 +590,61 @@ queueMicrotask(() => {
 
 ### 性能对比
 
-| 指标 | 优化前 | 优化后 | 提升 |
-|------|--------|--------|------|
-| 每条记录大小 | 4MB | 50KB | 98% |
-| 总内存占用 | 200MB | 2.5MB | 98% |
-| 撤销/重做响应时间 | 500ms | 50ms | 90% |
-| 历史记录容量 | 50 | 500 | 10x |
+| 指标              | 优化前 | 优化后 | 提升 |
+| ----------------- | ------ | ------ | ---- |
+| 每条记录大小      | 4MB    | 50KB   | 98%  |
+| 总内存占用        | 200MB  | 2.5MB  | 98%  |
+| 撤销/重做响应时间 | 500ms  | 50ms   | 90%  |
+| 历史记录容量      | 50     | 500    | 10x  |
 
 ### 关键代码
 
 ```typescript
 // 增量操作定义
 interface Operation {
-  type: "addComponent" | "removeComponent" | "updateComponent" | "moveComponent";
-  timestamp: number;
-  componentId?: string;
-  changes?: any;
-  from?: number;
-  to?: number;
+  type: 'addComponent' | 'removeComponent' | 'updateComponent' | 'moveComponent'
+  timestamp: number
+  componentId?: string
+  changes?: any
+  from?: number
+  to?: number
 }
 
 // 增量保存
 function recordOperation(operation: Operation) {
-  history.push(operation);
-  
+  history.push(operation)
+
   // 压缩历史记录
   if (history.length > 100) {
-    history = compressHistory(history);
+    history = compressHistory(history)
   }
-  
+
   // 异步保存
   queueMicrotask(() => {
-    saveHistoryToStorage(history);
-  });
+    saveHistoryToStorage(history)
+  })
 }
 
 // 操作回放
 function applyOperation(schema: IPageSchemaV2, operation: Operation) {
   switch (operation.type) {
-    case "updateComponent":
-      const component = schema.componentMap[operation.componentId!];
-      Object.assign(component, operation.changes);
-      break;
-    case "addComponent":
-      schema.componentMap[operation.componentId!] = operation.changes;
-      break;
-    case "removeComponent":
-      delete schema.componentMap[operation.componentId!];
-      break;
-    case "moveComponent":
-      const ids = schema.rootIds;
-      const [item] = ids.splice(operation.from!, 1);
-      ids.splice(operation.to!, 0, item);
-      break;
+    case 'updateComponent':
+      const component = schema.componentMap[operation.componentId!]
+      Object.assign(component, operation.changes)
+      break
+    case 'addComponent':
+      schema.componentMap[operation.componentId!] = operation.changes
+      break
+    case 'removeComponent':
+      delete schema.componentMap[operation.componentId!]
+      break
+    case 'moveComponent':
+      const ids = schema.rootIds
+      const [item] = ids.splice(operation.from!, 1)
+      ids.splice(operation.to!, 0, item)
+      break
   }
-  return schema;
+  return schema
 }
 ```
 

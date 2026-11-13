@@ -17,9 +17,7 @@
     >
       <Empty :description="errorMessage" image="error" class="w-full max-w-md px-4">
         <template #bottom>
-          <Button class="mt-4" type="primary" @click="retryLoad">
-            重新加载
-          </Button>
+          <Button class="mt-4" type="primary" @click="retryLoad"> 重新加载 </Button>
         </template>
       </Empty>
     </div>
@@ -35,106 +33,106 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
-import { useRoute } from "vue-router";
-import { Loading, Empty, Button } from "vant";
-import { migrateSchema } from "@cms/utils";
-import { normalizePageSchemaMaterials } from "@cms/ui";
-import { getPageDataById, parsePageSchema, type PageSchema } from "@/api/page";
-import SchemaRenderer from "@/components/SchemaRenderer.vue";
-import { usePageStore } from "@/store/usePageStore";
-import { getMarketingContext, trackEvent } from "@/utils/tracking";
+import { computed, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
+import { Loading, Empty, Button } from 'vant'
+import { migrateSchema } from '@cms/utils'
+import { normalizePageSchemaMaterials } from '@cms/ui'
+import { getPageDataById, parsePageSchema, type PageSchema } from '@/api/page'
+import SchemaRenderer from '@/components/SchemaRenderer.vue'
+import { usePageStore } from '@/store/usePageStore'
+import { getMarketingContext, trackEvent } from '@/utils/tracking'
 
 defineOptions({
-  name: "CrsPageView",
-});
+  name: 'CrsPageView'
+})
 
-const route = useRoute();
-const pageStore = usePageStore();
+const route = useRoute()
+const pageStore = usePageStore()
 
-const loading = ref(true);
-const error = ref(false);
-const errorMessage = ref("");
-const publishedVersionId = ref("");
+const loading = ref(true)
+const error = ref(false)
+const errorMessage = ref('')
+const publishedVersionId = ref('')
 
 const pageId = computed(() => {
-  const id = route.query.id;
-  return id ? Number(id) : null;
-});
+  const id = route.query.id
+  return id ? Number(id) : null
+})
 
 const pageBackgroundColor = computed(() => {
-  const bgColor = pageStore.pageSchema.pageConfig?.backgroundColor;
-  return typeof bgColor === "string" ? bgColor : "#ffffff";
-});
+  const bgColor = pageStore.pageSchema.pageConfig?.backgroundColor
+  return typeof bgColor === 'string' ? bgColor : '#ffffff'
+})
 
 const loadPageData = async () => {
   if (!pageId.value) {
-    error.value = true;
-    errorMessage.value = "页面ID不存在，请检查URL参数";
-    loading.value = false;
-    return;
+    error.value = true
+    errorMessage.value = '页面ID不存在，请检查URL参数'
+    loading.value = false
+    return
   }
 
   try {
-    loading.value = true;
-    error.value = false;
-    errorMessage.value = "";
+    loading.value = true
+    error.value = false
+    errorMessage.value = ''
 
-    const response = await getPageDataById(pageId.value);
+    const response = await getPageDataById(pageId.value)
 
     if (response.code !== 10000) {
-      throw new Error(response.message || `获取页面数据失败 (code: ${response.code})`);
+      throw new Error(response.message || `获取页面数据失败 (code: ${response.code})`)
     }
 
     if (!response.data) {
-      throw new Error("页面数据为空");
+      throw new Error('页面数据为空')
     }
 
     const pageData = response.data as unknown as {
-      schema: string | Record<string, unknown>;
-      publishedVersionId: string;
-      [key: string]: unknown;
-    };
-    const rawSchema = pageData.schema ? parsePageSchema(pageData.schema as string | PageSchema) : pageData;
-    const schema = normalizePageSchemaMaterials(migrateSchema(rawSchema));
-    publishedVersionId.value = pageData.publishedVersionId;
+      schema: string | Record<string, unknown>
+      publishedVersionId: string
+      [key: string]: unknown
+    }
+    const rawSchema = pageData.schema
+      ? parsePageSchema(pageData.schema as string | PageSchema)
+      : pageData
+    const schema = normalizePageSchemaMaterials(migrateSchema(rawSchema))
+    publishedVersionId.value = pageData.publishedVersionId
 
-    pageStore.importPageSchema(schema);
+    pageStore.importPageSchema(schema)
 
     const pageTitle =
-      typeof schema.pageConfig?.name === "string"
-        ? schema.pageConfig.name
-        : "移动端页面";
-    document.title = pageTitle;
+      typeof schema.pageConfig?.name === 'string' ? schema.pageConfig.name : '移动端页面'
+    document.title = pageTitle
 
-    const marketing = getMarketingContext();
+    const marketing = getMarketingContext()
     await trackEvent({
-      eventType: "page_view",
+      eventType: 'page_view',
       pageId: pageId.value,
       publishedVersionId: publishedVersionId.value,
       payload: {
-        source: "crs_page",
-        title: pageTitle,
+        source: 'crs_page',
+        title: pageTitle
       },
       utm: marketing.utm,
-      channel: marketing.channel,
-    });
+      channel: marketing.channel
+    })
   } catch (err: unknown) {
-    error.value = true;
-    const errorObj = err as Error;
-    errorMessage.value = errorObj.message || "页面加载失败，请稍后重试";
+    error.value = true
+    const errorObj = err as Error
+    errorMessage.value = errorObj.message || '页面加载失败，请稍后重试'
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
 const retryLoad = () => {
-  loadPageData();
-};
+  loadPageData()
+}
 
 onMounted(() => {
-  loadPageData();
-});
+  loadPageData()
+})
 </script>
 
 <style scoped>

@@ -59,9 +59,7 @@ async function seed() {
   try {
     const adminPassword = process.env.ADMIN_PASSWORD
     if (isProduction && (!adminPassword || DEFAULT_ADMIN_PASSWORDS.includes(adminPassword))) {
-      throw new Error(
-        '生产环境首次初始化必须显式配置非默认的 ADMIN_PASSWORD，已拒绝创建管理员账号'
-      )
+      throw new Error('生产环境首次初始化必须显式配置非默认的 ADMIN_PASSWORD，已拒绝创建管理员账号')
     }
 
     const admin = await ensureUser(

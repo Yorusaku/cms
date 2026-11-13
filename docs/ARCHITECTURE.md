@@ -7,19 +7,20 @@
 CMS 可视化搭建平台是一个低代码/可视化编辑平台，允许用户通过拖拽、配置等方式快速搭建页面，无需编写代码。
 
 **核心价值：**
+
 - 降低页面搭建门槛
 - 提升内容编辑效率
 - 支持复杂业务场景
 
 ### 1.2 核心功能
 
-| 功能 | 说明 |
-|------|------|
+| 功能       | 说明                                   |
+| ---------- | -------------------------------------- |
 | 可视化编辑 | 拖拽式编辑器，支持组件拖拽、配置、预览 |
-| 组件系统 | 14+ 业务组件，支持自定义扩展 |
-| 发布流程 | 草稿/发布双轨，支持版本管理和回滚 |
-| 编辑器效率 | 搜索、快捷键、批量配置、撤销重做 |
-| 性能优化 | 虚拟滚动、防抖节流、组件缓存 |
+| 组件系统   | 14+ 业务组件，支持自定义扩展           |
+| 发布流程   | 草稿/发布双轨，支持版本管理和回滚      |
+| 编辑器效率 | 搜索、快捷键、批量配置、撤销重做       |
+| 性能优化   | 虚拟滚动、防抖节流、组件缓存           |
 
 ### 1.3 技术栈
 
@@ -67,26 +68,28 @@ cms-vue3/
 ### 2.2 应用划分
 
 **cms（编辑器应用）：**
+
 - 负责页面编辑、配置、预览
 - 提供完整的编辑器 UI
 - 管理编辑状态和历史记录
 
 **crs（渲染器应用）：**
+
 - 负责页面预览和发布
 - 根据 Schema 动态渲染页面
 - 支持数据绑定和动态交互
 
 ### 2.3 包划分
 
-| 包 | 职责 |
-|------|------|
-| @cms/ui | UI 组件库（NoticeBlock、CarouselBlock 等） |
-| @cms/utils | 工具函数（Schema 处理、数据转换等） |
-| @cms/types | TypeScript 类型定义 |
-| @cms/hooks | 共享 hooks（usePageStore、usePageDraft 等） |
-| @cms/eslint-config | ESLint 规则配置 |
-| @cms/prettier-config | 代码格式化配置 |
-| @cms/test-utils | 测试工具和 mock 数据 |
+| 包                   | 职责                                        |
+| -------------------- | ------------------------------------------- |
+| @cms/ui              | UI 组件库（NoticeBlock、CarouselBlock 等）  |
+| @cms/utils           | 工具函数（Schema 处理、数据转换等）         |
+| @cms/types           | TypeScript 类型定义                         |
+| @cms/hooks           | 共享 hooks（usePageStore、usePageDraft 等） |
+| @cms/eslint-config   | ESLint 规则配置                             |
+| @cms/prettier-config | 代码格式化配置                              |
+| @cms/test-utils      | 测试工具和 mock 数据                        |
 
 ---
 
@@ -95,11 +98,13 @@ cms-vue3/
 ### 3.1 协议版本演进
 
 **V1 版本（已弃用）：**
+
 - 简单的组件树结构
 - 不支持复杂嵌套
 - 扩展性差
 
 **V2 版本（当前）：**
+
 - 基于 componentMap 的扁平化设计
 - 支持任意深度的组件嵌套
 - 易于序列化和扩展
@@ -110,50 +115,54 @@ cms-vue3/
 ```typescript
 // 页面 Schema
 interface IPageSchemaV2 {
-  version: "2.0.0";
+  version: '2.0.0'
   pageConfig: {
-    name: string;                    // 页面名称
-    shareDesc: string;               // 分享描述
-    shareImage: string;              // 分享图片
-    backgroundColor: string;         // 背景颜色
-    backgroundImage: string;         // 背景图片
-    backgroundPosition: "top" | "center" | "bottom";
-    cover: string;                   // 页面封面
-  };
-  componentMap: Record<string, IComponentSchemaV2>;  // 组件映射表
-  rootIds: string[];                 // 根组件 ID 列表
-  state?: Record<string, unknown>;   // 页面全局状态
+    name: string // 页面名称
+    shareDesc: string // 分享描述
+    shareImage: string // 分享图片
+    backgroundColor: string // 背景颜色
+    backgroundImage: string // 背景图片
+    backgroundPosition: 'top' | 'center' | 'bottom'
+    cover: string // 页面封面
+  }
+  componentMap: Record<string, IComponentSchemaV2> // 组件映射表
+  rootIds: string[] // 根组件 ID 列表
+  state?: Record<string, unknown> // 页面全局状态
 }
 
 // 组件 Schema
 interface IComponentSchemaV2 {
-  id: string;                        // 组件唯一 ID
-  type: string;                      // 组件类型
-  props: Record<string, unknown>;    // 组件属性
-  children?: string[];               // 子组件 ID 列表
-  events?: Record<string, unknown>;  // 事件配置
-  styles?: Record<string, unknown>;  // 样式配置
+  id: string // 组件唯一 ID
+  type: string // 组件类型
+  props: Record<string, unknown> // 组件属性
+  children?: string[] // 子组件 ID 列表
+  events?: Record<string, unknown> // 事件配置
+  styles?: Record<string, unknown> // 样式配置
 }
 ```
 
 ### 3.3 设计优势
 
 **1. 数据与视图分离**
+
 - Schema 是纯数据结构，不包含 Vue 组件实例
 - 易于序列化、存储、传输
 - 支持跨平台渲染
 
 **2. 支持组件嵌套**
+
 - 通过 children 字段支持任意深度嵌套
 - 通过 componentMap 快速查找组件
 - 避免深层对象嵌套导致的性能问题
 
 **3. 易于扩展**
+
 - 新增字段不影响现有逻辑
 - 支持自定义属性和事件
 - 支持插件系统
 
 **4. 易于序列化**
+
 - 纯 JSON 结构，无循环引用
 - 支持 localStorage、IndexedDB 存储
 - 支持网络传输
@@ -163,47 +172,47 @@ interface IComponentSchemaV2 {
 ```typescript
 // 示例：创建嵌套组件结构
 const schema: IPageSchemaV2 = {
-  version: "2.0.0",
-  pageConfig: { /* ... */ },
-  componentMap: {
-    "root-1": {
-      id: "root-1",
-      type: "Container",
-      props: { layout: "flex" },
-      children: ["child-1", "child-2"],
-    },
-    "child-1": {
-      id: "child-1",
-      type: "NoticeBlock",
-      props: { title: "Notice" },
-      children: [],
-    },
-    "child-2": {
-      id: "child-2",
-      type: "Container",
-      props: { layout: "grid" },
-      children: ["grandchild-1"],
-    },
-    "grandchild-1": {
-      id: "grandchild-1",
-      type: "ProductBlock",
-      props: { productId: "123" },
-    },
+  version: '2.0.0',
+  pageConfig: {
+    /* ... */
   },
-  rootIds: ["root-1"],
-};
+  componentMap: {
+    'root-1': {
+      id: 'root-1',
+      type: 'Container',
+      props: { layout: 'flex' },
+      children: ['child-1', 'child-2']
+    },
+    'child-1': {
+      id: 'child-1',
+      type: 'NoticeBlock',
+      props: { title: 'Notice' },
+      children: []
+    },
+    'child-2': {
+      id: 'child-2',
+      type: 'Container',
+      props: { layout: 'grid' },
+      children: ['grandchild-1']
+    },
+    'grandchild-1': {
+      id: 'grandchild-1',
+      type: 'ProductBlock',
+      props: { productId: '123' }
+    }
+  },
+  rootIds: ['root-1']
+}
 
 // 获取组件树
 function getComponentTree(schema: IPageSchemaV2, componentId: string) {
-  const component = schema.componentMap[componentId];
-  if (!component) return null;
+  const component = schema.componentMap[componentId]
+  if (!component) return null
 
   return {
     ...component,
-    children: (component.children || []).map((childId) =>
-      getComponentTree(schema, childId)
-    ),
-  };
+    children: (component.children || []).map(childId => getComponentTree(schema, childId))
+  }
 }
 ```
 
@@ -214,20 +223,20 @@ function getComponentTree(schema: IPageSchemaV2, componentId: string) {
 const schema: IPageSchemaV2 = {
   // ...
   state: {
-    currentUser: { id: "123", name: "John" },
-    theme: "light",
-    locale: "zh-CN",
-  },
-};
+    currentUser: { id: '123', name: 'John' },
+    theme: 'light',
+    locale: 'zh-CN'
+  }
+}
 
 // 组件可以访问全局状态
 interface IComponentSchemaV2 {
   // ...
   props: {
     // 支持状态绑定
-    userName: "${state.currentUser.name}",
-    isDarkMode: "${state.theme === 'dark'}",
-  };
+    userName: '${state.currentUser.name}'
+    isDarkMode: "${state.theme === 'dark'}"
+  }
 }
 ```
 
@@ -280,25 +289,25 @@ Schema 更新
 ```typescript
 interface PageStore {
   // 页面数据
-  pageSchema: IPageSchemaV2;
-  
+  pageSchema: IPageSchemaV2
+
   // 编辑状态
-  activeComponentId: string | null;
-  selectedComponentIds: string[];
-  
+  activeComponentId: string | null
+  selectedComponentIds: string[]
+
   // 历史记录
-  history: IPageSchemaV2[];
-  historyIndex: number;
-  
+  history: IPageSchemaV2[]
+  historyIndex: number
+
   // 方法
-  setInitPageSchema(schema: IPageSchemaV2): void;
-  setPageConfig(config: Partial<IPageSchemaV2["pageConfig"]>): void;
-  setActiveId(id: string): void;
-  addComponent(component: IComponentSchemaV2): void;
-  removeComponent(id: string): void;
-  updateComponent(id: string, updates: Partial<IComponentSchemaV2>): void;
-  undo(): void;
-  redo(): void;
+  setInitPageSchema(schema: IPageSchemaV2): void
+  setPageConfig(config: Partial<IPageSchemaV2['pageConfig']>): void
+  setActiveId(id: string): void
+  addComponent(component: IComponentSchemaV2): void
+  removeComponent(id: string): void
+  updateComponent(id: string, updates: Partial<IComponentSchemaV2>): void
+  undo(): void
+  redo(): void
 }
 ```
 
@@ -307,18 +316,18 @@ interface PageStore {
 ```typescript
 // 编辑器事件
 interface EditorEvents {
-  "component:select": { componentId: string };
-  "component:add": { component: IComponentSchemaV2 };
-  "component:remove": { componentId: string };
-  "component:update": { componentId: string; updates: any };
-  "component:move": { from: number; to: number };
-  "page:save": { schema: IPageSchemaV2 };
-  "page:publish": { schema: IPageSchemaV2 };
+  'component:select': { componentId: string }
+  'component:add': { component: IComponentSchemaV2 }
+  'component:remove': { componentId: string }
+  'component:update': { componentId: string; updates: any }
+  'component:move': { from: number; to: number }
+  'page:save': { schema: IPageSchemaV2 }
+  'page:publish': { schema: IPageSchemaV2 }
 }
 
 // 事件发射
-const emit = defineEmits<EditorEvents>();
-emit("component:select", { componentId: "comp-1" });
+const emit = defineEmits<EditorEvents>()
+emit('component:select', { componentId: 'comp-1' })
 ```
 
 ---
@@ -329,25 +338,25 @@ emit("component:select", { componentId: "comp-1" });
 
 ```typescript
 // 组件注册表
-const componentRegistry = new Map<string, ComponentDefinition>();
+const componentRegistry = new Map<string, ComponentDefinition>()
 
 interface ComponentDefinition {
-  name: string;
-  component: Component;
-  icon: string;
-  category: string;
-  defaultProps: Record<string, unknown>;
-  schema: JSONSchema;
+  name: string
+  component: Component
+  icon: string
+  category: string
+  defaultProps: Record<string, unknown>
+  schema: JSONSchema
 }
 
 // 注册组件
 function registerComponent(definition: ComponentDefinition) {
-  componentRegistry.set(definition.name, definition);
+  componentRegistry.set(definition.name, definition)
 }
 
 // 获取组件
 function getComponent(type: string) {
-  return componentRegistry.get(type)?.component;
+  return componentRegistry.get(type)?.component
 }
 ```
 
@@ -376,12 +385,14 @@ packages/ui/src/components/
 ### 5.3 物料系统
 
 **物料脚手架：**
+
 ```bash
 # 自动生成组件模板
 pnpm run scaffold:component --name MyComponent --category business
 ```
 
 **生成的文件结构：**
+
 ```
 packages/ui/src/components/MyComponent/
 ├── MyComponent.vue
@@ -394,11 +405,13 @@ packages/ui/src/components/MyComponent/
 ### 5.4 组件治理
 
 **UI 治理门禁：**
+
 - 样式覆盖白名单（element-deep-override-allowlist.txt）
 - 选择器白名单（element-selector-allowlist.txt）
 - 重要样式覆盖白名单（important-override-allowlist.txt）
 
 **治理流程：**
+
 ```
 代码提交
   ↓
@@ -423,57 +436,52 @@ UI 治理检查（检查样式覆盖）
 
 ```typescript
 interface PageDraft {
-  pageId: string;
-  schema: IPageSchemaV2;
-  lastSaveTime: number;
-  autoSaveInterval: number; // 自动保存间隔
+  pageId: string
+  schema: IPageSchemaV2
+  lastSaveTime: number
+  autoSaveInterval: number // 自动保存间隔
 }
 
 // 自动保存（防抖 300ms）
-const debouncedSave = createDebounce(
-  () => savePageDraft(pageId, schema),
-  { wait: 300 }
-);
+const debouncedSave = createDebounce(() => savePageDraft(pageId, schema), { wait: 300 })
 ```
 
 ### 6.2 发布前预检
 
 ```typescript
 interface PreflightCheck {
-  name: string;
-  check: (schema: IPageSchemaV2) => boolean;
-  message: string;
+  name: string
+  check: (schema: IPageSchemaV2) => boolean
+  message: string
 }
 
 const preflightChecks: PreflightCheck[] = [
   {
-    name: "hasComponents",
-    check: (schema) => schema.rootIds.length > 0,
-    message: "页面至少需要一个组件",
+    name: 'hasComponents',
+    check: schema => schema.rootIds.length > 0,
+    message: '页面至少需要一个组件'
   },
   {
-    name: "validComponentTypes",
-    check: (schema) => {
-      return Object.values(schema.componentMap).every((comp) =>
-        isValidComponentType(comp.type)
-      );
+    name: 'validComponentTypes',
+    check: schema => {
+      return Object.values(schema.componentMap).every(comp => isValidComponentType(comp.type))
     },
-    message: "存在无效的组件类型",
+    message: '存在无效的组件类型'
   },
   {
-    name: "noCircularReferences",
-    check: (schema) => !hasCircularReferences(schema),
-    message: "组件存在循环引用",
-  },
-];
+    name: 'noCircularReferences',
+    check: schema => !hasCircularReferences(schema),
+    message: '组件存在循环引用'
+  }
+]
 
 // 执行预检
 function runPreflightChecks(schema: IPageSchemaV2): PreflightCheckResult[] {
-  return preflightChecks.map((check) => ({
+  return preflightChecks.map(check => ({
     name: check.name,
     passed: check.check(schema),
-    message: check.message,
-  }));
+    message: check.message
+  }))
 }
 ```
 
@@ -481,25 +489,25 @@ function runPreflightChecks(schema: IPageSchemaV2): PreflightCheckResult[] {
 
 ```typescript
 interface PublishLog {
-  id: string;
-  pageId: string;
-  version: number;
-  schema: IPageSchemaV2;
-  operator: string;
-  publishTime: number;
-  remark: string;
-  status: "published" | "rollbacked";
+  id: string
+  pageId: string
+  version: number
+  schema: IPageSchemaV2
+  operator: string
+  publishTime: number
+  remark: string
+  status: 'published' | 'rollbacked'
 }
 
 // 发布页面
 async function publishPage(pageId: string, remark: string) {
-  const schema = await getPageDraft(pageId);
-  const checks = runPreflightChecks(schema);
-  
-  if (!checks.every((c) => c.passed)) {
-    throw new Error("发布前预检失败");
+  const schema = await getPageDraft(pageId)
+  const checks = runPreflightChecks(schema)
+
+  if (!checks.every(c => c.passed)) {
+    throw new Error('发布前预检失败')
   }
-  
+
   const log: PublishLog = {
     id: generateId(),
     pageId,
@@ -508,11 +516,11 @@ async function publishPage(pageId: string, remark: string) {
     operator: getCurrentUser().id,
     publishTime: Date.now(),
     remark,
-    status: "published",
-  };
-  
-  await savePublishLog(log);
-  return log;
+    status: 'published'
+  }
+
+  await savePublishLog(log)
+  return log
 }
 ```
 
@@ -521,14 +529,14 @@ async function publishPage(pageId: string, remark: string) {
 ```typescript
 // 回滚到指定版本
 async function rollbackPage(pageId: string, version: number) {
-  const log = await getPublishLog(pageId, version);
+  const log = await getPublishLog(pageId, version)
   if (!log) {
-    throw new Error("发布记录不存在");
+    throw new Error('发布记录不存在')
   }
-  
+
   // 将发布版本恢复为草稿
-  await savePageDraft(pageId, log.schema);
-  
+  await savePageDraft(pageId, log.schema)
+
   // 记录回滚操作
   const rollbackLog: PublishLog = {
     ...log,
@@ -537,11 +545,11 @@ async function rollbackPage(pageId: string, version: number) {
     operator: getCurrentUser().id,
     publishTime: Date.now(),
     remark: `回滚到版本 ${version}`,
-    status: "rollbacked",
-  };
-  
-  await savePublishLog(rollbackLog);
-  return rollbackLog;
+    status: 'rollbacked'
+  }
+
+  await savePublishLog(rollbackLog)
+  return rollbackLog
 }
 ```
 
@@ -552,11 +560,13 @@ async function rollbackPage(pageId: string, version: number) {
 ### 7.1 虚拟滚动
 
 **原理：**
+
 - 只渲染可见区域的组件
 - 使用缓冲区处理边界情况
 - 通过 transform 优化滚动性能
 
 **实现：**
+
 ```typescript
 function calculateVisibleRange(
   scrollTop: number,
@@ -564,19 +574,21 @@ function calculateVisibleRange(
   itemHeight: number,
   bufferSize: number = 5
 ) {
-  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - bufferSize);
-  const endIndex = Math.ceil((scrollTop + containerHeight) / itemHeight) + bufferSize;
-  return { startIndex, endIndex };
+  const startIndex = Math.max(0, Math.floor(scrollTop / itemHeight) - bufferSize)
+  const endIndex = Math.ceil((scrollTop + containerHeight) / itemHeight) + bufferSize
+  return { startIndex, endIndex }
 }
 ```
 
 ### 7.2 防抖和节流
 
 **防抖（Debounce）：**
+
 - 用于保存草稿（等待用户停止编辑后再保存）
 - 等待时间：300-800ms
 
 **节流（Throttle）：**
+
 - 用于滚动事件处理
 - 用于拖拽事件处理
 - 间隔时间：16ms（60fps）
@@ -585,18 +597,18 @@ function calculateVisibleRange(
 
 ```typescript
 class ComponentRenderCache {
-  private cache = new Map<string, any>();
-  
+  private cache = new Map<string, any>()
+
   get(key: string) {
-    return this.cache.get(key);
+    return this.cache.get(key)
   }
-  
+
   set(key: string, value: any) {
     if (this.cache.size >= 100) {
-      const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      const firstKey = this.cache.keys().next().value
+      this.cache.delete(firstKey)
     }
-    this.cache.set(key, value);
+    this.cache.set(key, value)
   }
 }
 ```
@@ -604,10 +616,12 @@ class ComponentRenderCache {
 ### 7.4 Undo/Redo 优化
 
 **当前实现：**
+
 - 容量：50
 - 深拷贝整个 schema
 
 **优化方向：**
+
 - 增量保存（只保存变化的部分）
 - 压缩历史记录（合并相似操作）
 - 异步保存（不阻塞主线程）
@@ -619,6 +633,7 @@ class ComponentRenderCache {
 ### 8.1 Monorepo 管理
 
 **Turbo 构建编排：**
+
 ```json
 {
   "pipeline": {
@@ -635,6 +650,7 @@ class ComponentRenderCache {
 ```
 
 **pnpm 包管理：**
+
 ```bash
 # 安装依赖
 pnpm install
@@ -667,6 +683,7 @@ Lint 检查（ESLint）
 ### 8.3 代码质量门禁
 
 **Husky + lint-staged：**
+
 ```bash
 # 提交前自动运行
 - ESLint 检查
@@ -677,10 +694,10 @@ Lint 检查（ESLint）
 
 ### 8.4 安全扫描
 
-| 工具 | 功能 |
-|------|------|
-| gitleaks | 检测密钥泄露 |
-| semgrep | 静态代码分析 |
+| 工具      | 功能         |
+| --------- | ------------ |
+| gitleaks  | 检测密钥泄露 |
+| semgrep   | 静态代码分析 |
 | npm audit | 依赖安全审计 |
 
 ---
@@ -691,13 +708,13 @@ Lint 检查（ESLint）
 
 ```typescript
 interface Plugin {
-  name: string;
-  version: string;
-  install(app: App): void;
+  name: string
+  version: string
+  install(app: App): void
 }
 
 // 注册插件
-app.use(myPlugin);
+app.use(myPlugin)
 ```
 
 ### 9.2 自定义组件
@@ -705,13 +722,13 @@ app.use(myPlugin);
 ```typescript
 // 用户可以注册自定义组件
 registerComponent({
-  name: "CustomBlock",
+  name: 'CustomBlock',
   component: CustomBlock,
-  icon: "custom",
-  category: "custom",
+  icon: 'custom',
+  category: 'custom',
   defaultProps: {},
-  schema: {},
-});
+  schema: {}
+})
 ```
 
 ### 9.3 主题系统
@@ -720,18 +737,18 @@ registerComponent({
 // 支持自定义主题
 const theme = {
   colors: {
-    primary: "#409eff",
-    success: "#67c23a",
-    warning: "#e6a23c",
-    danger: "#f56c6c",
+    primary: '#409eff',
+    success: '#67c23a',
+    warning: '#e6a23c',
+    danger: '#f56c6c'
   },
   spacing: {
-    xs: "4px",
-    sm: "8px",
-    md: "16px",
-    lg: "24px",
-  },
-};
+    xs: '4px',
+    sm: '8px',
+    md: '16px',
+    lg: '24px'
+  }
+}
 ```
 
 ---

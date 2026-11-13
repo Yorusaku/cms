@@ -1,7 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { type StorageAdapter, type StoredFile } from "./storage.adapter";
-import { signRequest } from "./sigv4";
+import { Injectable, Logger } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import { type StorageAdapter, type StoredFile } from './storage.adapter'
+import { signRequest } from './sigv4'
 
 /**
  * S3 兼容对象存储 adapter（生产用）。
@@ -19,31 +19,31 @@ import { signRequest } from "./sigv4";
  */
 @Injectable()
 export class S3StorageAdapter implements StorageAdapter {
-  readonly driver = "s3" as const;
-  private readonly logger = new Logger(S3StorageAdapter.name);
-  private readonly endpoint: string;
-  private readonly region: string;
-  private readonly bucket: string;
-  private readonly accessKeyId: string;
-  private readonly secretAccessKey: string;
-  private readonly publicBaseUrl: string;
+  readonly driver = 's3' as const
+  private readonly logger = new Logger(S3StorageAdapter.name)
+  private readonly endpoint: string
+  private readonly region: string
+  private readonly bucket: string
+  private readonly accessKeyId: string
+  private readonly secretAccessKey: string
+  private readonly publicBaseUrl: string
 
   constructor(configService: ConfigService) {
-    this.endpoint = this.require(configService, "S3_ENDPOINT").replace(/\/+$/, "");
-    this.region = configService.get<string>("S3_REGION", "us-east-1");
-    this.bucket = this.require(configService, "S3_BUCKET");
-    this.accessKeyId = this.require(configService, "S3_ACCESS_KEY_ID");
-    this.secretAccessKey = this.require(configService, "S3_SECRET_ACCESS_KEY");
+    this.endpoint = this.require(configService, 'S3_ENDPOINT').replace(/\/+$/, '')
+    this.region = configService.get<string>('S3_REGION', 'us-east-1')
+    this.bucket = this.require(configService, 'S3_BUCKET')
+    this.accessKeyId = this.require(configService, 'S3_ACCESS_KEY_ID')
+    this.secretAccessKey = this.require(configService, 'S3_SECRET_ACCESS_KEY')
     this.publicBaseUrl = (
-      configService.get<string>("S3_PUBLIC_BASE_URL") ?? `${this.endpoint}/${this.bucket}`
-    ).replace(/\/+$/, "");
+      configService.get<string>('S3_PUBLIC_BASE_URL') ?? `${this.endpoint}/${this.bucket}`
+    ).replace(/\/+$/, '')
   }
 
   async save(key: string, buffer: Buffer, contentType: string): Promise<StoredFile> {
-    const path = this.objectPath(key);
-    const url = `${this.endpoint}${path}`;
+    const path = this.objectPath(key)
+    const url = `${this.endpoint}${path}`
     const signed = signRequest({
-      method: "PUT",
+      method: 'PUT',
       path,
       region: this.region,
       accessKeyId: this.accessKeyId,
@@ -51,83 +51,85 @@ export class S3StorageAdapter implements StorageAdapter {
       body: buffer,
       headers: {
         host: new URL(this.endpoint).host,
-        "content-type": contentType,
-      },
-    });
+        'content-type': contentType
+      }
+    })
 
     const response = await fetch(url, {
-      method: "PUT",
-      headers: { ...signed.headers, "content-length": String(buffer.byteLength) },
-      body: new Uint8Array(buffer),
-    });
+      method: 'PUT',
+      headers: { ...signed.headers, 'content-length': String(buffer.byteLength) },
+      body: new Uint8Array(buffer)
+    })
 
     if (!response.ok) {
-      const detail = await response.text().catch(() => "");
-      this.logger.error(`对象存储写入失败 status=${response.status} key=${key}`);
-      throw new Error(`对象存储写入失败：${response.status}${detail ? ` ${detail.slice(0, 200)}` : ""}`);
+      const detail = await response.text().catch(() => '')
+      this.logger.error(`对象存储写入失败 status=${response.status} key=${key}`)
+      throw new Error(
+        `对象存储写入失败：${response.status}${detail ? ` ${detail.slice(0, 200)}` : ''}`
+      )
     }
 
-    return { key, url: `${this.publicBaseUrl}/${key}` };
+    return { key, url: `${this.publicBaseUrl}/${key}` }
   }
 
   async remove(key: string): Promise<void> {
-    const path = this.objectPath(key);
+    const path = this.objectPath(key)
     const signed = signRequest({
-      method: "DELETE",
+      method: 'DELETE',
       path,
       region: this.region,
       accessKeyId: this.accessKeyId,
       secretAccessKey: this.secretAccessKey,
-      headers: { host: new URL(this.endpoint).host },
-    });
+      headers: { host: new URL(this.endpoint).host }
+    })
 
     const response = await fetch(`${this.endpoint}${path}`, {
-      method: "DELETE",
-      headers: signed.headers,
-    });
+      method: 'DELETE',
+      headers: signed.headers
+    })
 
     // 对象本就不存在时按删除成功处理
     if (!response.ok && response.status !== 404) {
-      this.logger.error(`对象存储删除失败 status=${response.status} key=${key}`);
-      throw new Error(`对象存储删除失败：${response.status}`);
+      this.logger.error(`对象存储删除失败 status=${response.status} key=${key}`)
+      throw new Error(`对象存储删除失败：${response.status}`)
     }
   }
 
   async healthCheck(): Promise<void> {
-    const path = this.objectPath("");
+    const path = this.objectPath('')
     const signed = signRequest({
-      method: "HEAD",
+      method: 'HEAD',
       path,
       region: this.region,
       accessKeyId: this.accessKeyId,
       secretAccessKey: this.secretAccessKey,
-      headers: { host: new URL(this.endpoint).host },
-    });
+      headers: { host: new URL(this.endpoint).host }
+    })
 
     const response = await fetch(`${this.endpoint}${path}`, {
-      method: "HEAD",
-      headers: signed.headers,
-    });
+      method: 'HEAD',
+      headers: signed.headers
+    })
 
     // 403 说明凭据无效；404 说明桶不存在；其余 2xx/3xx 视为可用
     if (response.status === 403 || response.status === 404) {
-      throw new Error(`对象存储不可用：HTTP ${response.status}`);
+      throw new Error(`对象存储不可用：HTTP ${response.status}`)
     }
     if (response.status >= 500) {
-      throw new Error(`对象存储不可用：HTTP ${response.status}`);
+      throw new Error(`对象存储不可用：HTTP ${response.status}`)
     }
   }
 
   private objectPath(key: string): string {
-    const normalized = key.replace(/^\/+/, "");
-    return normalized ? `/${this.bucket}/${normalized}` : `/${this.bucket}`;
+    const normalized = key.replace(/^\/+/, '')
+    return normalized ? `/${this.bucket}/${normalized}` : `/${this.bucket}`
   }
 
   private require(configService: ConfigService, key: string): string {
-    const value = configService.get<string>(key);
+    const value = configService.get<string>(key)
     if (!value) {
-      throw new Error(`STORAGE_DRIVER=s3 时缺少必填环境变量 ${key}`);
+      throw new Error(`STORAGE_DRIVER=s3 时缺少必填环境变量 ${key}`)
     }
-    return value;
+    return value
   }
 }

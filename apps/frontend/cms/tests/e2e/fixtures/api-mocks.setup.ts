@@ -1,4 +1,4 @@
-import type { Page, Route } from "@playwright/test";
+import type { Page, Route } from '@playwright/test'
 import {
   authFailedResponse,
   mockLeadListResponse,
@@ -7,22 +7,22 @@ import {
   mockPageListResponse,
   mockPublishLogsResponse,
   mockTemplateListResponse,
-  successResponse,
-} from "./api-mocks";
+  successResponse
+} from './api-mocks'
 
-type RouteHandler = (route: Route) => Promise<void>;
+type RouteHandler = (route: Route) => Promise<void>
 
 const readJsonBody = async (route: Route) => {
-  const postData = route.request().postData();
+  const postData = route.request().postData()
   if (!postData) {
-    return {};
+    return {}
   }
   try {
-    return JSON.parse(postData) as Record<string, unknown>;
+    return JSON.parse(postData) as Record<string, unknown>
   } catch {
-    return {};
+    return {}
   }
-};
+}
 
 /**
  * 注入登录态。角色需一并写入：前端门禁统一从 localStorage.role（其次 JWT payload）取角色，
@@ -31,236 +31,236 @@ const readJsonBody = async (route: Route) => {
 export async function setAuthToken(
   page: Page,
   token: string,
-  role: "admin" | "editor" | "viewer" = "admin",
+  role: 'admin' | 'editor' | 'viewer' = 'admin'
 ) {
-  await page.goto("/cms-manage/login");
+  await page.goto('/cms-manage/login')
   await page.evaluate(
     ({ t, r }) => {
-      localStorage.setItem("token", t);
-      localStorage.setItem("role", r);
+      localStorage.setItem('token', t)
+      localStorage.setItem('role', r)
     },
-    { t: token, r: role },
-  );
+    { t: token, r: role }
+  )
 }
 
 export async function setupApiMocks(page: Page) {
   const handlers: Array<{ pattern: string | RegExp; handler: RouteHandler }> = [
     {
       pattern: /\/api\/atlas-cms\/login$/,
-      handler: async (route) => {
-        await route.fulfill({ json: mockLoginResponse() });
-      },
+      handler: async route => {
+        await route.fulfill({ json: mockLoginResponse() })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/trackEvent$/,
-      handler: async (route) => {
-        await route.fulfill({ json: successResponse({}) });
-      },
+      handler: async route => {
+        await route.fulfill({ json: successResponse({}) })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/submitLead$/,
-      handler: async (route) => {
-        await route.fulfill({ json: successResponse({ id: 1 }) });
-      },
+      handler: async route => {
+        await route.fulfill({ json: successResponse({ id: 1 }) })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/getLeadList/,
-      handler: async (route) => {
-        const url = new URL(route.request().url());
-        const pageId = Number(url.searchParams.get("pageId") || 1);
-        await route.fulfill({ json: successResponse(mockLeadListResponse(pageId)) });
-      },
+      handler: async route => {
+        const url = new URL(route.request().url())
+        const pageId = Number(url.searchParams.get('pageId') || 1)
+        await route.fulfill({ json: successResponse(mockLeadListResponse(pageId)) })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/getTemplateList/,
-      handler: async (route) => {
-        await route.fulfill({ json: successResponse(mockTemplateListResponse()) });
-      },
+      handler: async route => {
+        await route.fulfill({ json: successResponse(mockTemplateListResponse()) })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/createPageFromTemplate$/,
-      handler: async (route) => {
-        await route.fulfill({ json: successResponse({ id: 99 }) });
-      },
+      handler: async route => {
+        await route.fulfill({ json: successResponse({ id: 99 }) })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/getPageList/,
-      handler: async (route) => {
-        const url = new URL(route.request().url());
-        const keyword = (url.searchParams.get("name") || "").trim();
-        const pageNum = Number(url.searchParams.get("pageNum") || 1);
-        const pageSize = Number(url.searchParams.get("pageSize") || 10);
+      handler: async route => {
+        const url = new URL(route.request().url())
+        const keyword = (url.searchParams.get('name') || '').trim()
+        const pageNum = Number(url.searchParams.get('pageNum') || 1)
+        const pageSize = Number(url.searchParams.get('pageSize') || 10)
 
-        const matched = mockPageListResponse().filter((item) =>
-          keyword ? item.name.includes(keyword) : true,
-        );
+        const matched = mockPageListResponse().filter(item =>
+          keyword ? item.name.includes(keyword) : true
+        )
         // 与真实后端一致：先按 pageSize 截断，再返回当前页数据
-        const start = (pageNum - 1) * pageSize;
-        const list = matched.slice(start, start + pageSize);
+        const start = (pageNum - 1) * pageSize
+        const list = matched.slice(start, start + pageSize)
 
         await route.fulfill({
           json: successResponse({
             list,
             total: matched.length,
             pageNum,
-            pageSize,
-          }),
-        });
-      },
+            pageSize
+          })
+        })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/getPageJson/,
-      handler: async (route) => {
-        const url = new URL(route.request().url());
-        const pageId = parseInt(url.searchParams.get("id") || "1", 10);
-        await route.fulfill({ json: successResponse(mockPageDetailResponse(pageId)) });
-      },
+      handler: async route => {
+        const url = new URL(route.request().url())
+        const pageId = parseInt(url.searchParams.get('id') || '1', 10)
+        await route.fulfill({ json: successResponse(mockPageDetailResponse(pageId)) })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/addPageJson$/,
-      handler: async (route) => {
-        await route.fulfill({ json: successResponse({ id: 99 }) });
-      },
+      handler: async route => {
+        await route.fulfill({ json: successResponse({ id: 99 }) })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/updateCmsJson$/,
-      handler: async (route) => {
-        await route.fulfill({ json: successResponse({ id: 1 }) });
-      },
+      handler: async route => {
+        await route.fulfill({ json: successResponse({ id: 1 }) })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/deletePage$/,
-      handler: async (route) => {
-        await route.fulfill({ json: successResponse(null) });
-      },
+      handler: async route => {
+        await route.fulfill({ json: successResponse(null) })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/updatePageStatus$/,
-      handler: async (route) => {
-        await route.fulfill({ json: successResponse(null) });
-      },
+      handler: async route => {
+        await route.fulfill({ json: successResponse(null) })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/publishPage$/,
-      handler: async (route) => {
-        const body = await readJsonBody(route);
-        const pageId = Number(body.pageId || 1);
+      handler: async route => {
+        const body = await readJsonBody(route)
+        const pageId = Number(body.pageId || 1)
         await route.fulfill({
           json: successResponse({
             versionId: `${pageId}-${Date.now()}`,
-            versionNo: 1,
-          }),
-        });
-      },
+            versionNo: 1
+          })
+        })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/submitPageReview$/,
-      handler: async (route) => {
-        const body = await readJsonBody(route);
+      handler: async route => {
+        const body = await readJsonBody(route)
         await route.fulfill({
           json: successResponse({
             id: Number(body.pageId || 1),
-            name: "mock",
+            name: 'mock',
             isAbled: 0,
-            status: "pending_review",
-          }),
-        });
-      },
+            status: 'pending_review'
+          })
+        })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/reviewPage$/,
-      handler: async (route) => {
-        const body = await readJsonBody(route);
+      handler: async route => {
+        const body = await readJsonBody(route)
         await route.fulfill({
           json: successResponse({
             id: Number(body.pageId || 1),
-            name: "mock",
+            name: 'mock',
             isAbled: 0,
-            status: body.decision === "rejected" ? "rejected" : "approved",
-          }),
-        });
-      },
+            status: body.decision === 'rejected' ? 'rejected' : 'approved'
+          })
+        })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/getPagePublishLogs/,
-      handler: async (route) => {
-        const url = new URL(route.request().url());
-        const pageId = parseInt(url.searchParams.get("pageId") || "1", 10);
-        await route.fulfill({ json: successResponse(mockPublishLogsResponse(pageId)) });
-      },
+      handler: async route => {
+        const url = new URL(route.request().url())
+        const pageId = parseInt(url.searchParams.get('pageId') || '1', 10)
+        await route.fulfill({ json: successResponse(mockPublishLogsResponse(pageId)) })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/rollbackPageVersion$/,
-      handler: async (route) => {
+      handler: async route => {
         await route.fulfill({
-          json: successResponse({ schema: mockPageDetailResponse(1).schema }),
-        });
-      },
+          json: successResponse({ schema: mockPageDetailResponse(1).schema })
+        })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/upload/,
-      handler: async (route) => {
+      handler: async route => {
         await route.fulfill({
-          json: successResponse({ data: "http://127.0.0.1:3300/uploads/mock-image.png" }),
-        });
-      },
+          json: successResponse({ data: 'http://127.0.0.1:3300/uploads/mock-image.png' })
+        })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/getUserList$/,
-      handler: async (route) => {
-        await route.fulfill({ json: successResponse([]) });
-      },
+      handler: async route => {
+        await route.fulfill({ json: successResponse([]) })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/createUser$/,
-      handler: async (route) => {
-        const body = await readJsonBody(route);
+      handler: async route => {
+        const body = await readJsonBody(route)
         await route.fulfill({
           json: successResponse({
-            id: "u-1",
-            username: body.username || "user",
-            role: body.role || "editor",
+            id: 'u-1',
+            username: body.username || 'user',
+            role: body.role || 'editor',
             nickname: body.nickname || null,
-            createTime: "2026-05-20 10:00:00",
-            updateTime: "2026-05-20 10:00:00",
-          }),
-        });
-      },
+            createTime: '2026-05-20 10:00:00',
+            updateTime: '2026-05-20 10:00:00'
+          })
+        })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/updateUser$/,
-      handler: async (route) => {
-        const body = await readJsonBody(route);
+      handler: async route => {
+        const body = await readJsonBody(route)
         await route.fulfill({
           json: successResponse({
-            id: body.id || "u-1",
-            username: "user",
-            role: body.role || "editor",
+            id: body.id || 'u-1',
+            username: 'user',
+            role: body.role || 'editor',
             nickname: body.nickname || null,
-            createTime: "2026-05-20 10:00:00",
-            updateTime: "2026-05-20 10:10:00",
-          }),
-        });
-      },
+            createTime: '2026-05-20 10:00:00',
+            updateTime: '2026-05-20 10:10:00'
+          })
+        })
+      }
     },
     {
       pattern: /\/api\/atlas-cms\/deleteUser$/,
-      handler: async (route) => {
-        await route.fulfill({ json: successResponse(null) });
-      },
-    },
-  ];
+      handler: async route => {
+        await route.fulfill({ json: successResponse(null) })
+      }
+    }
+  ]
 
   for (const { pattern, handler } of handlers) {
-    await page.route(pattern, handler);
+    await page.route(pattern, handler)
   }
 }
 
 export async function setupFailedAuthMock(page: Page) {
-  await page.route(/\/api\/atlas-cms\/login$/, async (route) => {
-    await route.fulfill({ json: authFailedResponse() });
-  });
-  await page.route(/\/api\/atlas-cms\/getPageList/, async (route) => {
-    await route.fulfill({ json: authFailedResponse() });
-  });
+  await page.route(/\/api\/atlas-cms\/login$/, async route => {
+    await route.fulfill({ json: authFailedResponse() })
+  })
+  await page.route(/\/api\/atlas-cms\/getPageList/, async route => {
+    await route.fulfill({ json: authFailedResponse() })
+  })
 }

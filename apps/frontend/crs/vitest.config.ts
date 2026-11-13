@@ -1,8 +1,8 @@
-import { defineConfig } from "vite";
-import vue from "@vitejs/plugin-vue";
-import { resolve } from "path";
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
+import { resolve } from 'path'
 
-const workspaceRoot = resolve(__dirname, "../..");
+const workspaceRoot = resolve(__dirname, '../..')
 
 /**
  * 渲染端单测配置。
@@ -15,23 +15,23 @@ const workspaceRoot = resolve(__dirname, "../..");
  * 将来要测用到 Vant 的组件时，再补 resolver。
  */
 const workspaceSourceAlias = {
-  "@cms/types": resolve(workspaceRoot, "packages/types/src"),
-  "@cms/utils": resolve(workspaceRoot, "packages/utils/src"),
-  "@cms/hooks": resolve(workspaceRoot, "packages/hooks/src"),
-  "@cms/ui": resolve(workspaceRoot, "packages/ui/src"),
-};
+  '@cms/types': resolve(workspaceRoot, 'packages/types/src'),
+  '@cms/utils': resolve(workspaceRoot, 'packages/utils/src'),
+  '@cms/hooks': resolve(workspaceRoot, 'packages/hooks/src'),
+  '@cms/ui': resolve(workspaceRoot, 'packages/ui/src')
+}
 
 export default defineConfig({
   plugins: [vue()],
   resolve: {
     alias: {
-      "@": resolve(__dirname, "src"),
-      ...workspaceSourceAlias,
-    },
+      '@': resolve(__dirname, 'src'),
+      ...workspaceSourceAlias
+    }
   },
   test: {
-    environment: "jsdom",
+    environment: 'jsdom',
     globals: true,
-    include: ["src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}"],
-  },
-});
+    include: ['src/**/*.{test,spec}.{js,mjs,cjs,ts,mts,cts,jsx,tsx}']
+  }
+})

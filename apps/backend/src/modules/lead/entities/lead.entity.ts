@@ -1,66 +1,60 @@
-import {
-  Entity,
-  Column,
-  PrimaryGeneratedColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from "typeorm";
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm'
 
-export type LeadStatus = "new" | "contacted" | "converted" | "invalid";
+export type LeadStatus = 'new' | 'contacted' | 'converted' | 'invalid'
 
-@Entity("leads")
+@Entity('leads')
 export class Lead {
-  @PrimaryGeneratedColumn("increment", { type: "integer" })
-  id: number;
+  @PrimaryGeneratedColumn('increment', { type: 'integer' })
+  id: number
 
-  @Column({ type: "uuid", unique: true, name: "request_id" })
-  requestId: string;
+  @Column({ type: 'uuid', unique: true, name: 'request_id' })
+  requestId: string
 
-  @Column({ type: "varchar", length: 60 })
-  name: string;
+  @Column({ type: 'varchar', length: 60 })
+  name: string
 
-  @Column({ type: "varchar", length: 20, name: "phone_number" })
-  phoneNumber: string;
+  @Column({ type: 'varchar', length: 20, name: 'phone_number' })
+  phoneNumber: string
 
-  @Column({ type: "text", nullable: true })
-  remark: string | null;
+  @Column({ type: 'text', nullable: true })
+  remark: string | null
 
-  @Column({ type: "integer", name: "page_id" })
-  pageId: number;
+  @Column({ type: 'integer', name: 'page_id' })
+  pageId: number
 
-  @Column({ type: "varchar", length: 60, name: "published_version_id" })
-  publishedVersionId: string;
+  @Column({ type: 'varchar', length: 60, name: 'published_version_id' })
+  publishedVersionId: string
 
-  @Column({ type: "varchar", length: 120, name: "session_id" })
-  sessionId: string;
+  @Column({ type: 'varchar', length: 120, name: 'session_id' })
+  sessionId: string
 
-  @Column({ type: "varchar", length: 20, default: "new" })
-  status: LeadStatus;
+  @Column({ type: 'varchar', length: 20, default: 'new' })
+  status: LeadStatus
 
-  @Column({ type: "text", nullable: true, name: "follow_up_remark" })
-  followUpRemark: string | null;
+  @Column({ type: 'text', nullable: true, name: 'follow_up_remark' })
+  followUpRemark: string | null
 
-  @Column({ type: "varchar", length: 50, nullable: true, name: "followed_by" })
-  followedBy: string | null;
+  @Column({ type: 'varchar', length: 50, nullable: true, name: 'followed_by' })
+  followedBy: string | null
 
-  @Column({ type: "timestamptz", nullable: true, name: "followed_at" })
-  followedAt: Date | null;
+  @Column({ type: 'timestamptz', nullable: true, name: 'followed_at' })
+  followedAt: Date | null
 
-  @Column({ type: "jsonb", nullable: true })
-  utm: Record<string, string> | null;
+  @Column({ type: 'jsonb', nullable: true })
+  utm: Record<string, string> | null
 
-  @Column({ type: "jsonb", nullable: true })
-  channel: Record<string, string> | null;
+  @Column({ type: 'jsonb', nullable: true })
+  channel: Record<string, string> | null
 
-  @Column({ type: "boolean", name: "consent_accepted", default: false })
-  consentAccepted: boolean;
+  @Column({ type: 'boolean', name: 'consent_accepted', default: false })
+  consentAccepted: boolean
 
-  @Column({ type: "timestamptz", nullable: true, name: "consent_at" })
-  consentAt: Date | null;
+  @Column({ type: 'timestamptz', nullable: true, name: 'consent_at' })
+  consentAt: Date | null
 
-  @CreateDateColumn({ type: "timestamptz", name: "created_at" })
-  createdAt: Date;
+  @CreateDateColumn({ type: 'timestamptz', name: 'created_at' })
+  createdAt: Date
 
-  @UpdateDateColumn({ type: "timestamptz", name: "updated_at" })
-  updatedAt: Date;
+  @UpdateDateColumn({ type: 'timestamptz', name: 'updated_at' })
+  updatedAt: Date
 }

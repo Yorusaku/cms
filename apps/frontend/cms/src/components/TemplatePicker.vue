@@ -1,10 +1,5 @@
 ﻿<template>
-  <el-dialog
-    v-model="visible"
-    title="选择模板"
-    width="900px"
-    :close-on-click-modal="false"
-  >
+  <el-dialog v-model="visible" title="选择模板" width="900px" :close-on-click-modal="false">
     <el-tabs v-model="activeCategory" @tab-change="handleCategoryChange">
       <el-tab-pane label="全部" name="all" />
       <el-tab-pane label="营销活动" name="marketing" />
@@ -23,10 +18,7 @@
         @click="selectedId = item.id"
       >
         <div class="template-thumb">
-          <div
-            class="thumb-placeholder"
-            :style="{ background: categoryColor(item.category) }"
-          >
+          <div class="thumb-placeholder" :style="{ background: categoryColor(item.category) }">
             <span class="thumb-text">{{ item.name[0] }}</span>
           </div>
         </div>
@@ -46,7 +38,12 @@
 
     <template #footer>
       <el-button @click="handleSkip">跳过，创建空白页</el-button>
-      <el-button type="primary" :disabled="selectedId === null" :loading="creating" @click="handleUse">
+      <el-button
+        type="primary"
+        :disabled="selectedId === null"
+        :loading="creating"
+        @click="handleUse"
+      >
         使用此模板
       </el-button>
     </template>
@@ -54,131 +51,131 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from "vue";
-import { ElMessage } from "element-plus";
-import { createPageFromTemplate, getTemplateList, type TemplateItem } from "@/api/activity";
-import { trackEvent } from "@/utils/tracking";
+import { ref, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import { createPageFromTemplate, getTemplateList, type TemplateItem } from '@/api/activity'
+import { trackEvent } from '@/utils/tracking'
 
 interface Props {
-  modelValue: boolean;
+  modelValue: boolean
 }
 
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 const emit = defineEmits<{
-  (e: "update:modelValue", value: boolean): void;
-  (e: "created", pageId: number): void;
-  (e: "skip"): void;
-}>();
+  (e: 'update:modelValue', value: boolean): void
+  (e: 'created', pageId: number): void
+  (e: 'skip'): void
+}>()
 
-const visible = ref(false);
-const loading = ref(false);
-const creating = ref(false);
-const activeCategory = ref("all");
-const selectedId = ref<number | null>(null);
-const templates = ref<TemplateItem[]>([]);
+const visible = ref(false)
+const loading = ref(false)
+const creating = ref(false)
+const activeCategory = ref('all')
+const selectedId = ref<number | null>(null)
+const templates = ref<TemplateItem[]>([])
 
 watch(
   () => props.modelValue,
-  (val) => {
-    visible.value = val;
+  val => {
+    visible.value = val
     if (val) {
-      fetchTemplates();
+      fetchTemplates()
     }
-  },
-);
+  }
+)
 
-watch(visible, (val) => {
-  emit("update:modelValue", val);
-});
+watch(visible, val => {
+  emit('update:modelValue', val)
+})
 
 const fetchTemplates = async () => {
-  loading.value = true;
-  selectedId.value = null;
+  loading.value = true
+  selectedId.value = null
   try {
-    const category = activeCategory.value === "all" ? undefined : activeCategory.value;
-    const res = await getTemplateList(category);
-    templates.value = (res as any).data || [];
+    const category = activeCategory.value === 'all' ? undefined : activeCategory.value
+    const res = await getTemplateList(category)
+    templates.value = (res as any).data || []
   } catch {
-    ElMessage.error("获取模板列表失败");
+    ElMessage.error('获取模板列表失败')
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
 const handleCategoryChange = () => {
-  fetchTemplates();
-};
+  fetchTemplates()
+}
 
 const handleUse = async () => {
-  if (selectedId.value === null) return;
-  creating.value = true;
+  if (selectedId.value === null) return
+  creating.value = true
   try {
-    const template = templates.value.find((t) => t.id === selectedId.value);
-    const name = template?.name || "新建页面";
+    const template = templates.value.find(t => t.id === selectedId.value)
+    const name = template?.name || '新建页面'
     const res = await createPageFromTemplate({
       templateId: selectedId.value,
-      name,
-    });
-    const pageId = (res as any).data?.id;
+      name
+    })
+    const pageId = (res as any).data?.id
     if (pageId) {
       await trackEvent({
-        eventType: "cta_click",
+        eventType: 'cta_click',
         pageId,
-        ctaText: "use_template",
+        ctaText: 'use_template',
         payload: {
           templateId: selectedId.value,
-          templateName: template?.name || "",
-          category: template?.category || "unknown",
-        },
-      });
-      ElMessage.success(`已从模板创建页面: ${name}`);
-      visible.value = false;
-      emit("created", pageId);
+          templateName: template?.name || '',
+          category: template?.category || 'unknown'
+        }
+      })
+      ElMessage.success(`已从模板创建页面: ${name}`)
+      visible.value = false
+      emit('created', pageId)
     }
   } catch {
-    ElMessage.error("创建页面失败");
+    ElMessage.error('创建页面失败')
   } finally {
-    creating.value = false;
+    creating.value = false
   }
-};
+}
 
 const handleSkip = () => {
-  visible.value = false;
-  emit("skip");
-};
+  visible.value = false
+  emit('skip')
+}
 
 const categoryColor = (cat: string) => {
   const map: Record<string, string> = {
-    marketing: "#ff6b6b",
-    ecommerce: "#ffd93d",
-    brand: "#6c5ce7",
-    general: "#00b894",
-    business: "#2563eb",
-  };
-  return map[cat] || "#95a5a6";
-};
+    marketing: '#ff6b6b',
+    ecommerce: '#ffd93d',
+    brand: '#6c5ce7',
+    general: '#00b894',
+    business: '#2563eb'
+  }
+  return map[cat] || '#95a5a6'
+}
 
-const categoryTagType = (cat: string): "primary" | "danger" | "warning" | "success" | "info" => {
-  const map: Record<string, "primary" | "danger" | "warning" | "success" | "info"> = {
-    marketing: "danger",
-    ecommerce: "warning",
-    brand: "info",
-    general: "success",
-    business: "primary",
-  };
-  return map[cat] || "info";
-};
+const categoryTagType = (cat: string): 'primary' | 'danger' | 'warning' | 'success' | 'info' => {
+  const map: Record<string, 'primary' | 'danger' | 'warning' | 'success' | 'info'> = {
+    marketing: 'danger',
+    ecommerce: 'warning',
+    brand: 'info',
+    general: 'success',
+    business: 'primary'
+  }
+  return map[cat] || 'info'
+}
 
 const categoryLabel = (cat: string) => {
   const map: Record<string, string> = {
-    marketing: "营销活动",
-    ecommerce: "电商",
-    brand: "品牌",
-    general: "通用",
-    business: "业务",
-  };
-  return map[cat] || cat;
-};
+    marketing: '营销活动',
+    ecommerce: '电商',
+    brand: '品牌',
+    general: '通用',
+    business: '业务'
+  }
+  return map[cat] || cat
+}
 </script>
 
 <style scoped>
@@ -194,7 +191,9 @@ const categoryLabel = (cat: string) => {
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .template-card:hover {

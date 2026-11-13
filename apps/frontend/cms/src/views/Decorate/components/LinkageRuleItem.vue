@@ -1,5 +1,7 @@
 <template>
-  <div class="linkage-rule-item border border-gray-200 rounded-lg p-3 mb-2 hover:border-blue-400 transition-colors">
+  <div
+    class="linkage-rule-item border border-gray-200 rounded-lg p-3 mb-2 hover:border-blue-400 transition-colors"
+  >
     <div class="flex items-start justify-between">
       <div class="flex-1">
         <div class="flex items-center gap-2 mb-2">
@@ -61,45 +63,41 @@
 </template>
 
 <script setup lang="ts">
-import { ElMessageBox } from 'element-plus';
-import { Right, Edit, Delete, Operation, Filter, Hide, View } from '@element-plus/icons-vue';
-import type { IComponentLinkage } from '@cms/types';
-import { usePageStore } from '@/store/usePageStore';
+import { ElMessageBox } from 'element-plus'
+import { Right, Edit, Delete, Operation, Filter, Hide, View } from '@element-plus/icons-vue'
+import type { IComponentLinkage } from '@cms/types'
+import { usePageStore } from '@/store/usePageStore'
 
 interface Props {
-  linkage: IComponentLinkage;
+  linkage: IComponentLinkage
 }
 
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 const emit = defineEmits<{
-  edit: [linkage: IComponentLinkage];
-  delete: [id: string];
-  toggle: [id: string];
-}>();
+  edit: [linkage: IComponentLinkage]
+  delete: [id: string]
+  toggle: [id: string]
+}>()
 
-const pageStore = usePageStore();
+const pageStore = usePageStore()
 
 const getComponentName = (componentId: string) => {
-  const component = pageStore.pageSchema.componentMap[componentId];
-  return component ? `${component.type} (${componentId.slice(0, 8)})` : componentId;
-};
+  const component = pageStore.pageSchema.componentMap[componentId]
+  return component ? `${component.type} (${componentId.slice(0, 8)})` : componentId
+}
 
 const handleDelete = async () => {
   try {
-    await ElMessageBox.confirm(
-      '确定要删除这条联动规则吗？',
-      '删除确认',
-      {
-        confirmButtonText: '删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      }
-    );
-    emit('delete', props.linkage.id);
+    await ElMessageBox.confirm('确定要删除这条联动规则吗？', '删除确认', {
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    emit('delete', props.linkage.id)
   } catch {
     // 用户取消
   }
-};
+}
 </script>
 
 <style scoped>

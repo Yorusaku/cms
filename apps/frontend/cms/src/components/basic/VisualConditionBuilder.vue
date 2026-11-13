@@ -37,11 +37,7 @@
         </div>
 
         <!-- Condition rows -->
-        <div
-          v-for="(item, idx) in group.conditions"
-          :key="item.id"
-          class="mb-2 last:mb-0"
-        >
+        <div v-for="(item, idx) in group.conditions" :key="item.id" class="mb-2 last:mb-0">
           <!-- Row -->
           <div v-if="!isGroupItem(item)" class="flex items-center gap-2">
             <el-select
@@ -70,12 +66,7 @@
               @update:model-value="(v: string) => setRowValue(idx, v)"
             />
 
-            <el-button
-              size="small"
-              text
-              type="danger"
-              @click="removeRow(idx)"
-            >
+            <el-button size="small" text type="danger" @click="removeRow(idx)">
               <el-icon><Close /></el-icon>
             </el-button>
           </div>
@@ -86,7 +77,7 @@
             :model-value="serializeCondition(getItemAsGroup(item))"
             :depth="depth + 1"
             :max-depth="maxDepth"
-            @update:model-value="(v) => setNestedGroup(idx, v)"
+            @update:model-value="v => setNestedGroup(idx, v)"
           />
         </div>
 
@@ -96,13 +87,7 @@
             <el-icon><Plus /></el-icon>
             添加条件
           </el-button>
-          <el-button
-            v-if="depth < maxDepth - 1"
-            size="small"
-            text
-            type="primary"
-            @click="addGroup"
-          >
+          <el-button v-if="depth < maxDepth - 1" size="small" text type="primary" @click="addGroup">
             <el-icon><FolderAdd /></el-icon>
             添加条件组
           </el-button>
@@ -117,9 +102,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
-import { Close, Plus, FolderAdd } from '@element-plus/icons-vue';
-import type { ILinkageCondition } from '@/utils/linkage-engine';
+import { ref, watch } from 'vue'
+import { Close, Plus, FolderAdd } from '@element-plus/icons-vue'
+import type { ILinkageCondition } from '@/utils/linkage-engine'
 import {
   type IConditionRow,
   type IConditionGroup,
@@ -129,99 +114,99 @@ import {
   createEmptyGroup,
   nextConditionId,
   operatorNeedsValue,
-  expressionToOperatorValue,
-} from '@/utils/condition-serializer';
+  expressionToOperatorValue
+} from '@/utils/condition-serializer'
 
 interface Props {
-  modelValue?: ILinkageCondition | null;
-  depth?: number;
-  maxDepth?: number;
+  modelValue?: ILinkageCondition | null
+  depth?: number
+  maxDepth?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   depth: 0,
-  maxDepth: 3,
-});
+  maxDepth: 3
+})
 
 const emit = defineEmits<{
-  'update:modelValue': [value: ILinkageCondition | undefined];
-}>();
+  'update:modelValue': [value: ILinkageCondition | undefined]
+}>()
 
 // ==================== Template Helpers ====================
 
 function isGroupItem(item: IConditionRow | IConditionGroup): boolean {
-  return 'type' in item && item.type === 'group';
+  return 'type' in item && item.type === 'group'
 }
 
 function getItemOp(item: IConditionRow | IConditionGroup): string {
-  return (item as IConditionRow).operator ?? '';
+  return (item as IConditionRow).operator ?? ''
 }
 
 function getItemVal(item: IConditionRow | IConditionGroup): string {
-  return (item as IConditionRow).value ?? '';
+  return (item as IConditionRow).value ?? ''
 }
 
 function getItemAsGroup(item: IConditionRow | IConditionGroup): IConditionGroup {
-  return item as IConditionGroup;
+  return item as IConditionGroup
 }
 
 // ==================== State ====================
 
-const showAdvanced = ref(false);
-const advancedExpression = ref('');
-const advancedError = ref(false);
+const showAdvanced = ref(false)
+const advancedExpression = ref('')
+const advancedError = ref(false)
 
-const group = ref<IConditionGroup>(createEmptyGroup());
+const group = ref<IConditionGroup>(createEmptyGroup())
 
 // ==================== Watchers ====================
 
 watch(
   () => props.modelValue,
-  (val) => {
+  val => {
     if (showAdvanced.value) {
       if (val?.type === 'simple' && val.expression) {
-        advancedExpression.value = val.expression;
+        advancedExpression.value = val.expression
       } else if (val?.type === 'complex') {
-        advancedExpression.value = '';
-        advancedError.value = true;
+        advancedExpression.value = ''
+        advancedError.value = true
       } else if (!val) {
-        advancedExpression.value = '';
-        advancedError.value = false;
+        advancedExpression.value = ''
+        advancedError.value = false
       }
-      return;
+      return
     }
 
-    const parsed = deserializeCondition(val ?? undefined);
+    const parsed = deserializeCondition(val ?? undefined)
     if (parsed) {
-      group.value = parsed;
-      advancedError.value = false;
+      group.value = parsed
+      advancedError.value = false
     } else if (val) {
-      showAdvanced.value = true;
+      showAdvanced.value = true
       if (val.type === 'simple') {
-        advancedExpression.value = val.expression ?? '';
+        advancedExpression.value = val.expression ?? ''
       } else {
-        advancedExpression.value = '';
+        advancedExpression.value = ''
       }
-      advancedError.value = false;
+      advancedError.value = false
     } else {
-      group.value = createEmptyGroup();
-      advancedError.value = false;
+      group.value = createEmptyGroup()
+      advancedError.value = false
     }
   },
   { immediate: true }
-);
+)
 
-let syncTimer: ReturnType<typeof setTimeout> | null = null;
+let syncTimer: ReturnType<typeof setTimeout> | null = null
 
 function syncUp() {
-  if (syncTimer) clearTimeout(syncTimer);
+  if (syncTimer) clearTimeout(syncTimer)
   syncTimer = setTimeout(() => {
-    const result = serializeCondition(group.value);
-    emit('update:modelValue', result);
-  }, 150);
+    const result = serializeCondition(group.value)
+    emit('update:modelValue', result)
+  }, 150)
 }
 
-watch(group, syncUp, { deep: true });
+watch(group, syncUp, { deep: true })
 
 // ==================== Row Operations ====================
 
@@ -229,90 +214,90 @@ function addRow() {
   group.value.conditions.push({
     id: nextConditionId(),
     operator: 'gt',
-    value: '',
-  });
+    value: ''
+  })
 }
 
 function removeRow(idx: number) {
-  const conditions = [...group.value.conditions];
-  conditions.splice(idx, 1);
+  const conditions = [...group.value.conditions]
+  conditions.splice(idx, 1)
   if (conditions.length === 0) {
-    emit('update:modelValue', undefined);
-    group.value = createEmptyGroup();
-    return;
+    emit('update:modelValue', undefined)
+    group.value = createEmptyGroup()
+    return
   }
-  group.value = { ...group.value, conditions };
+  group.value = { ...group.value, conditions }
 }
 
 function setRowOperator(idx: number, operator: OperatorType) {
-  const row = group.value.conditions[idx] as IConditionRow;
-  row.operator = operator;
+  const row = group.value.conditions[idx] as IConditionRow
+  row.operator = operator
 }
 
 function setRowValue(idx: number, value: string) {
-  const row = group.value.conditions[idx] as IConditionRow;
-  row.value = value;
+  const row = group.value.conditions[idx] as IConditionRow
+  row.value = value
 }
 
 function setOperator(operator: string) {
-  group.value.operator = operator as 'AND' | 'OR';
+  group.value.operator = operator as 'AND' | 'OR'
 }
 
 // ==================== Group Operations ====================
 
 function addGroup() {
-  group.value.conditions.push(createEmptyGroup());
+  group.value.conditions.push(createEmptyGroup())
 }
 
 function setNestedGroup(idx: number, serialized: ILinkageCondition | undefined) {
   if (!serialized) {
-    const conditions = [...group.value.conditions];
-    conditions.splice(idx, 1);
+    const conditions = [...group.value.conditions]
+    conditions.splice(idx, 1)
     if (conditions.length === 0) {
-      emit('update:modelValue', undefined);
-      group.value = createEmptyGroup();
-      return;
+      emit('update:modelValue', undefined)
+      group.value = createEmptyGroup()
+      return
     }
-    group.value = { ...group.value, conditions };
-    return;
+    group.value = { ...group.value, conditions }
+    return
   }
 
-  const parsed = deserializeCondition(serialized);
+  const parsed = deserializeCondition(serialized)
   if (parsed) {
-    const conditions = [...group.value.conditions];
-    conditions[idx] = parsed;
-    group.value = { ...group.value, conditions };
+    const conditions = [...group.value.conditions]
+    conditions[idx] = parsed
+    group.value = { ...group.value, conditions }
   }
 }
 
 // ==================== Mode Switching ====================
 
 function switchToAdvanced() {
-  const serialized = serializeCondition(group.value);
+  const serialized = serializeCondition(group.value)
   if (serialized?.type === 'simple' && serialized.expression) {
-    advancedExpression.value = serialized.expression;
+    advancedExpression.value = serialized.expression
   } else if (serialized?.type === 'complex') {
-    advancedExpression.value = buildExpressionString(serialized);
+    advancedExpression.value = buildExpressionString(serialized)
   } else {
-    advancedExpression.value = '';
+    advancedExpression.value = ''
   }
-  advancedError.value = false;
-  showAdvanced.value = true;
+  advancedError.value = false
+  showAdvanced.value = true
 }
 
 function switchToVisual() {
-  const expr = advancedExpression.value.trim();
+  const expr = advancedExpression.value.trim()
   if (!expr) {
-    showAdvanced.value = false;
-    group.value = createEmptyGroup();
-    emit('update:modelValue', undefined);
-    return;
+    showAdvanced.value = false
+    group.value = createEmptyGroup()
+    emit('update:modelValue', undefined)
+    return
   }
 
-  const parsed = expressionToOperatorValue(expr);
+  const parsed = expressionToOperatorValue(expr)
   if (parsed) {
-    advancedError.value = false;
-    showAdvanced.value = false;
+    advancedError.value = false
+    showAdvanced.value = false
     group.value = {
       id: nextConditionId(),
       type: 'group',
@@ -321,28 +306,28 @@ function switchToVisual() {
         {
           id: nextConditionId(),
           operator: parsed.operator,
-          value: parsed.value,
-        },
-      ],
-    };
-    syncUp();
-    return;
+          value: parsed.value
+        }
+      ]
+    }
+    syncUp()
+    return
   }
 
-  advancedError.value = true;
+  advancedError.value = true
 }
 
 function buildExpressionString(condition: ILinkageCondition): string {
-  if (condition.type === 'simple') return condition.expression ?? '';
+  if (condition.type === 'simple') return condition.expression ?? ''
   if (condition.type === 'complex') {
-    const parts = (condition.conditions ?? []).map((c) => {
-      const inner = buildExpressionString(c);
-      return c.type === 'complex' ? `(${inner})` : inner;
-    });
-    const joiner = condition.operator === 'OR' ? ' || ' : ' && ';
-    return parts.join(joiner);
+    const parts = (condition.conditions ?? []).map(c => {
+      const inner = buildExpressionString(c)
+      return c.type === 'complex' ? `(${inner})` : inner
+    })
+    const joiner = condition.operator === 'OR' ? ' || ' : ' && '
+    return parts.join(joiner)
   }
-  return '';
+  return ''
 }
 </script>
 

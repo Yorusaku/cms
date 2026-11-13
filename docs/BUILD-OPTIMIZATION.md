@@ -22,22 +22,23 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    component: () => import('../views/Home.vue'), // 懒加载
+    component: () => import('../views/Home.vue') // 懒加载
   },
   {
     path: '/decorate',
     name: 'Decorate',
-    component: () => import('../views/Decorate/index.vue'),
+    component: () => import('../views/Decorate/index.vue')
   },
   {
     path: '/preview',
     name: 'Preview',
-    component: () => import('../views/Preview.vue'),
-  },
-];
+    component: () => import('../views/Preview.vue')
+  }
+]
 ```
 
 **预期收益：**
+
 - 首屏加载减少 ~200KB
 - 初始 JS 执行时间减少 30%
 
@@ -56,35 +57,30 @@ export default defineConfig({
         manualChunks: {
           // 将 Element Plus 单独打包
           'element-plus': ['element-plus'],
-          
+
           // 将物料组件按类型分组
           'materials-basic': [
             '@cms/ui/materials/CmsButton',
             '@cms/ui/materials/CmsImage',
-            '@cms/ui/materials/CmsText',
+            '@cms/ui/materials/CmsText'
           ],
-          'materials-layout': [
-            '@cms/ui/materials/CarouselBlock',
-            '@cms/ui/materials/NoticeBlock',
-          ],
-          'materials-business': [
-            '@cms/ui/materials/ProductBlock',
-            '@cms/ui/materials/CartBlock',
-          ],
-          
+          'materials-layout': ['@cms/ui/materials/CarouselBlock', '@cms/ui/materials/NoticeBlock'],
+          'materials-business': ['@cms/ui/materials/ProductBlock', '@cms/ui/materials/CartBlock'],
+
           // 将 Vue 生态单独打包
           'vue-vendor': ['vue', 'vue-router', 'pinia'],
-          
+
           // 将工具库单独打包
-          'utils': ['@cms/utils', '@vueuse/core'],
-        },
-      },
-    },
-  },
-});
+          utils: ['@cms/utils', '@vueuse/core']
+        }
+      }
+    }
+  }
+})
 ```
 
 **预期收益：**
+
 - 更好的缓存利用率
 - 并行加载提升性能
 - 包体积减少 ~150KB（通过 tree-shaking）
@@ -103,21 +99,21 @@ pnpm add -D unplugin-vue-components unplugin-auto-import
 
 ```typescript
 // apps/cms/vite.config.ts
-import AutoImport from 'unplugin-auto-import/vite';
-import Components from 'unplugin-vue-components/vite';
-import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
+import AutoImport from 'unplugin-auto-import/vite'
+import Components from 'unplugin-vue-components/vite'
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers'
 
 export default defineConfig({
   plugins: [
     vue(),
     AutoImport({
-      resolvers: [ElementPlusResolver()],
+      resolvers: [ElementPlusResolver()]
     }),
     Components({
-      resolvers: [ElementPlusResolver()],
-    }),
-  ],
-});
+      resolvers: [ElementPlusResolver()]
+    })
+  ]
+})
 ```
 
 **移除全局导入：**
@@ -129,10 +125,11 @@ export default defineConfig({
 // app.use(ElementPlus);
 
 // 只导入样式
-import 'element-plus/dist/index.css';
+import 'element-plus/dist/index.css'
 ```
 
 **预期收益：**
+
 - Element Plus 体积从 ~500KB 减少到 ~200KB
 - 首屏加载时间减少 ~300ms
 
@@ -150,42 +147,43 @@ pnpm add -D vite-plugin-imagemin
 
 ```typescript
 // apps/cms/vite.config.ts
-import viteImagemin from 'vite-plugin-imagemin';
+import viteImagemin from 'vite-plugin-imagemin'
 
 export default defineConfig({
   plugins: [
     viteImagemin({
       gifsicle: {
         optimizationLevel: 7,
-        interlaced: false,
+        interlaced: false
       },
       optipng: {
-        optimizationLevel: 7,
+        optimizationLevel: 7
       },
       mozjpeg: {
-        quality: 80,
+        quality: 80
       },
       pngquant: {
         quality: [0.8, 0.9],
-        speed: 4,
+        speed: 4
       },
       svgo: {
         plugins: [
           {
-            name: 'removeViewBox',
+            name: 'removeViewBox'
           },
           {
             name: 'removeEmptyAttrs',
-            active: false,
-          },
-        ],
-      },
-    }),
-  ],
-});
+            active: false
+          }
+        ]
+      }
+    })
+  ]
+})
 ```
 
 **预期收益：**
+
 - 图片体积减少 40-60%
 - 页面加载速度提升 20%
 
@@ -196,9 +194,9 @@ export default defineConfig({
 ```vue
 <template>
   <picture>
-    <source srcset="image.webp" type="image/webp">
-    <source srcset="image.jpg" type="image/jpeg">
-    <img src="image.jpg" alt="fallback">
+    <source srcset="image.webp" type="image/webp" />
+    <source srcset="image.jpg" type="image/jpeg" />
+    <img src="image.jpg" alt="fallback" />
   </picture>
 </template>
 ```
@@ -213,9 +211,9 @@ export default defineConfig({
 // apps/cms/vite.config.ts
 export default defineConfig({
   build: {
-    cssCodeSplit: true, // 启用 CSS 代码分割
-  },
-});
+    cssCodeSplit: true // 启用 CSS 代码分割
+  }
+})
 ```
 
 ### 4.2 移除未使用的 CSS
@@ -233,21 +231,18 @@ pnpm add -D @fullhuman/postcss-purgecss
 module.exports = {
   plugins: [
     require('@fullhuman/postcss-purgecss')({
-      content: [
-        './apps/cms/src/**/*.vue',
-        './apps/cms/src/**/*.ts',
-        './apps/cms/index.html',
-      ],
+      content: ['./apps/cms/src/**/*.vue', './apps/cms/src/**/*.ts', './apps/cms/index.html'],
       safelist: [
         /^el-/, // 保留 Element Plus 类名
-        /^cms-/, // 保留自定义类名
-      ],
-    }),
-  ],
-};
+        /^cms-/ // 保留自定义类名
+      ]
+    })
+  ]
+}
 ```
 
 **预期收益：**
+
 - CSS 体积减少 30-50%
 
 ## 5. 依赖优化
@@ -264,17 +259,17 @@ pnpm add -D rollup-plugin-visualizer
 
 ```typescript
 // apps/cms/vite.config.ts
-import { visualizer } from 'rollup-plugin-visualizer';
+import { visualizer } from 'rollup-plugin-visualizer'
 
 export default defineConfig({
   plugins: [
     visualizer({
       open: true,
       gzipSize: true,
-      brotliSize: true,
-    }),
-  ],
-});
+      brotliSize: true
+    })
+  ]
+})
 ```
 
 **运行分析：**
@@ -289,12 +284,12 @@ pnpm --filter @cms/cms build
 
 ```typescript
 // 替换前
-import moment from 'moment';
-const date = moment().format('YYYY-MM-DD');
+import moment from 'moment'
+const date = moment().format('YYYY-MM-DD')
 
 // 替换后
-import dayjs from 'dayjs';
-const date = dayjs().format('YYYY-MM-DD');
+import dayjs from 'dayjs'
+const date = dayjs().format('YYYY-MM-DD')
 ```
 
 **收益：** moment.js (232KB) → day.js (7KB)
@@ -312,32 +307,27 @@ export default defineConfig({
     terserOptions: {
       compress: {
         drop_console: true, // 移除 console
-        drop_debugger: true, // 移除 debugger
-      },
+        drop_debugger: true // 移除 debugger
+      }
     },
-    
+
     // 启用 gzip 压缩
     reportCompressedSize: true,
-    
+
     // 设置 chunk 大小警告阈值
     chunkSizeWarningLimit: 1000,
-    
+
     // 优化依赖预构建
     commonjsOptions: {
-      include: [/node_modules/],
-    },
+      include: [/node_modules/]
+    }
   },
-  
+
   // 优化依赖预构建
   optimizeDeps: {
-    include: [
-      'vue',
-      'vue-router',
-      'pinia',
-      '@vueuse/core',
-    ],
-  },
-});
+    include: ['vue', 'vue-router', 'pinia', '@vueuse/core']
+  }
+})
 ```
 
 ### 6.2 开发环境优化
@@ -347,16 +337,13 @@ export default defineConfig({
   server: {
     // 启用 HMR
     hmr: true,
-    
+
     // 预热常用文件
     warmup: {
-      clientFiles: [
-        './src/views/**/*.vue',
-        './src/components/**/*.vue',
-      ],
-    },
-  },
-});
+      clientFiles: ['./src/views/**/*.vue', './src/components/**/*.vue']
+    }
+  }
+})
 ```
 
 ## 7. 实施步骤
@@ -420,6 +407,7 @@ lighthouse http://localhost:5173 --view
 ```
 
 **关键指标：**
+
 - FCP (First Contentful Paint) < 1.8s
 - LCP (Largest Contentful Paint) < 2.5s
 - TTI (Time to Interactive) < 3.8s
@@ -437,13 +425,13 @@ time pnpm --filter @cms/cms build
 
 ## 9. 预期总收益
 
-| 指标 | 优化前 | 优化后 | 提升 |
-|------|--------|--------|------|
-| 包体积 | ~2.5MB | ~1.5MB | ↓ 40% |
-| 首屏加载 | ~3.5s | ~1.8s | ↑ 94% |
-| 构建时间 | ~8s | ~5s | ↓ 38% |
-| FCP | ~2.5s | ~1.2s | ↑ 108% |
-| LCP | ~3.8s | ~2.0s | ↑ 90% |
+| 指标     | 优化前 | 优化后 | 提升   |
+| -------- | ------ | ------ | ------ |
+| 包体积   | ~2.5MB | ~1.5MB | ↓ 40%  |
+| 首屏加载 | ~3.5s  | ~1.8s  | ↑ 94%  |
+| 构建时间 | ~8s    | ~5s    | ↓ 38%  |
+| FCP      | ~2.5s  | ~1.2s  | ↑ 108% |
+| LCP      | ~3.8s  | ~2.0s  | ↑ 90%  |
 
 ## 10. 注意事项
 

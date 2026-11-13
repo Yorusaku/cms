@@ -3,18 +3,18 @@
   AxiosRequestConfig,
   AxiosResponse,
   InternalAxiosRequestConfig,
-  AxiosError,
-} from "axios";
+  AxiosError
+} from 'axios'
 
 /**
  * 请求配置接口
  * @template T - 响应数据类型
  */
 export interface RequestConfig extends AxiosRequestConfig {
-  showLoading?: boolean;
-  showError?: boolean;
-  skipAuth?: boolean;
-  onError?: (message: string) => void;
+  showLoading?: boolean
+  showError?: boolean
+  skipAuth?: boolean
+  onError?: (message: string) => void
 }
 
 /**
@@ -22,37 +22,37 @@ export interface RequestConfig extends AxiosRequestConfig {
  * @template T - 数据类型
  */
 export interface ResponseData<T = unknown> {
-  code: number;
-  message: string;
-  data: T;
+  code: number
+  message: string
+  data: T
 }
 
 /**
  * 自定义请求错误接口
  */
 export interface CustomRequestError {
-  message: string;
-  code?: number;
-  response?: AxiosResponse;
+  message: string
+  code?: number
+  response?: AxiosResponse
 }
 
 /**
  * 错误显示函数类型
  */
-export type ErrorDisplayFn = (message: string) => void;
+export type ErrorDisplayFn = (message: string) => void
 
 /**
  * 登录跳转回调函数类型
  */
-export type LoginRedirectFn = () => void;
+export type LoginRedirectFn = () => void
 
 /**
  * Request 构造函数选项
  */
 export interface RequestOptions {
-  baseURL: string;
-  errorDisplayFn?: ErrorDisplayFn;
-  loginRedirectFn?: LoginRedirectFn;
+  baseURL: string
+  errorDisplayFn?: ErrorDisplayFn
+  loginRedirectFn?: LoginRedirectFn
 }
 
 /**
@@ -64,10 +64,10 @@ export interface RequestOptions {
  * const result = await request.get<UserInfo>('/user/info')
  */
 class Request {
-  private instance: AxiosInstance;
-  private loadingCount = 0;
-  private errorDisplayFn: ErrorDisplayFn | null = null;
-  private loginRedirectFn: LoginRedirectFn | null = null;
+  private instance: AxiosInstance
+  private loadingCount = 0
+  private errorDisplayFn: ErrorDisplayFn | null = null
+  private loginRedirectFn: LoginRedirectFn | null = null
 
   /**
    * 构造函数
@@ -78,19 +78,19 @@ class Request {
       baseURL: options.baseURL,
       timeout: 15000,
       headers: {
-        "Content-Type": "application/json",
-      },
-    });
+        'Content-Type': 'application/json'
+      }
+    })
 
     if (options.errorDisplayFn) {
-      this.errorDisplayFn = options.errorDisplayFn;
+      this.errorDisplayFn = options.errorDisplayFn
     }
 
     if (options.loginRedirectFn) {
-      this.loginRedirectFn = options.loginRedirectFn;
+      this.loginRedirectFn = options.loginRedirectFn
     }
 
-    this.setupInterceptors();
+    this.setupInterceptors()
   }
 
   /**
@@ -98,7 +98,7 @@ class Request {
    * @param fn - 错误显示函数
    */
   public setErrorDisplay(fn: ErrorDisplayFn): void {
-    this.errorDisplayFn = fn;
+    this.errorDisplayFn = fn
   }
 
   /**
@@ -106,7 +106,7 @@ class Request {
    * @param fn - 登录跳转回调函数
    */
   public setLoginRedirect(fn: LoginRedirectFn): void {
-    this.loginRedirectFn = fn;
+    this.loginRedirectFn = fn
   }
 
   /**
@@ -116,109 +116,107 @@ class Request {
     // 请求拦截器
     this.instance.interceptors.request.use(
       (config: InternalAxiosRequestConfig) => {
-        const requestConfig = config as RequestConfig;
+        const requestConfig = config as RequestConfig
         // 显示 Loading
         if (requestConfig.showLoading) {
-          this.showLoading();
+          this.showLoading()
         }
         // 添加 Token（使用标准 Authorization 头）
-        const token = this.getToken();
+        const token = this.getToken()
         if (token && !requestConfig.skipAuth) {
-          config.headers["Authorization"] = `Bearer ${token}`;
+          config.headers['Authorization'] = `Bearer ${token}`
         }
-        return config;
+        return config
       },
       (error: unknown) => {
         // 请求错误时隐藏 Loading
         if (this.loadingCount > 0) {
-          this.hideLoading();
+          this.hideLoading()
         }
-        return Promise.reject(error);
-      },
-    );
+        return Promise.reject(error)
+      }
+    )
 
     // 响应拦截器
     this.instance.interceptors.response.use(
       (response: AxiosResponse<ResponseData>) => {
-        const requestConfig = response.config as RequestConfig;
+        const requestConfig = response.config as RequestConfig
         // 隐藏 Loading
         if (requestConfig.showLoading) {
-          this.hideLoading();
+          this.hideLoading()
         }
 
-        const { data, status } = response;
+        const { data, status } = response
 
         // HTTP 状态码检查
         if (status < 200 || status >= 300) {
           const error: CustomRequestError = {
-            message: "[Fetch]: 网络开了小差",
-            code: status,
-          };
-          if (requestConfig.showError) {
-            this.showError(error.message);
+            message: '[Fetch]: 网络开了小差',
+            code: status
           }
-          return Promise.reject(error);
+          if (requestConfig.showError) {
+            this.showError(error.message)
+          }
+          return Promise.reject(error)
         }
 
         // 二进制响应（CSV / Excel 导出等）：后端直接回文件流，没有 { code, message, data }
         // 业务包，若按业务码解包会把 Blob 的 undefined code 误判为业务失败，
         // 因此原样返回，交由调用方读取 response.data。
-        const responseType = response.config.responseType;
-        if (responseType === "blob" || responseType === "arraybuffer") {
-          return response;
+        const responseType = response.config.responseType
+        if (responseType === 'blob' || responseType === 'arraybuffer') {
+          return response
         }
 
         // 业务状态码检查
         if (data.code === 10000) {
           // 请求成功
-          return response;
+          return response
         } else if (data.code === -2) {
           // 登录失效
           if (this.getCanToLoginStatus()) {
-            this.toLogin();
+            this.toLogin()
           }
           const error: CustomRequestError = {
-            message: data.message || "登录失效，请重新登录",
-            code: data.code,
-          };
-          if (requestConfig.showError) {
-            this.showError(error.message);
+            message: data.message || '登录失效，请重新登录',
+            code: data.code
           }
-          return Promise.reject(error);
+          if (requestConfig.showError) {
+            this.showError(error.message)
+          }
+          return Promise.reject(error)
         } else {
           // 其他业务错误
           const error: CustomRequestError = {
-            message: data.message || "请求失败",
-            code: data.code,
-          };
-          if (requestConfig.showError) {
-            this.showError(error.message);
+            message: data.message || '请求失败',
+            code: data.code
           }
-          return Promise.reject(error);
+          if (requestConfig.showError) {
+            this.showError(error.message)
+          }
+          return Promise.reject(error)
         }
       },
       (error: unknown) => {
         // 响应错误处理
         if (this.loadingCount > 0) {
-          this.hideLoading();
+          this.hideLoading()
         }
-        const errorMsg = this.getErrorMessage(error);
-        const requestConfig = (error as any).config as
-          | RequestConfig
-          | undefined;
+        const errorMsg = this.getErrorMessage(error)
+        const requestConfig = (error as any).config as RequestConfig | undefined
         if (requestConfig && requestConfig.showError) {
-          this.showError(errorMsg);
+          this.showError(errorMsg)
         }
-        return Promise.reject(error);
-      },
-    );
+        return Promise.reject(error)
+      }
+    )
   }
 
   /**
    * 显示 Loading
    */
   private showLoading(): void {
-    this.loadingCount++;
+    this.loadingCount++
   }
 
   /**
@@ -226,7 +224,7 @@ class Request {
    */
   private hideLoading(): void {
     if (this.loadingCount > 0) {
-      this.loadingCount--;
+      this.loadingCount--
     }
   }
 
@@ -235,7 +233,7 @@ class Request {
    * @returns Token 字符串，不存在则返回 null
    */
   private getToken(): string | null {
-    return localStorage.getItem("token");
+    return localStorage.getItem('token')
   }
 
   /**
@@ -243,19 +241,19 @@ class Request {
    * @returns 是否允许跳转
    */
   private getCanToLoginStatus(): boolean {
-    return true;
+    return true
   }
 
   /**
    * 跳转到登录页
    */
   private toLogin(): void {
-    localStorage.removeItem("token");
+    localStorage.removeItem('token')
     if (this.loginRedirectFn) {
-      this.loginRedirectFn();
+      this.loginRedirectFn()
     } else {
       // 降级方案：硬编码跳转
-      window.location.href = window.location.origin + "/cms-manage/#/login";
+      window.location.href = window.location.origin + '/cms-manage/#/login'
     }
   }
 
@@ -265,9 +263,9 @@ class Request {
    */
   private showError(message: string): void {
     if (this.errorDisplayFn) {
-      this.errorDisplayFn(message);
+      this.errorDisplayFn(message)
     } else {
-      console.error(message);
+      console.error(message)
     }
   }
 
@@ -278,16 +276,16 @@ class Request {
    */
   private getErrorMessage(error: unknown): string {
     if (axios.isAxiosError(error)) {
-      const axiosError = error as AxiosError;
+      const axiosError = error as AxiosError
       if (axiosError.response) {
-        return `请求失败：${axiosError.response.status}`;
+        return `请求失败：${axiosError.response.status}`
       } else if (axiosError.request) {
-        return "网络异常，请稍后重试";
+        return '网络异常，请稍后重试'
       } else {
-        return axiosError.message || "未知错误";
+        return axiosError.message || '未知错误'
       }
     }
-    return "网络异常，请稍后重试";
+    return '网络异常，请稍后重试'
   }
 
   /**
@@ -297,9 +295,7 @@ class Request {
    * @returns Promise<ResponseData<T>>
    */
   public request<T = unknown>(config: RequestConfig): Promise<ResponseData<T>> {
-    return this.instance
-      .request<ResponseData<T>>(config)
-      .then((res) => res.data);
+    return this.instance.request<ResponseData<T>>(config).then(res => res.data)
   }
 
   /**
@@ -312,13 +308,8 @@ class Request {
    * @example
    * const userInfo = await request.get<UserInfo>('/user/info')
    */
-  public get<T = unknown>(
-    url: string,
-    config?: RequestConfig,
-  ): Promise<ResponseData<T>> {
-    return this.instance
-      .get<ResponseData<T>>(url, config)
-      .then((res) => res.data);
+  public get<T = unknown>(url: string, config?: RequestConfig): Promise<ResponseData<T>> {
+    return this.instance.get<ResponseData<T>>(url, config).then(res => res.data)
   }
 
   /**
@@ -335,11 +326,9 @@ class Request {
   public post<T = unknown>(
     url: string,
     data?: unknown,
-    config?: RequestConfig,
+    config?: RequestConfig
   ): Promise<ResponseData<T>> {
-    return this.instance
-      .post<ResponseData<T>>(url, data, config)
-      .then((res) => res.data);
+    return this.instance.post<ResponseData<T>>(url, data, config).then(res => res.data)
   }
 
   /**
@@ -356,11 +345,9 @@ class Request {
   public put<T = unknown>(
     url: string,
     data?: unknown,
-    config?: RequestConfig,
+    config?: RequestConfig
   ): Promise<ResponseData<T>> {
-    return this.instance
-      .put<ResponseData<T>>(url, data, config)
-      .then((res) => res.data);
+    return this.instance.put<ResponseData<T>>(url, data, config).then(res => res.data)
   }
 
   /**
@@ -373,13 +360,8 @@ class Request {
    * @example
    * const result = await request.delete('/user/123')
    */
-  public delete<T = unknown>(
-    url: string,
-    config?: RequestConfig,
-  ): Promise<ResponseData<T>> {
-    return this.instance
-      .delete<ResponseData<T>>(url, config)
-      .then((res) => res.data);
+  public delete<T = unknown>(url: string, config?: RequestConfig): Promise<ResponseData<T>> {
+    return this.instance.delete<ResponseData<T>>(url, config).then(res => res.data)
   }
 
   /**
@@ -399,10 +381,10 @@ class Request {
   public async download(url: string, config?: RequestConfig): Promise<Blob> {
     const response = await this.instance.get<Blob>(url, {
       ...config,
-      responseType: "blob",
-    });
-    return response.data;
+      responseType: 'blob'
+    })
+    return response.data
   }
 }
 
-export default Request;
+export default Request

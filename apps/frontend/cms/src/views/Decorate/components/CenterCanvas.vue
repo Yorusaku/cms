@@ -169,7 +169,7 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   /** 请求打开编辑器内实时预览（由 Decorate/index.vue 承载浮层） */
-  (e: "open-live-preview"): void
+  (e: 'open-live-preview'): void
 }>()
 
 const dragDrop = useDragDrop()
@@ -242,20 +242,20 @@ const onVirtualMeasure = (id: string, _height: number) => {
  * 直接点在 input/select/textarea 上保持原行为；CRS 端不经过画布，表单交互不受影响。
  */
 const preventLabelForwarding = (event: MouseEvent) => {
-  const target = event.target as HTMLElement | null;
-  if (!target || typeof target.closest !== "function") {
-    return;
+  const target = event.target as HTMLElement | null
+  if (!target || typeof target.closest !== 'function') {
+    return
   }
-  const label = target.closest("label");
+  const label = target.closest('label')
   if (!label) {
-    return;
+    return
   }
-  const isFormControl = ["INPUT", "SELECT", "TEXTAREA"].includes(target.tagName);
+  const isFormControl = ['INPUT', 'SELECT', 'TEXTAREA'].includes(target.tagName)
   if (isFormControl) {
-    return;
+    return
   }
-  event.preventDefault();
-};
+  event.preventDefault()
+}
 
 const handleSelectComponent = (id: string, event: MouseEvent) => {
   if (event.ctrlKey || event.metaKey) {

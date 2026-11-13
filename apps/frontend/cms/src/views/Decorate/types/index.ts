@@ -1,4 +1,4 @@
 export interface DragComponent {
-  type?: string;
-  [key: string]: unknown;
+  type?: string
+  [key: string]: unknown
 }

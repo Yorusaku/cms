@@ -1,10 +1,6 @@
 ﻿<template>
   <div class="material-config-renderer">
-    <section
-      v-for="section in visibleSections"
-      :key="section.label"
-      class="config-section"
-    >
+    <section v-for="section in visibleSections" :key="section.label" class="config-section">
       <header class="section-header" @click="toggleSection(section.label!)">
         <h4 class="section-title">{{ section.label }}</h4>
         <p v-if="section.description" class="section-description">
@@ -39,166 +35,153 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { useDebounceFn } from "@vueuse/core";
-import type {
-  MaterialFieldSchema,
-  MaterialSectionSchema,
-  MaterialVisibilityRule,
-} from "@cms/types";
-import { deepClone } from "@cms/utils";
-import { resolveMaterialDefinition } from "@cms/ui";
-import MaterialFieldRenderer from "./MaterialFieldRenderer.vue";
+import { computed, ref, watch } from 'vue'
+import { useDebounceFn } from '@vueuse/core'
+import type { MaterialFieldSchema, MaterialSectionSchema, MaterialVisibilityRule } from '@cms/types'
+import { deepClone } from '@cms/utils'
+import { resolveMaterialDefinition } from '@cms/ui'
+import MaterialFieldRenderer from './MaterialFieldRenderer.vue'
 
-type MaterialRenderableField = Exclude<MaterialFieldSchema, MaterialSectionSchema>;
+type MaterialRenderableField = Exclude<MaterialFieldSchema, MaterialSectionSchema>
 
 const props = withDefaults(
   defineProps<{
-    materialType: string;
-    componentProps: Record<string, unknown>;
-    batchMode?: boolean;
+    materialType: string
+    componentProps: Record<string, unknown>
+    batchMode?: boolean
   }>(),
   {
-    batchMode: false,
-  },
-);
+    batchMode: false
+  }
+)
 
 const emit = defineEmits<{
-  (e: "update", props: Record<string, unknown>): void;
-}>();
+  (e: 'update', props: Record<string, unknown>): void
+}>()
 
-const draftProps = ref<Record<string, unknown>>(deepClone(props.componentProps));
-const expandedSections = ref<Set<string>>(new Set());
+const draftProps = ref<Record<string, unknown>>(deepClone(props.componentProps))
+const expandedSections = ref<Set<string>>(new Set())
 
-const materialDefinition = computed(() =>
-  resolveMaterialDefinition(props.materialType),
-);
+const materialDefinition = computed(() => resolveMaterialDefinition(props.materialType))
 
 const materialSchema = computed(() => {
-  if (materialDefinition.value?.editorConfig.mode !== "schema") {
-    return null;
+  if (materialDefinition.value?.editorConfig.mode !== 'schema') {
+    return null
   }
 
-  return materialDefinition.value.editorConfig.schema;
-});
+  return materialDefinition.value.editorConfig.schema
+})
 
 function isVisible(rule?: MaterialVisibilityRule) {
   if (!rule) {
-    return true;
+    return true
   }
 
-  const currentValue = getValue(rule.field);
+  const currentValue = getValue(rule.field)
 
   if (rule.truthy) {
-    return Boolean(currentValue);
+    return Boolean(currentValue)
   }
 
   if (rule.in) {
-    return rule.in.includes(currentValue);
+    return rule.in.includes(currentValue)
   }
 
   if (rule.notEquals !== undefined) {
-    return currentValue !== rule.notEquals;
+    return currentValue !== rule.notEquals
   }
 
   if (rule.equals !== undefined) {
-    return currentValue === rule.equals;
+    return currentValue === rule.equals
   }
 
-  return true;
+  return true
 }
 
 const visibleSections = computed(
-  () =>
-    materialSchema.value?.sections.filter((section) =>
-      isVisible(section.visibleWhen),
-    ) ?? [],
-);
+  () => materialSchema.value?.sections.filter(section => isVisible(section.visibleWhen)) ?? []
+)
 
 watch(
   () => props.componentProps,
-  (value) => {
-    draftProps.value = deepClone(value);
+  value => {
+    draftProps.value = deepClone(value)
   },
-  { deep: true },
-);
+  { deep: true }
+)
 
 watch(
   visibleSections,
-  (sections) => {
+  sections => {
     // sections 变化意味着切换了物料类型（组件被复用、本组件不会重新挂载），
     // 需重置为新物料的全部 section：否则 expandedSections 残留上一个物料的
     // label，新物料（如连续拖入多个物料后自动选中）的配置区会整体折叠
-    expandedSections.value = new Set(sections.map((section) => section.label!).filter(Boolean));
+    expandedSections.value = new Set(sections.map(section => section.label!).filter(Boolean))
   },
-  { immediate: true },
-);
+  { immediate: true }
+)
 
 const debouncedEmit = useDebounceFn(() => {
-  emit("update", deepClone(draftProps.value));
-}, 200);
+  emit('update', deepClone(draftProps.value))
+}, 200)
 
 const throttledEmitForBatch = useDebounceFn(() => {
-  emit("update", deepClone(draftProps.value));
-}, 300);
+  emit('update', deepClone(draftProps.value))
+}, 300)
 
-const getRenderableFields = (
-  fields: MaterialFieldSchema[],
-): MaterialRenderableField[] => {
-  return fields.filter(
-    (field): field is MaterialRenderableField => field.type !== "section",
-  );
-};
+const getRenderableFields = (fields: MaterialFieldSchema[]): MaterialRenderableField[] => {
+  return fields.filter((field): field is MaterialRenderableField => field.type !== 'section')
+}
 
 const getValue = (path: string) =>
-  path.split(".").reduce<unknown>((currentValue, segment) => {
-    if (!currentValue || typeof currentValue !== "object") {
-      return undefined;
+  path.split('.').reduce<unknown>((currentValue, segment) => {
+    if (!currentValue || typeof currentValue !== 'object') {
+      return undefined
     }
 
-    return (currentValue as Record<string, unknown>)[segment];
-  }, draftProps.value);
+    return (currentValue as Record<string, unknown>)[segment]
+  }, draftProps.value)
 
 const setValue = (path: string, value: unknown) => {
-  const segments = path.split(".");
-  let currentValue: Record<string, unknown> = draftProps.value;
+  const segments = path.split('.')
+  let currentValue: Record<string, unknown> = draftProps.value
 
   segments.forEach((segment, index) => {
     if (index === segments.length - 1) {
-      currentValue[segment] = value;
-      return;
+      currentValue[segment] = value
+      return
     }
 
-    const nextValue = currentValue[segment];
-    if (!nextValue || typeof nextValue !== "object") {
-      currentValue[segment] = {};
+    const nextValue = currentValue[segment]
+    if (!nextValue || typeof nextValue !== 'object') {
+      currentValue[segment] = {}
     }
 
-    currentValue = currentValue[segment] as Record<string, unknown>;
-  });
-};
+    currentValue = currentValue[segment] as Record<string, unknown>
+  })
+}
 
 const handleFieldUpdate = (path: string, value: unknown) => {
-  setValue(path, value);
+  setValue(path, value)
   if (props.batchMode) {
-    throttledEmitForBatch();
-    return;
+    throttledEmitForBatch()
+    return
   }
 
-  debouncedEmit();
-};
+  debouncedEmit()
+}
 
-const isSectionExpanded = (label: string) => expandedSections.value.has(label);
+const isSectionExpanded = (label: string) => expandedSections.value.has(label)
 
 const toggleSection = (label: string) => {
-  const next = new Set(expandedSections.value);
+  const next = new Set(expandedSections.value)
   if (next.has(label)) {
-    next.delete(label);
+    next.delete(label)
   } else {
-    next.add(label);
+    next.add(label)
   }
-  expandedSections.value = next;
-};
+  expandedSections.value = next
+}
 </script>
 
 <style scoped>

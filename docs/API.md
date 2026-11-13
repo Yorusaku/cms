@@ -9,9 +9,9 @@
 ### 1.2 初始化
 
 ```typescript
-import { usePageStore } from "@/store/usePageStore";
+import { usePageStore } from '@/store/usePageStore'
 
-const pageStore = usePageStore();
+const pageStore = usePageStore()
 ```
 
 ### 1.3 状态属性
@@ -39,157 +39,171 @@ pageStore.activeComponent: IComponentSchemaV2 | null; // 当前选中组件
 ### 1.4 方法
 
 #### setInitPageSchema(schema: IPageSchemaV2)
+
 初始化页面 Schema。
 
 ```typescript
 pageStore.setInitPageSchema({
-  version: "2.0.0",
-  pageConfig: { name: "My Page" },
+  version: '2.0.0',
+  pageConfig: { name: 'My Page' },
   componentMap: {},
-  rootIds: [],
-});
+  rootIds: []
+})
 ```
 
 #### setPageConfig(config: Partial<IPageSchemaV2["pageConfig"]>)
+
 更新页面配置。
 
 ```typescript
 pageStore.setPageConfig({
-  name: "Updated Page",
-  backgroundColor: "#ffffff",
-});
+  name: 'Updated Page',
+  backgroundColor: '#ffffff'
+})
 ```
 
 #### setActiveId(id: string)
+
 设置当前选中的组件。
 
 ```typescript
-pageStore.setActiveId("component-1");
+pageStore.setActiveId('component-1')
 ```
 
 #### toggleComponentSelection(id: string)
+
 切换组件的多选状态。
 
 ```typescript
-pageStore.toggleComponentSelection("component-1");
+pageStore.toggleComponentSelection('component-1')
 ```
 
 #### addComponent(component: IComponentSchemaV2, parentId?: string)
+
 添加组件。
 
 ```typescript
 pageStore.addComponent({
-  id: "new-component",
-  type: "NoticeBlock",
-  props: { title: "Notice" },
-  children: [],
-});
+  id: 'new-component',
+  type: 'NoticeBlock',
+  props: { title: 'Notice' },
+  children: []
+})
 ```
 
 #### removeComponent(id: string)
+
 删除组件。
 
 ```typescript
-pageStore.removeComponent("component-1");
+pageStore.removeComponent('component-1')
 ```
 
 #### deleteComponent(options: { index: number })
+
 按索引删除根组件。
 
 ```typescript
-pageStore.deleteComponent({ index: 0 });
+pageStore.deleteComponent({ index: 0 })
 ```
 
 #### deleteActiveComponent()
+
 删除当前选中的组件。
 
 ```typescript
-pageStore.deleteActiveComponent();
+pageStore.deleteActiveComponent()
 ```
 
 #### updateComponent(id: string, updates: Partial<IComponentSchemaV2>)
+
 更新组件。
 
 ```typescript
-pageStore.updateComponent("component-1", {
-  props: { title: "Updated Title" },
-});
+pageStore.updateComponent('component-1', {
+  props: { title: 'Updated Title' }
+})
 ```
 
 #### duplicateComponent(options: { id: string })
+
 复制组件。
 
 ```typescript
-pageStore.duplicateComponent({ id: "component-1" });
+pageStore.duplicateComponent({ id: 'component-1' })
 ```
 
 #### moveComponent(options: { from: number; to: number })
+
 移动组件位置。
 
 ```typescript
-pageStore.moveComponent({ from: 0, to: 1 });
+pageStore.moveComponent({ from: 0, to: 1 })
 ```
 
 #### reorderRootIds(ids: string[])
+
 重新排序根组件。
 
 ```typescript
-pageStore.reorderRootIds(["comp-2", "comp-1", "comp-3"]);
+pageStore.reorderRootIds(['comp-2', 'comp-1', 'comp-3'])
 ```
 
 #### undo()
+
 撤销上一步操作。
 
 ```typescript
 if (pageStore.canUndo) {
-  pageStore.undo();
+  pageStore.undo()
 }
 ```
 
 #### redo()
+
 重做下一步操作。
 
 ```typescript
 if (pageStore.canRedo) {
-  pageStore.redo();
+  pageStore.redo()
 }
 ```
 
 ### 1.5 示例
 
 ```typescript
-import { usePageStore } from "@/store/usePageStore";
+import { usePageStore } from '@/store/usePageStore'
 
-const pageStore = usePageStore();
+const pageStore = usePageStore()
 
 // 初始化页面
 pageStore.setInitPageSchema({
-  version: "2.0.0",
-  pageConfig: { name: "My Page" },
+  version: '2.0.0',
+  pageConfig: { name: 'My Page' },
   componentMap: {},
-  rootIds: [],
-});
+  rootIds: []
+})
 
 // 添加组件
 pageStore.addComponent({
-  id: "notice-1",
-  type: "NoticeBlock",
-  props: { title: "Welcome" },
-});
+  id: 'notice-1',
+  type: 'NoticeBlock',
+  props: { title: 'Welcome' }
+})
 
 // 选中组件
-pageStore.setActiveId("notice-1");
+pageStore.setActiveId('notice-1')
 
 // 更新组件
-pageStore.updateComponent("notice-1", {
-  props: { title: "Updated Welcome" },
-});
+pageStore.updateComponent('notice-1', {
+  props: { title: 'Updated Welcome' }
+})
 
 // 撤销
-pageStore.undo();
+pageStore.undo()
 
 // 重做
-pageStore.redo();
+pageStore.redo()
 ```
 
 ---
@@ -203,49 +217,53 @@ pageStore.redo();
 ### 2.2 方法
 
 #### loadPageDraft(pageId: string): Promise<IPageSchemaV2>
+
 加载页面草稿。
 
 ```typescript
-const schema = await usePageDraft().loadPageDraft("page-123");
+const schema = await usePageDraft().loadPageDraft('page-123')
 ```
 
 #### savePageDraft(pageId: string, schema: IPageSchemaV2): Promise<void>
+
 保存页面草稿。
 
 ```typescript
-await usePageDraft().savePageDraft("page-123", schema);
+await usePageDraft().savePageDraft('page-123', schema)
 ```
 
 #### clearPageDraft(pageId: string): Promise<void>
+
 清除页面草稿。
 
 ```typescript
-await usePageDraft().clearPageDraft("page-123");
+await usePageDraft().clearPageDraft('page-123')
 ```
 
 #### getLastSaveTime(pageId: string): number
+
 获取最后保存时间。
 
 ```typescript
-const timestamp = usePageDraft().getLastSaveTime("page-123");
+const timestamp = usePageDraft().getLastSaveTime('page-123')
 ```
 
 ### 2.3 示例
 
 ```typescript
-import { usePageDraft } from "@/hooks/usePageDraft";
+import { usePageDraft } from '@/hooks/usePageDraft'
 
-const pageDraft = usePageDraft();
+const pageDraft = usePageDraft()
 
 // 加载草稿
-const schema = await pageDraft.loadPageDraft("page-123");
+const schema = await pageDraft.loadPageDraft('page-123')
 
 // 保存草稿
-await pageDraft.savePageDraft("page-123", schema);
+await pageDraft.savePageDraft('page-123', schema)
 
 // 获取最后保存时间
-const lastSaveTime = pageDraft.getLastSaveTime("page-123");
-console.log("Last saved:", new Date(lastSaveTime));
+const lastSaveTime = pageDraft.getLastSaveTime('page-123')
+console.log('Last saved:', new Date(lastSaveTime))
 ```
 
 ---
@@ -259,66 +277,63 @@ console.log("Last saved:", new Date(lastSaveTime));
 ### 3.2 方法
 
 #### getLocalPublishLogs(pageId: string): PublishLog[]
+
 获取本地发布记录。
 
 ```typescript
-const logs = usePagePublish().getLocalPublishLogs("page-123");
+const logs = usePagePublish().getLocalPublishLogs('page-123')
 ```
 
 #### markPageDraft(pageId: string)
+
 标记页面为草稿状态。
 
 ```typescript
-usePagePublish().markPageDraft("page-123");
+usePagePublish().markPageDraft('page-123')
 ```
 
 #### publishPage(pageId: string, schema: IPageSchemaV2, remark: string): Promise<PublishLog>
+
 发布页面。
 
 ```typescript
-const log = await usePagePublish().publishPage(
-  "page-123",
-  schema,
-  "Initial publish"
-);
+const log = await usePagePublish().publishPage('page-123', schema, 'Initial publish')
 ```
 
 #### rollbackPage(pageId: string, version: number): Promise<PublishLog>
+
 回滚到指定版本。
 
 ```typescript
-const log = await usePagePublish().rollbackPage("page-123", 1);
+const log = await usePagePublish().rollbackPage('page-123', 1)
 ```
 
 #### getPublishLog(pageId: string, version: number): PublishLog | null
+
 获取指定版本的发布记录。
 
 ```typescript
-const log = usePagePublish().getPublishLog("page-123", 1);
+const log = usePagePublish().getPublishLog('page-123', 1)
 ```
 
 ### 3.3 示例
 
 ```typescript
-import { usePagePublish } from "@/hooks/usePagePublish";
+import { usePagePublish } from '@/hooks/usePagePublish'
 
-const pagePublish = usePagePublish();
+const pagePublish = usePagePublish()
 
 // 获取发布记录
-const logs = pagePublish.getLocalPublishLogs("page-123");
-console.log("Publish logs:", logs);
+const logs = pagePublish.getLocalPublishLogs('page-123')
+console.log('Publish logs:', logs)
 
 // 发布页面
-const publishLog = await pagePublish.publishPage(
-  "page-123",
-  schema,
-  "Release v1.0"
-);
-console.log("Published version:", publishLog.version);
+const publishLog = await pagePublish.publishPage('page-123', schema, 'Release v1.0')
+console.log('Published version:', publishLog.version)
 
 // 回滚到上一个版本
-const rollbackLog = await pagePublish.rollbackPage("page-123", publishLog.version - 1);
-console.log("Rolled back to version:", rollbackLog.version);
+const rollbackLog = await pagePublish.rollbackPage('page-123', publishLog.version - 1)
+console.log('Rolled back to version:', rollbackLog.version)
 ```
 
 ---
@@ -330,17 +345,19 @@ console.log("Rolled back to version:", rollbackLog.version);
 **用途：** 显示通知、公告等信息。
 
 **Props：**
+
 ```typescript
 interface NoticeBlockProps {
-  title: string;              // 标题
-  content: string;            // 内容
-  type?: "info" | "success" | "warning" | "error"; // 类型
-  closable?: boolean;         // 是否可关闭
-  icon?: string;              // 图标
+  title: string // 标题
+  content: string // 内容
+  type?: 'info' | 'success' | 'warning' | 'error' // 类型
+  closable?: boolean // 是否可关闭
+  icon?: string // 图标
 }
 ```
 
 **使用示例：**
+
 ```vue
 <NoticeBlock
   title="Important Notice"
@@ -355,26 +372,28 @@ interface NoticeBlockProps {
 **用途：** 显示图片或内容轮播。
 
 **Props：**
+
 ```typescript
 interface CarouselBlockProps {
   items: Array<{
-    id: string;
-    image: string;
-    title?: string;
-    link?: string;
-  }>;
-  autoplay?: boolean;         // 自动播放
-  interval?: number;          // 播放间隔（毫秒）
-  height?: string;            // 高度
+    id: string
+    image: string
+    title?: string
+    link?: string
+  }>
+  autoplay?: boolean // 自动播放
+  interval?: number // 播放间隔（毫秒）
+  height?: string // 高度
 }
 ```
 
 **使用示例：**
+
 ```vue
 <CarouselBlock
   :items="[
     { id: '1', image: 'url1', title: 'Slide 1' },
-    { id: '2', image: 'url2', title: 'Slide 2' },
+    { id: '2', image: 'url2', title: 'Slide 2' }
   ]"
   :autoplay="true"
   :interval="3000"
@@ -386,18 +405,20 @@ interface CarouselBlockProps {
 **用途：** 显示产品信息。
 
 **Props：**
+
 ```typescript
 interface ProductBlockProps {
-  productId: string;          // 产品 ID
-  title: string;              // 产品名称
-  price: number;              // 价格
-  image: string;              // 产品图片
-  description?: string;       // 描述
-  link?: string;              // 链接
+  productId: string // 产品 ID
+  title: string // 产品名称
+  price: number // 价格
+  image: string // 产品图片
+  description?: string // 描述
+  link?: string // 链接
 }
 ```
 
 **使用示例：**
+
 ```vue
 <ProductBlock
   product-id="prod-123"
@@ -413,24 +434,21 @@ interface ProductBlockProps {
 **用途：** 显示图片。
 
 **Props：**
+
 ```typescript
 interface ImageBlockProps {
-  src: string;                // 图片 URL
-  alt?: string;               // 替代文本
-  width?: string;             // 宽度
-  height?: string;            // 高度
-  link?: string;              // 链接
+  src: string // 图片 URL
+  alt?: string // 替代文本
+  width?: string // 宽度
+  height?: string // 高度
+  link?: string // 链接
 }
 ```
 
 **使用示例：**
+
 ```vue
-<ImageBlock
-  src="image.jpg"
-  alt="Description"
-  width="100%"
-  height="300px"
-/>
+<ImageBlock src="image.jpg" alt="Description" width="100%" height="300px" />
 ```
 
 ### 4.5 TextBlock - 文本块
@@ -438,23 +456,20 @@ interface ImageBlockProps {
 **用途：** 显示文本内容。
 
 **Props：**
+
 ```typescript
 interface TextBlockProps {
-  content: string;            // 文本内容
-  fontSize?: string;          // 字体大小
-  color?: string;             // 文字颜色
-  align?: "left" | "center" | "right"; // 对齐方式
+  content: string // 文本内容
+  fontSize?: string // 字体大小
+  color?: string // 文字颜色
+  align?: 'left' | 'center' | 'right' // 对齐方式
 }
 ```
 
 **使用示例：**
+
 ```vue
-<TextBlock
-  content="Hello World"
-  font-size="16px"
-  color="#333"
-  align="center"
-/>
+<TextBlock content="Hello World" font-size="16px" color="#333" align="center" />
 ```
 
 ### 4.6 ButtonBlock - 按钮块
@@ -462,24 +477,21 @@ interface TextBlockProps {
 **用途：** 显示按钮。
 
 **Props：**
+
 ```typescript
 interface ButtonBlockProps {
-  text: string;               // 按钮文本
-  type?: "primary" | "success" | "warning" | "danger"; // 类型
-  size?: "small" | "medium" | "large"; // 大小
-  link?: string;              // 链接
-  onClick?: () => void;       // 点击回调
+  text: string // 按钮文本
+  type?: 'primary' | 'success' | 'warning' | 'danger' // 类型
+  size?: 'small' | 'medium' | 'large' // 大小
+  link?: string // 链接
+  onClick?: () => void // 点击回调
 }
 ```
 
 **使用示例：**
+
 ```vue
-<ButtonBlock
-  text="Click Me"
-  type="primary"
-  size="large"
-  @click="handleClick"
-/>
+<ButtonBlock text="Click Me" type="primary" size="large" @click="handleClick" />
 ```
 
 ### 4.7 FormBlock - 表单块
@@ -487,25 +499,27 @@ interface ButtonBlockProps {
 **用途：** 显示表单。
 
 **Props：**
+
 ```typescript
 interface FormBlockProps {
   fields: Array<{
-    name: string;
-    label: string;
-    type: "text" | "email" | "number" | "textarea";
-    required?: boolean;
-  }>;
-  submitText?: string;        // 提交按钮文本
-  onSubmit?: (data: any) => void; // 提交回调
+    name: string
+    label: string
+    type: 'text' | 'email' | 'number' | 'textarea'
+    required?: boolean
+  }>
+  submitText?: string // 提交按钮文本
+  onSubmit?: (data: any) => void // 提交回调
 }
 ```
 
 **使用示例：**
+
 ```vue
 <FormBlock
   :fields="[
     { name: 'email', label: 'Email', type: 'email', required: true },
-    { name: 'message', label: 'Message', type: 'textarea' },
+    { name: 'message', label: 'Message', type: 'textarea' }
   ]"
   submit-text="Send"
   @submit="handleSubmit"
@@ -517,31 +531,33 @@ interface FormBlockProps {
 **用途：** 显示表格数据。
 
 **Props：**
+
 ```typescript
 interface TableBlockProps {
   columns: Array<{
-    key: string;
-    label: string;
-    width?: string;
-  }>;
-  data: Array<Record<string, any>>;
+    key: string
+    label: string
+    width?: string
+  }>
+  data: Array<Record<string, any>>
   pagination?: {
-    pageSize: number;
-    total: number;
-  };
+    pageSize: number
+    total: number
+  }
 }
 ```
 
 **使用示例：**
+
 ```vue
 <TableBlock
   :columns="[
     { key: 'name', label: 'Name' },
-    { key: 'email', label: 'Email' },
+    { key: 'email', label: 'Email' }
   ]"
   :data="[
     { name: 'John', email: 'john@example.com' },
-    { name: 'Jane', email: 'jane@example.com' },
+    { name: 'Jane', email: 'jane@example.com' }
   ]"
 />
 ```
@@ -551,29 +567,29 @@ interface TableBlockProps {
 **用途：** 显示图表。
 
 **Props：**
+
 ```typescript
 interface ChartBlockProps {
-  type: "line" | "bar" | "pie" | "area"; // 图表类型
+  type: 'line' | 'bar' | 'pie' | 'area' // 图表类型
   data: {
-    labels: string[];
+    labels: string[]
     datasets: Array<{
-      label: string;
-      data: number[];
-    }>;
-  };
-  options?: any;              // 图表选项
+      label: string
+      data: number[]
+    }>
+  }
+  options?: any // 图表选项
 }
 ```
 
 **使用示例：**
+
 ```vue
 <ChartBlock
   type="bar"
   :data="{
     labels: ['Jan', 'Feb', 'Mar'],
-    datasets: [
-      { label: 'Sales', data: [100, 200, 150] },
-    ],
+    datasets: [{ label: 'Sales', data: [100, 200, 150] }]
   }"
 />
 ```
@@ -583,26 +599,22 @@ interface ChartBlockProps {
 **用途：** 显示视频。
 
 **Props：**
+
 ```typescript
 interface VideoBlockProps {
-  src: string;                // 视频 URL
-  poster?: string;            // 封面图片
-  width?: string;             // 宽度
-  height?: string;            // 高度
-  controls?: boolean;         // 显示控制条
-  autoplay?: boolean;         // 自动播放
+  src: string // 视频 URL
+  poster?: string // 封面图片
+  width?: string // 宽度
+  height?: string // 高度
+  controls?: boolean // 显示控制条
+  autoplay?: boolean // 自动播放
 }
 ```
 
 **使用示例：**
+
 ```vue
-<VideoBlock
-  src="video.mp4"
-  poster="poster.jpg"
-  width="100%"
-  height="400px"
-  :controls="true"
-/>
+<VideoBlock src="video.mp4" poster="poster.jpg" width="100%" height="400px" :controls="true" />
 ```
 
 ---
@@ -612,98 +624,103 @@ interface VideoBlockProps {
 ### 5.1 editor-optimization.ts
 
 #### createDebounce(fn, options)
+
 创建防抖函数。
 
 ```typescript
-import { createDebounce } from "@/utils/editor-optimization";
+import { createDebounce } from '@/utils/editor-optimization'
 
-const debouncedSave = createDebounce(
-  () => savePageDraft(pageId, schema),
-  { wait: 300, trailing: true }
-);
+const debouncedSave = createDebounce(() => savePageDraft(pageId, schema), {
+  wait: 300,
+  trailing: true
+})
 ```
 
 #### createThrottle(fn, options)
+
 创建节流函数。
 
 ```typescript
-import { createThrottle } from "@/utils/editor-optimization";
+import { createThrottle } from '@/utils/editor-optimization'
 
-const throttledScroll = createThrottle(
-  (event) => handleScroll(event),
-  { wait: 16 }
-);
+const throttledScroll = createThrottle(event => handleScroll(event), { wait: 16 })
 ```
 
 #### createRAFThrottle(fn)
+
 创建 RAF 节流函数。
 
 ```typescript
-import { createRAFThrottle } from "@/utils/editor-optimization";
+import { createRAFThrottle } from '@/utils/editor-optimization'
 
-const rafThrottledDrag = createRAFThrottle(
-  (event) => handleDrag(event)
-);
+const rafThrottledDrag = createRAFThrottle(event => handleDrag(event))
 ```
 
 #### ComponentRenderCache
+
 组件渲染缓存。
 
 ```typescript
-import { ComponentRenderCache } from "@/utils/editor-optimization";
+import { ComponentRenderCache } from '@/utils/editor-optimization'
 
-const cache = new ComponentRenderCache(100);
-cache.set("component-1", renderedComponent);
-const cached = cache.get("component-1");
+const cache = new ComponentRenderCache(100)
+cache.set('component-1', renderedComponent)
+const cached = cache.get('component-1')
 ```
 
 ### 5.2 performance-monitor.ts
 
 #### getPerformanceMonitor()
+
 获取性能监控实例。
 
 ```typescript
-import { getPerformanceMonitor } from "@/utils/performance-monitor";
+import { getPerformanceMonitor } from '@/utils/performance-monitor'
 
-const monitor = getPerformanceMonitor();
+const monitor = getPerformanceMonitor()
 ```
 
 #### markStart(name)
+
 标记测量开始。
 
 ```typescript
-monitor.markStart("editor-init");
+monitor.markStart('editor-init')
 ```
 
 #### markEnd(name, metricName?)
+
 标记测量结束。
 
 ```typescript
-monitor.markEnd("editor-init", "editorInitTime");
+monitor.markEnd('editor-init', 'editorInitTime')
 ```
 
 #### getVitals()
+
 获取 Core Web Vitals。
 
 ```typescript
-const vitals = monitor.getVitals();
-console.log("LCP:", vitals.lcp);
+const vitals = monitor.getVitals()
+console.log('LCP:', vitals.lcp)
 ```
 
 #### getReport()
+
 获取完整的性能报告。
 
 ```typescript
-const report = monitor.getReport();
+const report = monitor.getReport()
 ```
 
 #### onReport(callback)
+
 注册性能报告回调。
 
 ```typescript
-const unsubscribe = monitor.onReport((report) => {
-  console.log("Performance report:", report);
-});
+const unsubscribe = monitor.onReport(report => {
+  console.log('Performance report:', report)
+})
 ```
 
 ---
@@ -714,19 +731,19 @@ const unsubscribe = monitor.onReport((report) => {
 
 ```typescript
 interface IPageSchemaV2 {
-  version: "2.0.0";
+  version: '2.0.0'
   pageConfig: {
-    name: string;
-    shareDesc: string;
-    shareImage: string;
-    backgroundColor: string;
-    backgroundImage: string;
-    backgroundPosition: "top" | "center" | "bottom";
-    cover: string;
-  };
-  componentMap: Record<string, IComponentSchemaV2>;
-  rootIds: string[];
-  state?: Record<string, unknown>;
+    name: string
+    shareDesc: string
+    shareImage: string
+    backgroundColor: string
+    backgroundImage: string
+    backgroundPosition: 'top' | 'center' | 'bottom'
+    cover: string
+  }
+  componentMap: Record<string, IComponentSchemaV2>
+  rootIds: string[]
+  state?: Record<string, unknown>
 }
 ```
 
@@ -734,12 +751,12 @@ interface IPageSchemaV2 {
 
 ```typescript
 interface IComponentSchemaV2 {
-  id: string;
-  type: string;
-  props: Record<string, unknown>;
-  children?: string[];
-  events?: Record<string, unknown>;
-  styles?: Record<string, unknown>;
+  id: string
+  type: string
+  props: Record<string, unknown>
+  children?: string[]
+  events?: Record<string, unknown>
+  styles?: Record<string, unknown>
 }
 ```
 
@@ -747,14 +764,14 @@ interface IComponentSchemaV2 {
 
 ```typescript
 interface PublishLog {
-  id: string;
-  pageId: string;
-  version: number;
-  schema: IPageSchemaV2;
-  operator: string;
-  publishTime: number;
-  remark: string;
-  status: "published" | "rollbacked";
+  id: string
+  pageId: string
+  version: number
+  schema: IPageSchemaV2
+  operator: string
+  publishTime: number
+  remark: string
+  status: 'published' | 'rollbacked'
 }
 ```
 

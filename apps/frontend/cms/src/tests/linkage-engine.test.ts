@@ -1,433 +1,429 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import {
-  LinkageEngine,
-  IComponentLinkage,
-  LinkageTransforms,
-} from "../utils/linkage-engine";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { LinkageEngine, IComponentLinkage, LinkageTransforms } from '../utils/linkage-engine'
 
-describe("LinkageEngine", () => {
-  let engine: LinkageEngine;
+describe('LinkageEngine', () => {
+  let engine: LinkageEngine
 
   beforeEach(() => {
-    engine = new LinkageEngine();
-  });
+    engine = new LinkageEngine()
+  })
 
   afterEach(() => {
-    engine.clearAllLinkages();
-  });
+    engine.clearAllLinkages()
+  })
 
-  describe("Linkage Registration", () => {
-    it("should register a linkage", () => {
+  describe('Linkage Registration', () => {
+    it('should register a linkage', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
-      const allLinkages = engine.getAllLinkages();
+      engine.registerLinkage(linkage)
+      const allLinkages = engine.getAllLinkages()
 
-      expect(allLinkages).toHaveLength(1);
-      expect(allLinkages[0].id).toBe("link-1");
-    });
+      expect(allLinkages).toHaveLength(1)
+      expect(allLinkages[0].id).toBe('link-1')
+    })
 
-    it("should not register duplicate linkage", () => {
+    it('should not register duplicate linkage', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
-      engine.registerLinkage(linkage);
+      engine.registerLinkage(linkage)
+      engine.registerLinkage(linkage)
 
-      expect(engine.getAllLinkages()).toHaveLength(1);
-    });
+      expect(engine.getAllLinkages()).toHaveLength(1)
+    })
 
-    it("should unregister a linkage", () => {
+    it('should unregister a linkage', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
-      engine.unregisterLinkage("link-1");
+      engine.registerLinkage(linkage)
+      engine.unregisterLinkage('link-1')
 
-      expect(engine.getAllLinkages()).toHaveLength(0);
-    });
-  });
+      expect(engine.getAllLinkages()).toHaveLength(0)
+    })
+  })
 
-  describe("Linkage Triggering", () => {
-    it("should trigger linkage and update target component", () => {
+  describe('Linkage Triggering', () => {
+    it('should trigger linkage and update target component', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
-      engine.triggerLinkage("comp-1", "price", 100);
+      engine.registerLinkage(linkage)
+      engine.triggerLinkage('comp-1', 'price', 100)
 
-      const targetState = engine.getComponentState("comp-2");
-      expect(targetState.totalPrice).toBe(100);
-    });
+      const targetState = engine.getComponentState('comp-2')
+      expect(targetState.totalPrice).toBe(100)
+    })
 
-    it("should apply transformation function", () => {
+    it('should apply transformation function', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        transformFn: (value) => value * 1.1, // Add 10%
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        transformFn: value => value * 1.1, // Add 10%
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
-      engine.triggerLinkage("comp-1", "price", 100);
+      engine.registerLinkage(linkage)
+      engine.triggerLinkage('comp-1', 'price', 100)
 
-      const targetState = engine.getComponentState("comp-2");
+      const targetState = engine.getComponentState('comp-2')
       // 100 * 1.1 在 IEEE 754 下是 110.00000000000001，用 toBeCloseTo 比较
-      expect(targetState.totalPrice).toBeCloseTo(110);
-    });
+      expect(targetState.totalPrice).toBeCloseTo(110)
+    })
 
-    it("should evaluate condition before triggering linkage", () => {
+    it('should evaluate condition before triggering linkage', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
         condition: {
-          type: "simple",
-          expression: "value > 100",
+          type: 'simple',
+          expression: 'value > 100'
         },
-        enabled: true,
-      };
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
+      engine.registerLinkage(linkage)
 
       // Should not trigger (value <= 100)
-      engine.triggerLinkage("comp-1", "price", 50);
-      let targetState = engine.getComponentState("comp-2");
-      expect(targetState.totalPrice).toBeUndefined();
+      engine.triggerLinkage('comp-1', 'price', 50)
+      let targetState = engine.getComponentState('comp-2')
+      expect(targetState.totalPrice).toBeUndefined()
 
       // Should trigger (value > 100)
-      engine.triggerLinkage("comp-1", "price", 150);
-      targetState = engine.getComponentState("comp-2");
-      expect(targetState.totalPrice).toBe(150);
-    });
-  });
+      engine.triggerLinkage('comp-1', 'price', 150)
+      targetState = engine.getComponentState('comp-2')
+      expect(targetState.totalPrice).toBe(150)
+    })
+  })
 
-  describe("Event Subscription", () => {
-    it("should notify subscribers of linkage events", () => {
+  describe('Event Subscription', () => {
+    it('should notify subscribers of linkage events', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
+      engine.registerLinkage(linkage)
 
-      let eventReceived = false;
-      let receivedValue = 0;
+      let eventReceived = false
+      let receivedValue = 0
 
-      engine.subscribe("comp-2", (event) => {
-        eventReceived = true;
-        receivedValue = event.value;
-      });
+      engine.subscribe('comp-2', event => {
+        eventReceived = true
+        receivedValue = event.value
+      })
 
-      engine.triggerLinkage("comp-1", "price", 100);
+      engine.triggerLinkage('comp-1', 'price', 100)
 
-      expect(eventReceived).toBe(true);
-      expect(receivedValue).toBe(100);
-    });
+      expect(eventReceived).toBe(true)
+      expect(receivedValue).toBe(100)
+    })
 
-    it("should allow unsubscribing from events", () => {
+    it('should allow unsubscribing from events', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
+      engine.registerLinkage(linkage)
 
-      let callCount = 0;
-      const unsubscribe = engine.subscribe("comp-2", () => {
-        callCount++;
-      });
+      let callCount = 0
+      const unsubscribe = engine.subscribe('comp-2', () => {
+        callCount++
+      })
 
-      engine.triggerLinkage("comp-1", "price", 100);
-      expect(callCount).toBe(1);
+      engine.triggerLinkage('comp-1', 'price', 100)
+      expect(callCount).toBe(1)
 
-      unsubscribe();
+      unsubscribe()
 
-      engine.triggerLinkage("comp-1", "price", 200);
-      expect(callCount).toBe(1); // Should not increase
-    });
-  });
+      engine.triggerLinkage('comp-1', 'price', 200)
+      expect(callCount).toBe(1) // Should not increase
+    })
+  })
 
-  describe("Transformation Functions", () => {
-    it("should apply uppercase transformation", () => {
+  describe('Transformation Functions', () => {
+    it('should apply uppercase transformation', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "title",
-        targetProperty: "displayTitle",
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'title',
+        targetProperty: 'displayTitle',
         transformFn: LinkageTransforms.uppercase,
-        enabled: true,
-      };
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
-      engine.triggerLinkage("comp-1", "title", "hello");
+      engine.registerLinkage(linkage)
+      engine.triggerLinkage('comp-1', 'title', 'hello')
 
-      const targetState = engine.getComponentState("comp-2");
-      expect(targetState.displayTitle).toBe("HELLO");
-    });
+      const targetState = engine.getComponentState('comp-2')
+      expect(targetState.displayTitle).toBe('HELLO')
+    })
 
-    it("should apply multiply transformation", () => {
+    it('should apply multiply transformation', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
         transformFn: LinkageTransforms.multiply(1.2),
-        enabled: true,
-      };
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
-      engine.triggerLinkage("comp-1", "price", 100);
+      engine.registerLinkage(linkage)
+      engine.triggerLinkage('comp-1', 'price', 100)
 
-      const targetState = engine.getComponentState("comp-2");
-      expect(targetState.totalPrice).toBe(120);
-    });
+      const targetState = engine.getComponentState('comp-2')
+      expect(targetState.totalPrice).toBe(120)
+    })
 
-    it("should apply clamp transformation", () => {
+    it('should apply clamp transformation', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "value",
-        targetProperty: "clampedValue",
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'value',
+        targetProperty: 'clampedValue',
         transformFn: LinkageTransforms.clamp(0, 100),
-        enabled: true,
-      };
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
+      engine.registerLinkage(linkage)
 
-      engine.triggerLinkage("comp-1", "value", 150);
-      let targetState = engine.getComponentState("comp-2");
-      expect(targetState.clampedValue).toBe(100);
+      engine.triggerLinkage('comp-1', 'value', 150)
+      let targetState = engine.getComponentState('comp-2')
+      expect(targetState.clampedValue).toBe(100)
 
-      engine.triggerLinkage("comp-1", "value", -50);
-      targetState = engine.getComponentState("comp-2");
-      expect(targetState.clampedValue).toBe(0);
-    });
-  });
+      engine.triggerLinkage('comp-1', 'value', -50)
+      targetState = engine.getComponentState('comp-2')
+      expect(targetState.clampedValue).toBe(0)
+    })
+  })
 
-  describe("Linkage History", () => {
-    it("should record linkage events in history", () => {
+  describe('Linkage History', () => {
+    it('should record linkage events in history', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
-      engine.triggerLinkage("comp-1", "price", 100);
-      engine.triggerLinkage("comp-1", "price", 200);
+      engine.registerLinkage(linkage)
+      engine.triggerLinkage('comp-1', 'price', 100)
+      engine.triggerLinkage('comp-1', 'price', 200)
 
-      const history = engine.getHistory();
-      expect(history).toHaveLength(2);
-      expect(history[0].value).toBe(100);
-      expect(history[1].value).toBe(200);
-    });
+      const history = engine.getHistory()
+      expect(history).toHaveLength(2)
+      expect(history[0].value).toBe(100)
+      expect(history[1].value).toBe(200)
+    })
 
-    it("should limit history size", () => {
+    it('should limit history size', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
+      engine.registerLinkage(linkage)
 
       // Trigger more than max history size
       for (let i = 0; i < 150; i++) {
-        engine.triggerLinkage("comp-1", "price", i);
+        engine.triggerLinkage('comp-1', 'price', i)
       }
 
-      const history = engine.getHistory();
-      expect(history.length).toBeLessThanOrEqual(100);
-    });
+      const history = engine.getHistory()
+      expect(history.length).toBeLessThanOrEqual(100)
+    })
 
-    it("should clear history", () => {
+    it('should clear history', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
-      engine.triggerLinkage("comp-1", "price", 100);
+      engine.registerLinkage(linkage)
+      engine.triggerLinkage('comp-1', 'price', 100)
 
-      engine.clearHistory();
-      expect(engine.getHistory()).toHaveLength(0);
-    });
-  });
+      engine.clearHistory()
+      expect(engine.getHistory()).toHaveLength(0)
+    })
+  })
 
-  describe("Linkage Control", () => {
-    it("should enable/disable linkage", () => {
+  describe('Linkage Control', () => {
+    it('should enable/disable linkage', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
-      engine.triggerLinkage("comp-1", "price", 100);
+      engine.registerLinkage(linkage)
+      engine.triggerLinkage('comp-1', 'price', 100)
 
-      let targetState = engine.getComponentState("comp-2");
-      expect(targetState.totalPrice).toBe(100);
+      let targetState = engine.getComponentState('comp-2')
+      expect(targetState.totalPrice).toBe(100)
 
       // Disable linkage
-      engine.setLinkageEnabled("link-1", false);
-      engine.triggerLinkage("comp-1", "price", 200);
+      engine.setLinkageEnabled('link-1', false)
+      engine.triggerLinkage('comp-1', 'price', 200)
 
-      targetState = engine.getComponentState("comp-2");
-      expect(targetState.totalPrice).toBe(100); // Should not update
-    });
+      targetState = engine.getComponentState('comp-2')
+      expect(targetState.totalPrice).toBe(100) // Should not update
+    })
 
-    it("should get linkages for component", () => {
+    it('should get linkages for component', () => {
       const linkage1: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        enabled: true
+      }
 
       const linkage2: IComponentLinkage = {
-        id: "link-2",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-3",
-        sourceProperty: "price",
-        targetProperty: "discount",
-        enabled: true,
-      };
+        id: 'link-2',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-3',
+        sourceProperty: 'price',
+        targetProperty: 'discount',
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage1);
-      engine.registerLinkage(linkage2);
+      engine.registerLinkage(linkage1)
+      engine.registerLinkage(linkage2)
 
-      const linkages = engine.getLinkagesForComponent("comp-1");
-      expect(linkages).toHaveLength(2);
-    });
-  });
+      const linkages = engine.getLinkagesForComponent('comp-1')
+      expect(linkages).toHaveLength(2)
+    })
+  })
 
-  describe("State Isolation", () => {
+  describe('State Isolation', () => {
     const makeLinkage = (): IComponentLinkage => ({
-      id: "link-1",
-      sourceComponentId: "comp-1",
-      targetComponentId: "comp-2",
-      sourceProperty: "price",
-      targetProperty: "totalPrice",
-      enabled: true,
-    });
+      id: 'link-1',
+      sourceComponentId: 'comp-1',
+      targetComponentId: 'comp-2',
+      sourceProperty: 'price',
+      targetProperty: 'totalPrice',
+      enabled: true
+    })
 
-    it("switching enabled does not mutate the registered source object", () => {
+    it('switching enabled does not mutate the registered source object', () => {
       // 模拟页面 Schema 中的 linkages
-      const schemaLinkages = [makeLinkage()];
+      const schemaLinkages = [makeLinkage()]
 
-      engine.registerLinkage(schemaLinkages[0]);
-      engine.setLinkageEnabled("link-1", false);
+      engine.registerLinkage(schemaLinkages[0])
+      engine.setLinkageEnabled('link-1', false)
 
       // 原始 Schema 对象未被改写（撤销 / 保存 / 导出读取的仍是原值）
-      expect(schemaLinkages[0].enabled).toBe(true);
+      expect(schemaLinkages[0].enabled).toBe(true)
       // 引擎内已切换为禁用
-      expect(engine.getAllLinkages()[0].enabled).toBe(false);
-    });
+      expect(engine.getAllLinkages()[0].enabled).toBe(false)
+    })
 
-    it("runtime linkage still triggers after enabling again", () => {
-      engine.registerLinkage(makeLinkage());
+    it('runtime linkage still triggers after enabling again', () => {
+      engine.registerLinkage(makeLinkage())
 
-      engine.setLinkageEnabled("link-1", false);
-      engine.triggerLinkage("comp-1", "price", 100);
-      expect(engine.getComponentState("comp-2").totalPrice).toBeUndefined();
+      engine.setLinkageEnabled('link-1', false)
+      engine.triggerLinkage('comp-1', 'price', 100)
+      expect(engine.getComponentState('comp-2').totalPrice).toBeUndefined()
 
-      engine.setLinkageEnabled("link-1", true);
-      engine.triggerLinkage("comp-1", "price", 200);
-      expect(engine.getComponentState("comp-2").totalPrice).toBe(200);
-    });
+      engine.setLinkageEnabled('link-1', true)
+      engine.triggerLinkage('comp-1', 'price', 200)
+      expect(engine.getComponentState('comp-2').totalPrice).toBe(200)
+    })
 
-    it("mutating objects returned by get* does not affect internal state", () => {
-      engine.registerLinkage(makeLinkage());
+    it('mutating objects returned by get* does not affect internal state', () => {
+      engine.registerLinkage(makeLinkage())
 
-      const all = engine.getAllLinkages();
-      all[0].enabled = false;
-      all[0].targetProperty = "tampered";
+      const all = engine.getAllLinkages()
+      all[0].enabled = false
+      all[0].targetProperty = 'tampered'
 
-      const forComponent = engine.getLinkagesForComponent("comp-1");
-      forComponent[0].enabled = false;
+      const forComponent = engine.getLinkagesForComponent('comp-1')
+      forComponent[0].enabled = false
 
-      expect(engine.getAllLinkages()[0].enabled).toBe(true);
-      expect(engine.getAllLinkages()[0].targetProperty).toBe("totalPrice");
-      expect(engine.getStatistics().enabledLinkages).toBe(1);
-    });
-  });
+      expect(engine.getAllLinkages()[0].enabled).toBe(true)
+      expect(engine.getAllLinkages()[0].targetProperty).toBe('totalPrice')
+      expect(engine.getStatistics().enabledLinkages).toBe(1)
+    })
+  })
 
-  describe("Statistics", () => {
-    it("should provide statistics", () => {
+  describe('Statistics', () => {
+    it('should provide statistics', () => {
       const linkage: IComponentLinkage = {
-        id: "link-1",
-        sourceComponentId: "comp-1",
-        targetComponentId: "comp-2",
-        sourceProperty: "price",
-        targetProperty: "totalPrice",
-        enabled: true,
-      };
+        id: 'link-1',
+        sourceComponentId: 'comp-1',
+        targetComponentId: 'comp-2',
+        sourceProperty: 'price',
+        targetProperty: 'totalPrice',
+        enabled: true
+      }
 
-      engine.registerLinkage(linkage);
-      engine.triggerLinkage("comp-1", "price", 100);
+      engine.registerLinkage(linkage)
+      engine.triggerLinkage('comp-1', 'price', 100)
 
-      const stats = engine.getStatistics();
-      expect(stats.totalLinkages).toBe(1);
-      expect(stats.enabledLinkages).toBe(1);
-      expect(stats.totalComponents).toBe(2);
-      expect(stats.historySize).toBe(1);
-    });
-  });
-});
+      const stats = engine.getStatistics()
+      expect(stats.totalLinkages).toBe(1)
+      expect(stats.enabledLinkages).toBe(1)
+      expect(stats.totalComponents).toBe(2)
+      expect(stats.historySize).toBe(1)
+    })
+  })
+})

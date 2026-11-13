@@ -114,7 +114,9 @@ test.describe.serial('真实链路全流程（登录→建页→编辑→发布�
 
     // Action 20 起装修页只提交审核；发布由管理员在活动页执行
     await decorate.clickSubmitReview()
-    await expect(page.locator('.el-message--success').filter({ hasText: /已提交审核/ })).toBeVisible({
+    await expect(
+      page.locator('.el-message--success').filter({ hasText: /已提交审核/ })
+    ).toBeVisible({
       timeout: 10000
     })
 
@@ -289,7 +291,7 @@ test.describe.serial('真实链路全流程（登录→建页→编辑→发布�
 
     // 渠道分桶：URL 上的 utm_source 应落到渠道表（透传自页面级营销上下文）
     const channelValues = (body.data.channels as Array<{ channelValue: string }>).map(
-      (channel) => channel.channelValue
+      channel => channel.channelValue
     )
     expect(channelValues).toContain('e2e_live')
 
@@ -302,7 +304,7 @@ test.describe.serial('真实链路全流程（登录→建页→编辑→发布�
     const cmsBody = await cmsResp.json()
     expect(cmsBody.code).toBe(10000)
     const cmsChannelValues = (cmsBody.data.channels as Array<{ channelValue: string }>).map(
-      (channel) => channel.channelValue
+      channel => channel.channelValue
     )
     expect(cmsChannelValues).not.toContain('e2e_live')
   })

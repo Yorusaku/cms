@@ -1,60 +1,52 @@
-import { Type } from "class-transformer";
-import {
-  IsString,
-  IsNotEmpty,
-  IsObject,
-  IsArray,
-  IsOptional,
-  IsInt,
-  Min,
-} from "class-validator";
+import { Type } from 'class-transformer'
+import { IsString, IsNotEmpty, IsObject, IsArray, IsOptional, IsInt, Min } from 'class-validator'
 
 export class AddPageJsonDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name: string
 
   @IsObject()
-  schema: Record<string, unknown>;
+  schema: Record<string, unknown>
 
   @IsArray()
   @IsOptional()
-  componentList?: Record<string, unknown>[];
+  componentList?: Record<string, unknown>[]
 
   @IsOptional()
   @IsString()
-  shareDesc?: string;
+  shareDesc?: string
 
   @IsOptional()
   @IsString()
-  shareImage?: string;
+  shareImage?: string
 
   @IsOptional()
   @IsString()
-  backgroundColor?: string;
+  backgroundColor?: string
 
   @IsOptional()
   @IsString()
-  backgroundImage?: string;
+  backgroundImage?: string
 
   @IsOptional()
   @IsString()
-  backgroundPosition?: string;
+  backgroundPosition?: string
 
   @IsOptional()
   @IsString()
-  cover?: string;
+  cover?: string
 
   /** 1 = publish, absent/0 = draft save */
   @IsOptional()
   @Type(() => Number)
   @IsInt()
-  online?: number;
+  online?: number
 }
 
 export class UpdatePageJsonDto extends AddPageJsonDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  id: number;
+  id: number
 }

@@ -13,9 +13,7 @@
     :rows="field.rows ?? (field.type === 'richText' ? 8 : 4)"
     :placeholder="field.placeholder"
     :input-style="
-      field.type === 'richText'
-        ? { fontFamily: 'monospace', fontSize: '12px' }
-        : undefined
+      field.type === 'richText' ? { fontFamily: 'monospace', fontSize: '12px' } : undefined
     "
     @update:model-value="emitUpdate"
   />
@@ -51,11 +49,8 @@
   </el-select>
 
   <div v-else-if="field.type === 'color'" class="field-inline">
-    <el-color-picker
-      :model-value="stringValue"
-      @update:model-value="emitUpdate"
-    />
-    <span class="field-value">{{ stringValue || "未设置" }}</span>
+    <el-color-picker :model-value="stringValue" @update:model-value="emitUpdate" />
+    <span class="field-value">{{ stringValue || '未设置' }}</span>
   </div>
 
   <UpLoadBox
@@ -90,12 +85,7 @@
     >
       <div class="array-item-header">
         <span class="array-item-title">#{{ index + 1 }}</span>
-        <el-button
-          type="danger"
-          link
-          size="small"
-          @click="removeArrayItem(index)"
-        >
+        <el-button type="danger" link size="small" @click="removeArrayItem(index)">
           删除
         </el-button>
       </div>
@@ -114,9 +104,7 @@
             v-if="itemField.type === 'text'"
             :model-value="toStringValue(item[itemField.key])"
             :placeholder="itemField.placeholder"
-            @update:model-value="
-              updateArrayItemField(index, itemField.key, $event)
-            "
+            @update:model-value="updateArrayItemField(index, itemField.key, $event)"
           />
 
           <el-input-number
@@ -126,174 +114,151 @@
             :min="itemField.min"
             :max="itemField.max"
             :step="itemField.step"
-            @update:model-value="
-              updateArrayItemField(index, itemField.key, $event)
-            "
+            @update:model-value="updateArrayItemField(index, itemField.key, $event)"
           />
 
           <UpLoadBox
             v-else-if="itemField.type === 'image'"
             :img-url="toStringValue(item[itemField.key])"
             :add-place-holder="itemField.placeholder || '上传图片'"
-            @update:img-url="
-              updateArrayItemField(index, itemField.key, $event)
-            "
+            @update:img-url="updateArrayItemField(index, itemField.key, $event)"
           />
 
           <ConfigLink
             v-else-if="itemField.type === 'link'"
             :link-obj="toLinkValue(item[itemField.key])"
-            @update:link-obj="
-              updateArrayItemField(index, itemField.key, $event)
-            "
+            @update:link-obj="updateArrayItemField(index, itemField.key, $event)"
           />
 
-          <div v-else class="field-unsupported">
-            暂不支持 {{ itemField.type }} 字段
-          </div>
+          <div v-else class="field-unsupported">暂不支持 {{ itemField.type }} 字段</div>
         </div>
       </div>
     </div>
 
-    <el-button
-      type="primary"
-      plain
-      class="array-add-btn"
-      @click="addArrayItem(field)"
-    >
-      {{ field.addText || "添加项" }}
+    <el-button type="primary" plain class="array-add-btn" @click="addArrayItem(field)">
+      {{ field.addText || '添加项' }}
     </el-button>
   </div>
 
-  <div v-else class="field-unsupported">
-    暂不支持 {{ field.type }} 字段
-  </div>
+  <div v-else class="field-unsupported">暂不支持 {{ field.type }} 字段</div>
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed } from 'vue'
 import type {
   MaterialArrayFieldSchema,
   MaterialArrayItemSchema,
   MaterialFieldSchema,
-  MaterialSectionSchema,
-} from "@cms/types";
-import ConfigLink from "@/components/basic/ConfigLink.vue";
-import PicList from "@/components/basic/PicList.vue";
-import UpLoadBox from "@/components/basic/UpLoadBox.vue";
+  MaterialSectionSchema
+} from '@cms/types'
+import ConfigLink from '@/components/basic/ConfigLink.vue'
+import PicList from '@/components/basic/PicList.vue'
+import UpLoadBox from '@/components/basic/UpLoadBox.vue'
 
-type MaterialRenderableField = Exclude<MaterialFieldSchema, MaterialSectionSchema>;
+type MaterialRenderableField = Exclude<MaterialFieldSchema, MaterialSectionSchema>
 
 const props = defineProps<{
-  field: MaterialRenderableField;
-  modelValue: unknown;
-}>();
+  field: MaterialRenderableField
+  modelValue: unknown
+}>()
 
 const emit = defineEmits<{
-  (e: "update", value: unknown): void;
-}>();
+  (e: 'update', value: unknown): void
+}>()
 
-const stringValue = computed(() =>
-  typeof props.modelValue === "string" ? props.modelValue : "",
-);
+const stringValue = computed(() => (typeof props.modelValue === 'string' ? props.modelValue : ''))
 
 const numberValue = computed(() => {
-  if (typeof props.modelValue === "number" && Number.isFinite(props.modelValue)) {
-    return props.modelValue;
+  if (typeof props.modelValue === 'number' && Number.isFinite(props.modelValue)) {
+    return props.modelValue
   }
-  return 0;
-});
+  return 0
+})
 
-const booleanValue = computed(() => props.modelValue === true);
+const booleanValue = computed(() => props.modelValue === true)
 
-const arrayValue = computed(() =>
-  Array.isArray(props.modelValue) ? props.modelValue : [],
-);
+const arrayValue = computed(() => (Array.isArray(props.modelValue) ? props.modelValue : []))
 
 const arrayObjectValue = computed(() =>
-  arrayValue.value.map((item) =>
-    item && typeof item === "object" && !Array.isArray(item)
+  arrayValue.value.map(item =>
+    item && typeof item === 'object' && !Array.isArray(item)
       ? (item as Record<string, unknown>)
-      : {},
-  ),
-);
+      : {}
+  )
+)
 
 const linkValue = computed(() => {
-  return toLinkValue(props.modelValue);
-});
+  return toLinkValue(props.modelValue)
+})
 
 const emitUpdate = (value: unknown) => {
-  emit("update", value);
-};
+  emit('update', value)
+}
 
 const toStringValue = (value: unknown) => {
-  return typeof value === "string" ? value : "";
-};
+  return typeof value === 'string' ? value : ''
+}
 
 const toNumberValue = (value: unknown) => {
-  if (typeof value === "number" && Number.isFinite(value)) {
-    return value;
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value
   }
-  if (typeof value === "string" && value.trim()) {
-    const parsedValue = Number(value);
+  if (typeof value === 'string' && value.trim()) {
+    const parsedValue = Number(value)
     if (Number.isFinite(parsedValue)) {
-      return parsedValue;
+      return parsedValue
     }
   }
-  return 0;
-};
+  return 0
+}
 
 const toLinkValue = (value: unknown) => {
-  if (
-    value &&
-    typeof value === "object" &&
-    "clickType" in (value as Record<string, unknown>)
-  ) {
-    return value as { clickType: number; data: unknown };
+  if (value && typeof value === 'object' && 'clickType' in (value as Record<string, unknown>)) {
+    return value as { clickType: number; data: unknown }
   }
   return {
     clickType: 0,
-    data: null,
-  };
-};
+    data: null
+  }
+}
 
 const createDefaultArrayItem = (schema: MaterialArrayItemSchema[]) => {
-  const nextItem: Record<string, unknown> = {};
-  schema.forEach((itemField) => {
-    if (itemField.type === "link") {
-      nextItem[itemField.key] = { clickType: 0, data: null };
-      return;
+  const nextItem: Record<string, unknown> = {}
+  schema.forEach(itemField => {
+    if (itemField.type === 'link') {
+      nextItem[itemField.key] = { clickType: 0, data: null }
+      return
     }
-    if (itemField.type === "number") {
-      nextItem[itemField.key] = 0;
-      return;
+    if (itemField.type === 'number') {
+      nextItem[itemField.key] = 0
+      return
     }
-    nextItem[itemField.key] = "";
-  });
-  return nextItem;
-};
+    nextItem[itemField.key] = ''
+  })
+  return nextItem
+}
 
 const updateArrayItemField = (index: number, key: string, value: unknown) => {
-  const nextArray = arrayObjectValue.value.map((item) => ({ ...item }));
-  const targetItem = nextArray[index] ?? {};
-  targetItem[key] = value;
-  nextArray[index] = targetItem;
-  emitUpdate(nextArray);
-};
+  const nextArray = arrayObjectValue.value.map(item => ({ ...item }))
+  const targetItem = nextArray[index] ?? {}
+  targetItem[key] = value
+  nextArray[index] = targetItem
+  emitUpdate(nextArray)
+}
 
 const removeArrayItem = (index: number) => {
-  const nextArray = arrayObjectValue.value.filter((_, itemIndex) => itemIndex !== index);
-  emitUpdate(nextArray);
-};
+  const nextArray = arrayObjectValue.value.filter((_, itemIndex) => itemIndex !== index)
+  emitUpdate(nextArray)
+}
 
 const addArrayItem = (field: MaterialArrayFieldSchema) => {
-  const nextArray = arrayObjectValue.value.map((item) => ({ ...item }));
+  const nextArray = arrayObjectValue.value.map(item => ({ ...item }))
   if (field.limit && nextArray.length >= field.limit) {
-    return;
+    return
   }
-  nextArray.push(createDefaultArrayItem(field.itemSchema));
-  emitUpdate(nextArray);
-};
+  nextArray.push(createDefaultArrayItem(field.itemSchema))
+  emitUpdate(nextArray)
+}
 </script>
 
 <style scoped>

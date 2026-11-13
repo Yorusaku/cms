@@ -1,25 +1,25 @@
-﻿import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
-import { APP_GUARD } from "@nestjs/core";
-import { DatabaseModule } from "./database/database.module";
-import { AuthModule } from "./modules/auth/auth.module";
-import { PageModule } from "./modules/page/page.module";
-import { UploadModule } from "./modules/upload/upload.module";
-import { UserModule } from "./modules/user/user.module";
-import { TemplateModule } from "./modules/template/template.module";
-import { LeadModule } from "./modules/lead/lead.module";
-import { TrackingModule } from "./modules/tracking/tracking.module";
-import { AiModule } from "./modules/ai/ai.module";
-import { HealthModule } from "./common/health/health.module";
-import { JwtAuthGuard } from "./common/guards/auth.guard";
-import { RolesGuard } from "./common/guards/roles.guard";
-import { resolve } from "path";
+﻿import { Module } from '@nestjs/common'
+import { ConfigModule } from '@nestjs/config'
+import { APP_GUARD } from '@nestjs/core'
+import { DatabaseModule } from './database/database.module'
+import { AuthModule } from './modules/auth/auth.module'
+import { PageModule } from './modules/page/page.module'
+import { UploadModule } from './modules/upload/upload.module'
+import { UserModule } from './modules/user/user.module'
+import { TemplateModule } from './modules/template/template.module'
+import { LeadModule } from './modules/lead/lead.module'
+import { TrackingModule } from './modules/tracking/tracking.module'
+import { AiModule } from './modules/ai/ai.module'
+import { HealthModule } from './common/health/health.module'
+import { JwtAuthGuard } from './common/guards/auth.guard'
+import { RolesGuard } from './common/guards/roles.guard'
+import { resolve } from 'path'
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: resolve(process.cwd(), ".env"),
+      envFilePath: resolve(process.cwd(), '.env')
     }),
     DatabaseModule,
     AuthModule,
@@ -30,17 +30,17 @@ import { resolve } from "path";
     TrackingModule,
     AiModule,
     UploadModule,
-    HealthModule,
+    HealthModule
   ],
   providers: [
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard,
+      useClass: JwtAuthGuard
     },
     {
       provide: APP_GUARD,
-      useClass: RolesGuard,
-    },
-  ],
+      useClass: RolesGuard
+    }
+  ]
 })
 export class AppModule {}

@@ -42,6 +42,7 @@ pnpm run dev
 ### 1.4 调试技巧
 
 **Vue DevTools：**
+
 ```bash
 # 安装 Vue DevTools 浏览器扩展
 # Chrome: https://chrome.google.com/webstore/detail/vuejs-devtools/nhdogjmeocebotngbohdhpeja07dqblw
@@ -51,6 +52,7 @@ pnpm run dev
 ```
 
 **Chrome DevTools：**
+
 ```bash
 # 打开 Chrome DevTools (F12)
 # 1. Elements 标签：查看 DOM 结构
@@ -61,6 +63,7 @@ pnpm run dev
 ```
 
 **VS Code 调试：**
+
 ```json
 // .vscode/launch.json
 {
@@ -142,43 +145,49 @@ cms-vue3/
 ### 2.2 应用结构
 
 **编辑器应用（cms）：**
+
 - 负责页面编辑、配置、预览
 - 提供完整的编辑器 UI
 - 管理编辑状态和历史记录
 
 **渲染器应用（crs）：**
+
 - 负责页面预览和发布
 - 根据 Schema 动态渲染页面
 - 支持数据绑定和动态交互
 
 ### 2.3 包结构
 
-| 包 | 职责 |
-|------|------|
-| @cms/ui | UI 组件库 |
-| @cms/utils | 工具函数库 |
-| @cms/types | TypeScript 类型定义 |
-| @cms/hooks | 共享 hooks |
-| @cms/eslint-config | ESLint 规则配置 |
-| @cms/prettier-config | 代码格式化配置 |
-| @cms/test-utils | 测试工具和 mock 数据 |
+| 包                   | 职责                 |
+| -------------------- | -------------------- |
+| @cms/ui              | UI 组件库            |
+| @cms/utils           | 工具函数库           |
+| @cms/types           | TypeScript 类型定义  |
+| @cms/hooks           | 共享 hooks           |
+| @cms/eslint-config   | ESLint 规则配置      |
+| @cms/prettier-config | 代码格式化配置       |
+| @cms/test-utils      | 测试工具和 mock 数据 |
 
 ### 2.4 文件命名规范
 
 **Vue 组件：**
+
 - 使用 PascalCase 命名
 - 文件名与组件名相同
 - 示例：`NoticeBlock.vue`
 
 **TypeScript 文件：**
+
 - 使用 camelCase 命名
 - 示例：`usePageStore.ts`、`editor-optimization.ts`
 
 **测试文件：**
+
 - 使用 `.test.ts` 或 `.spec.ts` 后缀
 - 示例：`usePageStore.test.ts`
 
 **样式文件：**
+
 - 使用 `scoped` 样式
 - 使用 BEM 命名规范
 - 示例：`.canvas-component__title`
@@ -201,6 +210,7 @@ git checkout -b docs/api-documentation
 ```
 
 **分支命名规范：**
+
 - `feat/` - 新功能
 - `fix/` - 修复 bug
 - `docs/` - 文档
@@ -248,6 +258,7 @@ git push origin feat/my-feature
 ```
 
 **提交信息规范：**
+
 ```
 <type>(<scope>): <subject>
 
@@ -257,6 +268,7 @@ git push origin feat/my-feature
 ```
 
 示例：
+
 ```
 feat(editor): 实现组件联动机制
 
@@ -278,25 +290,31 @@ Closes #123
 ```
 
 **PR 模板：**
+
 ```markdown
 ## 描述
+
 简要描述这个 PR 的目的
 
 ## 相关 Issue
+
 Closes #123
 
 ## 修改类型
+
 - [ ] Bug 修复
 - [ ] 新功能
 - [ ] 破坏性修改
 - [ ] 文档更新
 
 ## 测试
+
 - [ ] 添加了单元测试
 - [ ] 添加了集成测试
 - [ ] 手动测试通过
 
 ## 检查清单
+
 - [ ] 代码遵循项目规范
 - [ ] 更新了相关文档
 - [ ] 没有引入新的警告
@@ -330,8 +348,8 @@ git push origin main
 ```typescript
 // ✅ 好的做法
 interface PageConfig {
-  name: string;
-  description: string;
+  name: string
+  description: string
 }
 
 function updatePageConfig(config: PageConfig): void {
@@ -356,18 +374,18 @@ function updatePageConfig(config: any): void {
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { ref } from 'vue'
 
 interface Props {
-  title: string;
+  title: string
 }
 
-const props = defineProps<Props>();
-const count = ref(0);
+const props = defineProps<Props>()
+const count = ref(0)
 
 const handleClick = () => {
-  count.value++;
-};
+  count.value++
+}
 </script>
 
 <style scoped>
@@ -386,11 +404,11 @@ const handleClick = () => {
 
 <script>
 export default {
-  props: ["title"],
+  props: ['title'],
   data() {
-    return { count: 0 };
-  },
-};
+    return { count: 0 }
+  }
+}
 </script>
 ```
 
@@ -417,11 +435,11 @@ private _cache = new Map();
 ```typescript
 // ✅ 好的做法 - 说明 WHY，不是 WHAT
 // 使用 shallowRef 避免深度响应式，提升性能
-const schema = shallowRef(initialSchema);
+const schema = shallowRef(initialSchema)
 
 // ❌ 不好的做法 - 重复代码的内容
 // 设置 schema
-const schema = shallowRef(initialSchema);
+const schema = shallowRef(initialSchema)
 ```
 
 ---
@@ -442,30 +460,31 @@ pnpm --filter @cms/cms test -- --coverage --run
 ```
 
 **编写单元测试：**
-```typescript
-import { describe, it, expect, beforeEach } from "vitest";
-import { usePageStore } from "../store/usePageStore";
 
-describe("usePageStore", () => {
-  let store: ReturnType<typeof usePageStore>;
+```typescript
+import { describe, it, expect, beforeEach } from 'vitest'
+import { usePageStore } from '../store/usePageStore'
+
+describe('usePageStore', () => {
+  let store: ReturnType<typeof usePageStore>
 
   beforeEach(() => {
-    store = usePageStore();
-  });
+    store = usePageStore()
+  })
 
-  it("should initialize with empty schema", () => {
-    expect(store.pageSchema.rootIds).toEqual([]);
-  });
+  it('should initialize with empty schema', () => {
+    expect(store.pageSchema.rootIds).toEqual([])
+  })
 
-  it("should add component", () => {
+  it('should add component', () => {
     store.addComponent({
-      id: "comp-1",
-      type: "NoticeBlock",
-      props: {},
-    });
-    expect(store.pageSchema.componentMap["comp-1"]).toBeDefined();
-  });
-});
+      id: 'comp-1',
+      type: 'NoticeBlock',
+      props: {}
+    })
+    expect(store.pageSchema.componentMap['comp-1']).toBeDefined()
+  })
+})
 ```
 
 ### 5.2 集成测试
@@ -562,21 +581,21 @@ pnpm --filter @cms/cms test -- performance-benchmark.test.ts --run
 
 ```typescript
 // 基本调试
-console.log("value:", value);
+console.log('value:', value)
 
 // 对象调试
-console.table(componentMap);
+console.table(componentMap)
 
 // 性能调试
-console.time("operation");
+console.time('operation')
 // ... 操作
-console.timeEnd("operation");
+console.timeEnd('operation')
 
 // 分组调试
-console.group("Editor State");
-console.log("activeId:", activeId);
-console.log("selectedIds:", selectedIds);
-console.groupEnd();
+console.group('Editor State')
+console.log('activeId:', activeId)
+console.log('selectedIds:', selectedIds)
+console.groupEnd()
 ```
 
 ### 7.2 使用 debugger
@@ -584,7 +603,7 @@ console.groupEnd();
 ```typescript
 // 在代码中设置断点
 function updateComponent(id: string, updates: any) {
-  debugger; // 执行到这里时暂停
+  debugger // 执行到这里时暂停
   // ...
 }
 

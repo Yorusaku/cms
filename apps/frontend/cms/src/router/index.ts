@@ -1,5 +1,5 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from "vue-router";
-import type { UserRole } from "@/utils/auth";
+import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import type { UserRole } from '@/utils/auth'
 
 /**
  * 路由角色矩阵（与后端 @Roles 保持一致）：
@@ -9,56 +9,56 @@ import type { UserRole } from "@/utils/auth";
  */
 const routes: Array<RouteRecordRaw> = [
   {
-    path: "/",
-    redirect: "/home",
+    path: '/',
+    redirect: '/home'
   },
   {
-    path: "/home",
-    name: "Home",
-    component: () => import("@/views/Home.vue"),
+    path: '/home',
+    name: 'Home',
+    component: () => import('@/views/Home.vue')
   },
   {
-    path: "/login",
-    name: "Login",
-    component: () => import("@/views/Login.vue"),
+    path: '/login',
+    name: 'Login',
+    component: () => import('@/views/Login.vue')
   },
   {
-    path: "/decorate",
-    name: "Decorate",
-    component: () => import("@/views/Decorate/index.vue"),
-    meta: { roles: ["admin", "editor"] as UserRole[] },
+    path: '/decorate',
+    name: 'Decorate',
+    component: () => import('@/views/Decorate/index.vue'),
+    meta: { roles: ['admin', 'editor'] as UserRole[] }
   },
   {
-    path: "/preview",
-    name: "Preview",
-    component: () => import("@/views/Preview.vue"),
+    path: '/preview',
+    name: 'Preview',
+    component: () => import('@/views/Preview.vue')
   },
   {
-    path: "/activity",
-    name: "Activity",
-    component: () => import("@/views/Activity.vue"),
+    path: '/activity',
+    name: 'Activity',
+    component: () => import('@/views/Activity.vue')
   },
   {
-    path: "/performance",
-    name: "Performance",
-    component: () => import("@/views/Performance.vue"),
+    path: '/performance',
+    name: 'Performance',
+    component: () => import('@/views/Performance.vue')
   },
   {
-    path: "/users",
-    name: "Users",
-    component: () => import("@/views/Users.vue"),
-    meta: { roles: ["admin"] as UserRole[] },
+    path: '/users',
+    name: 'Users',
+    component: () => import('@/views/Users.vue'),
+    meta: { roles: ['admin'] as UserRole[] }
   },
   {
-    path: "/404",
-    name: "404",
-    component: () => import("@/views/404.vue"),
-  },
-];
+    path: '/404',
+    name: '404',
+    component: () => import('@/views/404.vue')
+  }
+]
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes,
-});
+  routes
+})
 
-export default router;
+export default router

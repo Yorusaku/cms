@@ -37,48 +37,48 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { Plus } from '@element-plus/icons-vue';
-import { usePageStore } from '@/store/usePageStore';
-import type { IComponentLinkage } from '@cms/types';
-import LinkageRuleItem from './LinkageRuleItem.vue';
-import LinkageRuleDialog from './LinkageRuleDialog.vue';
+import { ref, computed } from 'vue'
+import { Plus } from '@element-plus/icons-vue'
+import { usePageStore } from '@/store/usePageStore'
+import type { IComponentLinkage } from '@cms/types'
+import LinkageRuleItem from './LinkageRuleItem.vue'
+import LinkageRuleDialog from './LinkageRuleDialog.vue'
 
-const pageStore = usePageStore();
-const dialogVisible = ref(false);
-const currentLinkage = ref<IComponentLinkage | null>(null);
+const pageStore = usePageStore()
+const dialogVisible = ref(false)
+const currentLinkage = ref<IComponentLinkage | null>(null)
 
-const linkages = computed(() => pageStore.linkages || []);
+const linkages = computed(() => pageStore.linkages || [])
 const components = computed(() => {
-  return Object.values(pageStore.pageSchema.componentMap);
-});
+  return Object.values(pageStore.pageSchema.componentMap)
+})
 
 const handleAdd = () => {
-  currentLinkage.value = null;
-  dialogVisible.value = true;
-};
+  currentLinkage.value = null
+  dialogVisible.value = true
+}
 
 const handleEdit = (linkage: IComponentLinkage) => {
-  currentLinkage.value = linkage;
-  dialogVisible.value = true;
-};
+  currentLinkage.value = linkage
+  dialogVisible.value = true
+}
 
 const handleDelete = (id: string) => {
-  pageStore.deleteLinkage(id);
-};
+  pageStore.deleteLinkage(id)
+}
 
 const handleToggle = (id: string) => {
-  pageStore.toggleLinkage(id);
-};
+  pageStore.toggleLinkage(id)
+}
 
 const handleSave = (linkage: IComponentLinkage) => {
   if (currentLinkage.value) {
-    pageStore.updateLinkage(linkage.id, linkage);
+    pageStore.updateLinkage(linkage.id, linkage)
   } else {
-    pageStore.addLinkage(linkage);
+    pageStore.addLinkage(linkage)
   }
-  dialogVisible.value = false;
-};
+  dialogVisible.value = false
+}
 </script>
 
 <style scoped>

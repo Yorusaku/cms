@@ -5,78 +5,78 @@
  * Supports API data, static data, and computed data.
  */
 
-export type DataSourceType = "api" | "static" | "computed";
+export type DataSourceType = 'api' | 'static' | 'computed'
 
 export interface IDataSource {
-  id: string;
-  name: string;
-  type: DataSourceType;
+  id: string
+  name: string
+  type: DataSourceType
   // API source
-  url?: string;
-  method?: "GET" | "POST" | "PUT" | "DELETE";
-  headers?: Record<string, string>;
-  params?: Record<string, any>;
+  url?: string
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  headers?: Record<string, string>
+  params?: Record<string, any>
   // Static source
-  data?: any;
+  data?: any
   // Computed source
-  computeFn?: (context: any) => any;
+  computeFn?: (context: any) => any
   // Common
-  cacheEnabled?: boolean;
-  cacheDuration?: number; // milliseconds
-  refreshInterval?: number; // milliseconds
-  transformFn?: (data: any) => any;
-  errorHandler?: (error: any) => any;
+  cacheEnabled?: boolean
+  cacheDuration?: number // milliseconds
+  refreshInterval?: number // milliseconds
+  transformFn?: (data: any) => any
+  errorHandler?: (error: any) => any
 }
 
 export interface IDataBinding {
-  id: string;
-  componentId: string;
-  dataSourceId: string;
-  targetProperty: string;
-  enabled: boolean;
+  id: string
+  componentId: string
+  dataSourceId: string
+  targetProperty: string
+  enabled: boolean
 }
 
 export interface DataSourceCache {
-  data: any;
-  timestamp: number;
+  data: any
+  timestamp: number
 }
 
 export interface DataBindingEvent {
-  dataSourceId: string;
-  data: any;
-  timestamp: number;
-  error?: Error;
+  dataSourceId: string
+  data: any
+  timestamp: number
+  error?: Error
 }
 
 export interface DataBindingListener {
-  (event: DataBindingEvent): void;
+  (event: DataBindingEvent): void
 }
 
 /**
  * DataBindingEngine manages data sources and bindings
  */
 export class DataBindingEngine {
-  private dataSources = new Map<string, IDataSource>();
-  private bindings = new Map<string, IDataBinding>();
-  private cache = new Map<string, DataSourceCache>();
-  private listeners = new Map<string, Set<DataBindingListener>>();
-  private refreshTimers = new Map<string, NodeJS.Timeout>();
-  private componentData = new Map<string, Record<string, any>>();
+  private dataSources = new Map<string, IDataSource>()
+  private bindings = new Map<string, IDataBinding>()
+  private cache = new Map<string, DataSourceCache>()
+  private listeners = new Map<string, Set<DataBindingListener>>()
+  private refreshTimers = new Map<string, NodeJS.Timeout>()
+  private componentData = new Map<string, Record<string, any>>()
 
   /**
    * Register a data source
    */
   registerDataSource(source: IDataSource): void {
     if (this.dataSources.has(source.id)) {
-      console.warn(`Data source ${source.id} already exists`);
-      return;
+      console.warn(`Data source ${source.id} already exists`)
+      return
     }
 
-    this.dataSources.set(source.id, source);
+    this.dataSources.set(source.id, source)
 
     // Start refresh interval if configured
     if (source.refreshInterval && source.refreshInterval > 0) {
-      this.startRefreshInterval(source.id);
+      this.startRefreshInterval(source.id)
     }
   }
 
@@ -84,9 +84,9 @@ export class DataBindingEngine {
    * Unregister a data source
    */
   unregisterDataSource(sourceId: string): void {
-    this.dataSources.delete(sourceId);
-    this.cache.delete(sourceId);
-    this.stopRefreshInterval(sourceId);
+    this.dataSources.delete(sourceId)
+    this.cache.delete(sourceId)
+    this.stopRefreshInterval(sourceId)
   }
 
   /**
@@ -94,83 +94,83 @@ export class DataBindingEngine {
    */
   registerBinding(binding: IDataBinding): void {
     if (this.bindings.has(binding.id)) {
-      console.warn(`Binding ${binding.id} already exists`);
-      return;
+      console.warn(`Binding ${binding.id} already exists`)
+      return
     }
 
-    this.bindings.set(binding.id, binding);
-    this.initializeComponentData(binding.componentId);
+    this.bindings.set(binding.id, binding)
+    this.initializeComponentData(binding.componentId)
   }
 
   /**
    * Unregister a binding
    */
   unregisterBinding(bindingId: string): void {
-    this.bindings.delete(bindingId);
+    this.bindings.delete(bindingId)
   }
 
   /**
    * Fetch data from a data source
    */
   async fetchData(sourceId: string): Promise<any> {
-    const source = this.dataSources.get(sourceId);
+    const source = this.dataSources.get(sourceId)
     if (!source) {
-      throw new Error(`Data source ${sourceId} not found`);
+      throw new Error(`Data source ${sourceId} not found`)
     }
 
     // Check cache
     if (source.cacheEnabled) {
-      const cached = this.cache.get(sourceId);
+      const cached = this.cache.get(sourceId)
       if (cached && Date.now() - cached.timestamp < (source.cacheDuration || 0)) {
-        return cached.data;
+        return cached.data
       }
     }
 
-    let data: any;
+    let data: any
 
     try {
       switch (source.type) {
-        case "api":
-          data = await this.fetchFromAPI(source);
-          break;
-        case "static":
-          data = source.data;
-          break;
-        case "computed":
-          data = await this.computeData(source);
-          break;
+        case 'api':
+          data = await this.fetchFromAPI(source)
+          break
+        case 'static':
+          data = source.data
+          break
+        case 'computed':
+          data = await this.computeData(source)
+          break
         default:
-          throw new Error(`Unknown data source type: ${source.type}`);
+          throw new Error(`Unknown data source type: ${source.type}`)
       }
 
       // Apply transformation
       if (source.transformFn) {
-        data = source.transformFn(data);
+        data = source.transformFn(data)
       }
 
       // Cache the data
       if (source.cacheEnabled) {
         this.cache.set(sourceId, {
           data,
-          timestamp: Date.now(),
-        });
+          timestamp: Date.now()
+        })
       }
 
       // Notify listeners
       this.notifyListeners(sourceId, {
         dataSourceId: sourceId,
         data,
-        timestamp: Date.now(),
-      });
+        timestamp: Date.now()
+      })
 
-      return data;
+      return data
     } catch (error) {
       // Handle error
       if (source.errorHandler) {
         try {
-          return source.errorHandler(error);
+          return source.errorHandler(error)
         } catch (handlerError) {
-          console.error(`Error in error handler for ${sourceId}:`, handlerError);
+          console.error(`Error in error handler for ${sourceId}:`, handlerError)
         }
       }
 
@@ -179,10 +179,10 @@ export class DataBindingEngine {
         dataSourceId: sourceId,
         data: null,
         timestamp: Date.now(),
-        error: error as Error,
-      });
+        error: error as Error
+      })
 
-      throw error;
+      throw error
     }
   }
 
@@ -190,25 +190,25 @@ export class DataBindingEngine {
    * Fetch data from API
    */
   private async fetchFromAPI(source: IDataSource): Promise<any> {
-    const url = new URL(source.url || "");
+    const url = new URL(source.url || '')
 
     // Add query parameters
     if (source.params) {
       Object.entries(source.params).forEach(([key, value]) => {
-        url.searchParams.append(key, String(value));
-      });
+        url.searchParams.append(key, String(value))
+      })
     }
 
     const response = await fetch(url.toString(), {
-      method: source.method || "GET",
-      headers: source.headers,
-    });
+      method: source.method || 'GET',
+      headers: source.headers
+    })
 
     if (!response.ok) {
-      throw new Error(`API request failed: ${response.statusText}`);
+      throw new Error(`API request failed: ${response.statusText}`)
     }
 
-    return response.json();
+    return response.json()
   }
 
   /**
@@ -216,10 +216,10 @@ export class DataBindingEngine {
    */
   private async computeData(source: IDataSource): Promise<any> {
     if (!source.computeFn) {
-      throw new Error("Compute function not provided");
+      throw new Error('Compute function not provided')
     }
 
-    return source.computeFn({});
+    return source.computeFn({})
   }
 
   /**
@@ -230,23 +230,23 @@ export class DataBindingEngine {
    * 其余情况（对象无同名键 / 数组 / 标量）整体作为值写入。
    */
   async applyDataBinding(bindingId: string): Promise<void> {
-    const binding = this.bindings.get(bindingId);
+    const binding = this.bindings.get(bindingId)
     if (!binding || !binding.enabled) {
-      return;
+      return
     }
 
     try {
-      const data = await this.fetchData(binding.dataSourceId);
+      const data = await this.fetchData(binding.dataSourceId)
       const resolved =
         data !== null &&
-        typeof data === "object" &&
+        typeof data === 'object' &&
         !Array.isArray(data) &&
         binding.targetProperty in data
           ? (data as Record<string, unknown>)[binding.targetProperty]
-          : data;
-      this.updateComponentData(binding.componentId, binding.targetProperty, resolved);
+          : data
+      this.updateComponentData(binding.componentId, binding.targetProperty, resolved)
     } catch (error) {
-      console.error(`Error applying binding ${bindingId}:`, error);
+      console.error(`Error applying binding ${bindingId}:`, error)
     }
   }
 
@@ -255,12 +255,10 @@ export class DataBindingEngine {
    */
   async applyBindingsForComponent(componentId: string): Promise<void> {
     const componentBindings = Array.from(this.bindings.values()).filter(
-      (b) => b.componentId === componentId && b.enabled
-    );
+      b => b.componentId === componentId && b.enabled
+    )
 
-    await Promise.all(
-      componentBindings.map((binding) => this.applyDataBinding(binding.id))
-    );
+    await Promise.all(componentBindings.map(binding => this.applyDataBinding(binding.id)))
   }
 
   /**
@@ -268,30 +266,30 @@ export class DataBindingEngine {
    */
   subscribe(sourceId: string, listener: DataBindingListener): () => void {
     if (!this.listeners.has(sourceId)) {
-      this.listeners.set(sourceId, new Set());
+      this.listeners.set(sourceId, new Set())
     }
 
-    this.listeners.get(sourceId)!.add(listener);
+    this.listeners.get(sourceId)!.add(listener)
 
     // Return unsubscribe function
     return () => {
-      this.listeners.get(sourceId)?.delete(listener);
-    };
+      this.listeners.get(sourceId)?.delete(listener)
+    }
   }
 
   /**
    * Notify listeners
    */
   private notifyListeners(sourceId: string, event: DataBindingEvent): void {
-    const listeners = this.listeners.get(sourceId);
+    const listeners = this.listeners.get(sourceId)
     if (listeners) {
-      listeners.forEach((listener) => {
+      listeners.forEach(listener => {
         try {
-          listener(event);
+          listener(event)
         } catch (error) {
-          console.error(`Error in data binding listener for ${sourceId}:`, error);
+          console.error(`Error in data binding listener for ${sourceId}:`, error)
         }
-      });
+      })
     }
   }
 
@@ -299,23 +297,19 @@ export class DataBindingEngine {
    * Get component data
    */
   getComponentData(componentId: string): Record<string, any> {
-    return this.componentData.get(componentId) || {};
+    return this.componentData.get(componentId) || {}
   }
 
   /**
    * Update component data
    */
-  private updateComponentData(
-    componentId: string,
-    property: string,
-    value: any
-  ): void {
+  private updateComponentData(componentId: string, property: string, value: any): void {
     if (!this.componentData.has(componentId)) {
-      this.componentData.set(componentId, {});
+      this.componentData.set(componentId, {})
     }
 
-    const data = this.componentData.get(componentId)!;
-    data[property] = value;
+    const data = this.componentData.get(componentId)!
+    data[property] = value
   }
 
   /**
@@ -323,7 +317,7 @@ export class DataBindingEngine {
    */
   private initializeComponentData(componentId: string): void {
     if (!this.componentData.has(componentId)) {
-      this.componentData.set(componentId, {});
+      this.componentData.set(componentId, {})
     }
   }
 
@@ -331,28 +325,28 @@ export class DataBindingEngine {
    * Start refresh interval for a data source
    */
   private startRefreshInterval(sourceId: string): void {
-    const source = this.dataSources.get(sourceId);
+    const source = this.dataSources.get(sourceId)
     if (!source || !source.refreshInterval) {
-      return;
+      return
     }
 
     const timerId = setInterval(() => {
-      this.fetchData(sourceId).catch((error) => {
-        console.error(`Error refreshing data source ${sourceId}:`, error);
-      });
-    }, source.refreshInterval);
+      this.fetchData(sourceId).catch(error => {
+        console.error(`Error refreshing data source ${sourceId}:`, error)
+      })
+    }, source.refreshInterval)
 
-    this.refreshTimers.set(sourceId, timerId);
+    this.refreshTimers.set(sourceId, timerId)
   }
 
   /**
    * Stop refresh interval for a data source
    */
   private stopRefreshInterval(sourceId: string): void {
-    const timerId = this.refreshTimers.get(sourceId);
+    const timerId = this.refreshTimers.get(sourceId)
     if (timerId) {
-      clearInterval(timerId);
-      this.refreshTimers.delete(sourceId);
+      clearInterval(timerId)
+      this.refreshTimers.delete(sourceId)
     }
   }
 
@@ -360,46 +354,44 @@ export class DataBindingEngine {
    * Clear cache for a data source
    */
   clearCache(sourceId: string): void {
-    this.cache.delete(sourceId);
+    this.cache.delete(sourceId)
   }
 
   /**
    * Clear all caches
    */
   clearAllCaches(): void {
-    this.cache.clear();
+    this.cache.clear()
   }
 
   /**
    * Get all data sources
    */
   getAllDataSources(): IDataSource[] {
-    return Array.from(this.dataSources.values());
+    return Array.from(this.dataSources.values())
   }
 
   /**
    * Get all bindings
    */
   getAllBindings(): IDataBinding[] {
-    return Array.from(this.bindings.values());
+    return Array.from(this.bindings.values())
   }
 
   /**
    * Get bindings for a component
    */
   getBindingsForComponent(componentId: string): IDataBinding[] {
-    return Array.from(this.bindings.values()).filter(
-      (b) => b.componentId === componentId
-    );
+    return Array.from(this.bindings.values()).filter(b => b.componentId === componentId)
   }
 
   /**
    * Enable/disable a binding
    */
   setBindingEnabled(bindingId: string, enabled: boolean): void {
-    const binding = this.bindings.get(bindingId);
+    const binding = this.bindings.get(bindingId)
     if (binding) {
-      binding.enabled = enabled;
+      binding.enabled = enabled
     }
   }
 
@@ -408,15 +400,15 @@ export class DataBindingEngine {
    */
   destroy(): void {
     // Stop all refresh intervals
-    this.refreshTimers.forEach((timerId) => clearInterval(timerId));
-    this.refreshTimers.clear();
+    this.refreshTimers.forEach(timerId => clearInterval(timerId))
+    this.refreshTimers.clear()
 
     // Clear all data
-    this.dataSources.clear();
-    this.bindings.clear();
-    this.cache.clear();
-    this.listeners.clear();
-    this.componentData.clear();
+    this.dataSources.clear()
+    this.bindings.clear()
+    this.cache.clear()
+    this.listeners.clear()
+    this.componentData.clear()
   }
 
   /**
@@ -425,38 +417,32 @@ export class DataBindingEngine {
   getStatistics() {
     return {
       totalDataSources: this.dataSources.size,
-      apiSources: Array.from(this.dataSources.values()).filter(
-        (s) => s.type === "api"
-      ).length,
-      staticSources: Array.from(this.dataSources.values()).filter(
-        (s) => s.type === "static"
-      ).length,
-      computedSources: Array.from(this.dataSources.values()).filter(
-        (s) => s.type === "computed"
-      ).length,
-      totalBindings: this.bindings.size,
-      enabledBindings: Array.from(this.bindings.values()).filter((b) => b.enabled)
+      apiSources: Array.from(this.dataSources.values()).filter(s => s.type === 'api').length,
+      staticSources: Array.from(this.dataSources.values()).filter(s => s.type === 'static').length,
+      computedSources: Array.from(this.dataSources.values()).filter(s => s.type === 'computed')
         .length,
+      totalBindings: this.bindings.size,
+      enabledBindings: Array.from(this.bindings.values()).filter(b => b.enabled).length,
       cachedSources: this.cache.size,
-      activeRefreshIntervals: this.refreshTimers.size,
-    };
+      activeRefreshIntervals: this.refreshTimers.size
+    }
   }
 }
 
 /**
  * Create a singleton instance of DataBindingEngine
  */
-let instance: DataBindingEngine | null = null;
+let instance: DataBindingEngine | null = null
 
 export function getDataBindingEngine(): DataBindingEngine {
   if (!instance) {
-    instance = new DataBindingEngine();
+    instance = new DataBindingEngine()
   }
-  return instance;
+  return instance
 }
 
 export function createDataBindingEngine(): DataBindingEngine {
-  return new DataBindingEngine();
+  return new DataBindingEngine()
 }
 
 /**
@@ -471,13 +457,13 @@ export function createAPIDataSource(
   return {
     id,
     name,
-    type: "api",
+    type: 'api',
     url,
-    method: "GET",
+    method: 'GET',
     cacheEnabled: true,
     cacheDuration: 5000,
-    ...options,
-  };
+    ...options
+  }
 }
 
 /**
@@ -492,10 +478,10 @@ export function createStaticDataSource(
   return {
     id,
     name,
-    type: "static",
+    type: 'static',
     data,
-    ...options,
-  };
+    ...options
+  }
 }
 
 /**
@@ -510,8 +496,8 @@ export function createComputedDataSource(
   return {
     id,
     name,
-    type: "computed",
+    type: 'computed',
     computeFn,
-    ...options,
-  };
+    ...options
+  }
 }

@@ -34,11 +34,7 @@
       <!-- 触发历史 -->
       <el-tab-pane label="历史" name="history">
         <div class="history-list">
-          <div
-            v-for="(event, index) in history"
-            :key="index"
-            class="history-item"
-          >
+          <div v-for="(event, index) in history" :key="index" class="history-item">
             <div class="history-time">
               {{ formatTime(event.timestamp) }}
             </div>
@@ -101,7 +97,12 @@
                 <code>{{ linkage.condition.expression }}</code>
               </template>
               <template v-else-if="linkage.condition.type === 'complex'">
-                <code>{{ linkage.condition.operator }} ({{ linkage.condition.conditions?.length ?? 0 }} 个子条件)</code>
+                <code
+                  >{{ linkage.condition.operator }} ({{
+                    linkage.condition.conditions?.length ?? 0
+                  }}
+                  个子条件)</code
+                >
               </template>
             </div>
           </div>
@@ -134,97 +135,97 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
-import { usePageStore } from '@/store/usePageStore';
-import type { LinkageEvent } from '@/utils/linkage-engine';
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { usePageStore } from '@/store/usePageStore'
+import type { LinkageEvent } from '@/utils/linkage-engine'
 
-const pageStore = usePageStore();
-const activeTab = ref('stats');
+const pageStore = usePageStore()
+const activeTab = ref('stats')
 
 // 统计信息
 const stats = ref({
   totalLinkages: 0,
   enabledLinkages: 0,
   totalComponents: 0,
-  historySize: 0,
-});
+  historySize: 0
+})
 
 // 触发历史
-const history = ref<LinkageEvent[]>([]);
+const history = ref<LinkageEvent[]>([])
 
 // 联动规则
-const linkages = computed(() => pageStore.linkages || []);
+const linkages = computed(() => pageStore.linkages || [])
 
 // 组件状态
-const componentStates = ref<Record<string, any>>({});
+const componentStates = ref<Record<string, any>>({})
 
 // 刷新统计信息
 const refreshStats = () => {
-  stats.value = pageStore.linkageEngine.getStatistics();
-  history.value = pageStore.linkageEngine.getHistory().slice(-20).reverse();
+  stats.value = pageStore.linkageEngine.getStatistics()
+  history.value = pageStore.linkageEngine.getHistory().slice(-20).reverse()
 
   // 获取所有组件状态
-  const allComponents = Object.keys(pageStore.pageSchema.componentMap);
-  componentStates.value = {};
+  const allComponents = Object.keys(pageStore.pageSchema.componentMap)
+  componentStates.value = {}
   allComponents.forEach(id => {
-    const state = pageStore.linkageEngine.getComponentState(id);
+    const state = pageStore.linkageEngine.getComponentState(id)
     if (Object.keys(state).length > 0) {
-      componentStates.value[id] = state;
+      componentStates.value[id] = state
     }
-  });
-};
+  })
+}
 
 // 清空历史
 const clearHistory = () => {
-  pageStore.linkageEngine.clearHistory();
-  refreshStats();
-};
+  pageStore.linkageEngine.clearHistory()
+  refreshStats()
+}
 
 // 切换联动启用状态
 const toggleLinkage = (id: string) => {
-  pageStore.toggleLinkage(id);
-  refreshStats();
-};
+  pageStore.toggleLinkage(id)
+  refreshStats()
+}
 
 // 获取组件标签
 const getComponentLabel = (componentId: string) => {
-  const component = pageStore.pageSchema.componentMap[componentId];
-  if (!component) return componentId;
-  return `${component.type} (${componentId.slice(0, 8)})`;
-};
+  const component = pageStore.pageSchema.componentMap[componentId]
+  if (!component) return componentId
+  return `${component.type} (${componentId.slice(0, 8)})`
+}
 
 // 格式化时间
 const formatTime = (timestamp: number) => {
-  const date = new Date(timestamp);
+  const date = new Date(timestamp)
   return date.toLocaleTimeString('zh-CN', {
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
+    second: '2-digit'
     // fractionalSecondDigits: 3,
-  });
-};
+  })
+}
 
 // 格式化值
 const formatValue = (value: any) => {
   if (typeof value === 'object') {
-    return JSON.stringify(value);
+    return JSON.stringify(value)
   }
-  return String(value);
-};
+  return String(value)
+}
 
 // 定时刷新
-let refreshInterval: ReturnType<typeof setInterval> | null = null;
+let refreshInterval: ReturnType<typeof setInterval> | null = null
 
 onMounted(() => {
-  refreshStats();
-  refreshInterval = setInterval(refreshStats, 1000);
-});
+  refreshStats()
+  refreshInterval = setInterval(refreshStats, 1000)
+})
 
 onUnmounted(() => {
   if (refreshInterval) {
-    clearInterval(refreshInterval);
+    clearInterval(refreshInterval)
   }
-});
+})
 </script>
 
 <style scoped>

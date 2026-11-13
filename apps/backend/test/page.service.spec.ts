@@ -147,9 +147,7 @@ const createTransactionContext = (options: {
     createQueryBuilder: jest.fn(() => ({
       select: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
-      getRawOne: jest
-        .fn()
-        .mockResolvedValue({ maxVersion: String(options.maxVersion ?? 0) })
+      getRawOne: jest.fn().mockResolvedValue({ maxVersion: String(options.maxVersion ?? 0) })
     })),
     save: jest.fn(async (payload: SavedLog) => {
       savedLogs.push(payload)

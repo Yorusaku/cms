@@ -51,235 +51,235 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
-import { useRoute, useRouter } from "vue-router";
-import { ElMessage, ElMessageBox } from "element-plus";
-import { RefreshLeft, RefreshRight } from "@element-plus/icons-vue";
-import { useEventListener } from "@vueuse/core";
-import { usePageStore } from "@/store/usePageStore";
-import { saveCmsPage, submitPageReview, type SavePageParams } from "@/api/activity";
-import { migrateSchemaToV1 } from "@cms/utils";
-import { runPagePreflight, type PreflightIssue } from "@/utils/page-preflight";
-import { clearPageDraft } from "@/utils/page-draft";
-import { markPageDraft } from "@/utils/page-publish";
-import { trackEvent } from "@/utils/tracking";
-import { getEffectiveRole } from "@/utils/auth";
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { RefreshLeft, RefreshRight } from '@element-plus/icons-vue'
+import { useEventListener } from '@vueuse/core'
+import { usePageStore } from '@/store/usePageStore'
+import { saveCmsPage, submitPageReview, type SavePageParams } from '@/api/activity'
+import { migrateSchemaToV1 } from '@cms/utils'
+import { runPagePreflight, type PreflightIssue } from '@/utils/page-preflight'
+import { clearPageDraft } from '@/utils/page-draft'
+import { markPageDraft } from '@/utils/page-publish'
+import { trackEvent } from '@/utils/tracking'
+import { getEffectiveRole } from '@/utils/auth'
 
-const route = useRoute();
-const router = useRouter();
-const pageStore = usePageStore();
+const route = useRoute()
+const router = useRouter()
+const pageStore = usePageStore()
 
 /** 装修页写操作（撤销/重做/保存草稿/提交审核）限管理员与编辑员；观察员只读 */
-const canEdit = computed(() => ["admin", "editor"].includes(getEffectiveRole()));
+const canEdit = computed(() => ['admin', 'editor'].includes(getEffectiveRole()))
 
-const saveLoading = ref(false);
-const previewLoading = ref(false);
-const publishLoading = ref(false);
+const saveLoading = ref(false)
+const previewLoading = ref(false)
+const publishLoading = ref(false)
 
 const buildPreflightHtml = (issues: PreflightIssue[]) =>
   issues
     .slice(0, 20)
-    .map((issue) => `<li>${issue.message}</li>`)
-    .join("");
+    .map(issue => `<li>${issue.message}</li>`)
+    .join('')
 
 const runPreflight = async () => {
-  const pageSchema = pageStore.exportPageSchema();
-  const result = runPagePreflight(pageSchema);
+  const pageSchema = pageStore.exportPageSchema()
+  const result = runPagePreflight(pageSchema)
   if (result.ok) {
-    return true;
+    return true
   }
 
   const extraText =
     result.issues.length > 20
       ? `<p style="margin-top: 8px;">还有 ${result.issues.length - 20} 条问题未展示，请先修复后再试。</p>`
-      : "";
+      : ''
 
   await ElMessageBox.alert(
     `<p>当前页面未通过发布前校验，请先修复以下问题：</p><ul style="margin: 8px 0 0 16px; padding: 0;">${buildPreflightHtml(result.issues)}</ul>${extraText}`,
-    "保存/发布已拦截",
+    '保存/发布已拦截',
     {
       dangerouslyUseHTMLString: true,
-      confirmButtonText: "我知道了",
-      type: "warning",
-    },
-  );
+      confirmButtonText: '我知道了',
+      type: 'warning'
+    }
+  )
 
-  return false;
-};
+  return false
+}
 
 const handleUndo = () => {
   if (pageStore.canUndo) {
-    pageStore.undo();
+    pageStore.undo()
   }
-};
+}
 
 const handleRedo = () => {
   if (pageStore.canRedo) {
-    pageStore.redo();
+    pageStore.redo()
   }
-};
+}
 
-useEventListener(window, "keydown", (e: KeyboardEvent) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === "z" && !e.shiftKey) {
-    e.preventDefault();
-    handleUndo();
+useEventListener(window, 'keydown', (e: KeyboardEvent) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+    e.preventDefault()
+    handleUndo()
   }
 
-  if ((e.ctrlKey || e.metaKey) && (e.key === "y" || (e.key === "z" && e.shiftKey))) {
-    e.preventDefault();
-    handleRedo();
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
+    e.preventDefault()
+    handleRedo()
   }
-});
+})
 
 interface SavePageResponse {
   data?: {
-    id?: string | number;
-  };
+    id?: string | number
+  }
 }
 
 const getCurrentPageId = (response?: SavePageResponse) => {
-  const id = Number(response?.data?.id || route.query.id || 0);
-  return Number.isFinite(id) && id > 0 ? id : null;
-};
+  const id = Number(response?.data?.id || route.query.id || 0)
+  return Number.isFinite(id) && id > 0 ? id : null
+}
 
 const saveAndPreview = async () => {
-  previewLoading.value = true;
+  previewLoading.value = true
   try {
-    const preflightPassed = await runPreflight();
+    const preflightPassed = await runPreflight()
     if (!preflightPassed) {
-      return;
+      return
     }
 
-    const response = (await savePage()) as SavePageResponse;
-    const pageId = getCurrentPageId(response);
+    const response = (await savePage()) as SavePageResponse
+    const pageId = getCurrentPageId(response)
     if (pageId) {
-      openPreview(pageId);
+      openPreview(pageId)
     }
-    ElMessage.success("草稿已保存并打开预览");
+    ElMessage.success('草稿已保存并打开预览')
   } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    ElMessage.warning(`预览失败: ${errorMessage}`);
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    ElMessage.warning(`预览失败: ${errorMessage}`)
   } finally {
-    previewLoading.value = false;
+    previewLoading.value = false
   }
-};
+}
 
 const submitReview = async () => {
-  publishLoading.value = true;
+  publishLoading.value = true
   try {
-    const preflightPassed = await runPreflight();
+    const preflightPassed = await runPreflight()
     if (!preflightPassed) {
-      return;
+      return
     }
 
-    const response = (await savePage()) as SavePageResponse;
-    const pageId = getCurrentPageId(response);
+    const response = (await savePage()) as SavePageResponse
+    const pageId = getCurrentPageId(response)
     if (pageId) {
-      await submitPageReview({ pageId });
+      await submitPageReview({ pageId })
     }
-    ElMessage.success("已提交审核");
+    ElMessage.success('已提交审核')
   } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    ElMessage.warning(`提交审核失败: ${errorMessage}`);
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    ElMessage.warning(`提交审核失败: ${errorMessage}`)
   } finally {
-    publishLoading.value = false;
+    publishLoading.value = false
   }
-};
+}
 
 const saveDraft = async () => {
-  saveLoading.value = true;
+  saveLoading.value = true
   try {
-    const response = (await savePage()) as SavePageResponse;
-    const pageId = getCurrentPageId(response);
+    const response = (await savePage()) as SavePageResponse
+    const pageId = getCurrentPageId(response)
     if (pageId) {
-      markPageDraft(pageId);
+      markPageDraft(pageId)
       await trackEvent({
-        eventType: "cta_click",
+        eventType: 'cta_click',
         pageId,
-        ctaText: "save_draft",
-      });
+        ctaText: 'save_draft'
+      })
     }
-    ElMessage.success("草稿保存成功");
+    ElMessage.success('草稿保存成功')
   } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : String(err);
-    ElMessage.warning(`保存失败: ${errorMessage}`);
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    ElMessage.warning(`保存失败: ${errorMessage}`)
   } finally {
-    saveLoading.value = false;
+    saveLoading.value = false
   }
-};
+}
 
 const openPublishLogs = () => {
-  const pageId = Number(route.query.id || 0);
+  const pageId = Number(route.query.id || 0)
   if (!Number.isFinite(pageId) || pageId <= 0) {
-    ElMessage.info("请先保存页面后再查看发布记录");
-    return;
+    ElMessage.info('请先保存页面后再查看发布记录')
+    return
   }
-  router.push({ path: "/activity", query: { publishLogsPageId: pageId } });
-};
+  router.push({ path: '/activity', query: { publishLogsPageId: pageId } })
+}
 
 const openPreview = (id: number) => {
   const urlObj = router.resolve({
-    path: "/preview",
-    query: { id },
-  });
-  window.open(urlObj.href, "_blank");
-};
+    path: '/preview',
+    query: { id }
+  })
+  window.open(urlObj.href, '_blank')
+}
 
 const backToList = () => {
   try {
-    const isParentActivityPage = window.opener && window.opener.location.hash === "#/activity";
+    const isParentActivityPage = window.opener && window.opener.location.hash === '#/activity'
     if (isParentActivityPage) {
-      window.opener.close();
+      window.opener.close()
     }
-    router.push("/activity");
+    router.push('/activity')
   } catch {
-    router.push("/activity");
+    router.push('/activity')
   }
-};
+}
 
 const savePage = async () => {
-  const pageSchema = pageStore.exportPageSchema();
+  const pageSchema = pageStore.exportPageSchema()
   const legacyComponentList = migrateSchemaToV1(pageSchema).components.map((component, index) => ({
     id: component.id,
     sort: index,
     data: {
       component: component.type,
-      ...(component.props as Record<string, unknown>),
+      ...(component.props as Record<string, unknown>)
     },
-    styles: component.styles ?? {},
-  }));
+    styles: component.styles ?? {}
+  }))
 
   const pageData: SavePageParams = {
-    name: ((pageSchema.pageConfig as Record<string, unknown>)?.name as string) || "",
+    name: ((pageSchema.pageConfig as Record<string, unknown>)?.name as string) || '',
     schema: pageSchema,
     ...(pageSchema.pageConfig as Record<string, unknown>),
-    componentList: legacyComponentList,
-  };
+    componentList: legacyComponentList
+  }
 
   if (route.query.id) {
-    pageData.id = Number(route.query.id);
+    pageData.id = Number(route.query.id)
   }
 
-  const resp = await saveCmsPage(pageData);
+  const resp = await saveCmsPage(pageData)
 
-  const createdId = (resp as SavePageResponse)?.data?.id;
+  const createdId = (resp as SavePageResponse)?.data?.id
   if (createdId) {
-    setIdForAddSave(createdId);
+    setIdForAddSave(createdId)
   }
 
-  const currentId = Number(createdId || route.query.id || 0);
-  clearPageDraft(null);
+  const currentId = Number(createdId || route.query.id || 0)
+  clearPageDraft(null)
   if (Number.isFinite(currentId) && currentId > 0) {
-    clearPageDraft(currentId);
+    clearPageDraft(currentId)
   }
 
-  return resp;
-};
+  return resp
+}
 
 const setIdForAddSave = (id: string | number) => {
-  router.push(`/decorate?id=${id}`);
-  pageStore.setPageConfig({ id });
-};
+  router.push(`/decorate?id=${id}`)
+  pageStore.setPageConfig({ id })
+}
 </script>
 
 <style scoped>

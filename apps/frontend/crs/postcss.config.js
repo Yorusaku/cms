@@ -27,9 +27,9 @@ const inlineUiDistCss = () => ({
     result.messages.push({
       type: 'dependency',
       plugin: 'inline-cms-ui-dist-css',
-      file,
+      file
     })
-  },
+  }
 })
 
 export default {
@@ -47,8 +47,8 @@ export default {
       selectorBlackList: [],
       minPixelValue: 1,
       mediaQuery: false,
-      exclude: [],
+      exclude: []
     }),
-    autoprefixer(),
-  ],
+    autoprefixer()
+  ]
 }

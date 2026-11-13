@@ -6,31 +6,27 @@
  */
 
 export interface HistoryDelta {
-  type: 'add' | 'update' | 'delete' | 'reorder';
-  path: string[]; // Path to the changed property
-  oldValue?: any;
-  newValue?: any;
-  timestamp: number;
+  type: 'add' | 'update' | 'delete' | 'reorder'
+  path: string[] // Path to the changed property
+  oldValue?: any
+  newValue?: any
+  timestamp: number
 }
 
 export interface HistorySnapshot {
-  deltas: HistoryDelta[];
-  timestamp: number;
+  deltas: HistoryDelta[]
+  timestamp: number
 }
 
 /**
  * Calculate delta between two objects
  */
-export function calculateDelta(
-  oldObj: any,
-  newObj: any,
-  path: string[] = []
-): HistoryDelta[] {
-  const deltas: HistoryDelta[] = [];
+export function calculateDelta(oldObj: any, newObj: any, path: string[] = []): HistoryDelta[] {
+  const deltas: HistoryDelta[] = []
 
   // Handle null/undefined
   if (oldObj === newObj) {
-    return deltas;
+    return deltas
   }
 
   if (oldObj === null || oldObj === undefined) {
@@ -38,9 +34,9 @@ export function calculateDelta(
       type: 'add',
       path,
       newValue: newObj,
-      timestamp: Date.now(),
-    });
-    return deltas;
+      timestamp: Date.now()
+    })
+    return deltas
   }
 
   if (newObj === null || newObj === undefined) {
@@ -48,9 +44,9 @@ export function calculateDelta(
       type: 'delete',
       path,
       oldValue: oldObj,
-      timestamp: Date.now(),
-    });
-    return deltas;
+      timestamp: Date.now()
+    })
+    return deltas
   }
 
   // Handle primitives
@@ -61,10 +57,10 @@ export function calculateDelta(
         path,
         oldValue: oldObj,
         newValue: newObj,
-        timestamp: Date.now(),
-      });
+        timestamp: Date.now()
+      })
     }
-    return deltas;
+    return deltas
   }
 
   // Handle arrays
@@ -75,18 +71,18 @@ export function calculateDelta(
         path,
         oldValue: oldObj,
         newValue: newObj,
-        timestamp: Date.now(),
-      });
+        timestamp: Date.now()
+      })
     }
-    return deltas;
+    return deltas
   }
 
   // Handle objects
-  const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)]);
+  const allKeys = new Set([...Object.keys(oldObj), ...Object.keys(newObj)])
 
   for (const key of allKeys) {
-    const oldValue = oldObj[key];
-    const newValue = newObj[key];
+    const oldValue = oldObj[key]
+    const newValue = newObj[key]
 
     if (!(key in oldObj)) {
       // Property added
@@ -94,20 +90,20 @@ export function calculateDelta(
         type: 'add',
         path: [...path, key],
         newValue,
-        timestamp: Date.now(),
-      });
+        timestamp: Date.now()
+      })
     } else if (!(key in newObj)) {
       // Property deleted
       deltas.push({
         type: 'delete',
         path: [...path, key],
         oldValue,
-        timestamp: Date.now(),
-      });
+        timestamp: Date.now()
+      })
     } else if (typeof oldValue === 'object' && typeof newValue === 'object') {
       // Nested object - recurse
-      const nestedDeltas = calculateDelta(oldValue, newValue, [...path, key]);
-      deltas.push(...nestedDeltas);
+      const nestedDeltas = calculateDelta(oldValue, newValue, [...path, key])
+      deltas.push(...nestedDeltas)
     } else if (oldValue !== newValue) {
       // Property updated
       deltas.push({
@@ -115,12 +111,12 @@ export function calculateDelta(
         path: [...path, key],
         oldValue,
         newValue,
-        timestamp: Date.now(),
-      });
+        timestamp: Date.now()
+      })
     }
   }
 
-  return deltas;
+  return deltas
 }
 
 /**
@@ -130,46 +126,46 @@ export function applyDelta(obj: any, delta: HistoryDelta): any {
   if (delta.path.length === 0) {
     // Root level change
     if (delta.type === 'add' || delta.type === 'update') {
-      return delta.newValue;
+      return delta.newValue
     } else if (delta.type === 'delete') {
-      return undefined;
+      return undefined
     }
   }
 
   // Clone object
-  const result = JSON.parse(JSON.stringify(obj));
+  const result = JSON.parse(JSON.stringify(obj))
 
   // Navigate to parent
-  let current = result;
+  let current = result
   for (let i = 0; i < delta.path.length - 1; i++) {
-    const key = delta.path[i];
+    const key = delta.path[i]
     if (!(key in current)) {
-      current[key] = {};
+      current[key] = {}
     }
-    current = current[key];
+    current = current[key]
   }
 
-  const lastKey = delta.path[delta.path.length - 1];
+  const lastKey = delta.path[delta.path.length - 1]
 
   // Apply change
   if (delta.type === 'add' || delta.type === 'update') {
-    current[lastKey] = delta.newValue;
+    current[lastKey] = delta.newValue
   } else if (delta.type === 'delete') {
-    delete current[lastKey];
+    delete current[lastKey]
   }
 
-  return result;
+  return result
 }
 
 /**
  * Apply multiple deltas to an object
  */
 export function applyDeltas(obj: any, deltas: HistoryDelta[]): any {
-  let result = obj;
+  let result = obj
   for (const delta of deltas) {
-    result = applyDelta(result, delta);
+    result = applyDelta(result, delta)
   }
-  return result;
+  return result
 }
 
 /**
@@ -181,15 +177,15 @@ export function reverseDelta(delta: HistoryDelta): HistoryDelta {
       type: 'delete',
       path: delta.path,
       oldValue: delta.newValue,
-      timestamp: Date.now(),
-    };
+      timestamp: Date.now()
+    }
   } else if (delta.type === 'delete') {
     return {
       type: 'add',
       path: delta.path,
       newValue: delta.oldValue,
-      timestamp: Date.now(),
-    };
+      timestamp: Date.now()
+    }
   } else {
     // update
     return {
@@ -197,8 +193,8 @@ export function reverseDelta(delta: HistoryDelta): HistoryDelta {
       path: delta.path,
       oldValue: delta.newValue,
       newValue: delta.oldValue,
-      timestamp: Date.now(),
-    };
+      timestamp: Date.now()
+    }
   }
 }
 
@@ -206,13 +202,13 @@ export function reverseDelta(delta: HistoryDelta): HistoryDelta {
  * Compress consecutive similar deltas
  */
 export function compressDeltas(deltas: HistoryDelta[]): HistoryDelta[] {
-  if (deltas.length === 0) return [];
+  if (deltas.length === 0) return []
 
-  const compressed: HistoryDelta[] = [];
-  let current = deltas[0];
+  const compressed: HistoryDelta[] = []
+  let current = deltas[0]
 
   for (let i = 1; i < deltas.length; i++) {
-    const next = deltas[i];
+    const next = deltas[i]
 
     // Check if deltas can be merged (same path, both updates)
     if (
@@ -225,67 +221,67 @@ export function compressDeltas(deltas: HistoryDelta[]): HistoryDelta[] {
       current = {
         ...current,
         newValue: next.newValue,
-        timestamp: next.timestamp,
-      };
+        timestamp: next.timestamp
+      }
     } else {
-      compressed.push(current);
-      current = next;
+      compressed.push(current)
+      current = next
     }
   }
 
-  compressed.push(current);
-  return compressed;
+  compressed.push(current)
+  return compressed
 }
 
 /**
  * Calculate size of deltas in bytes
  */
 export function calculateDeltaSize(deltas: HistoryDelta[]): number {
-  return new Blob([JSON.stringify(deltas)]).size;
+  return new Blob([JSON.stringify(deltas)]).size
 }
 
 /**
  * Incremental History Manager
  */
 export class IncrementalHistoryManager<T> {
-  private baseSnapshot: T;
-  private history: HistorySnapshot[] = [];
-  private currentIndex = -1;
-  private maxCapacity = 50;
+  private baseSnapshot: T
+  private history: HistorySnapshot[] = []
+  private currentIndex = -1
+  private maxCapacity = 50
 
   constructor(initialState: T, maxCapacity = 50) {
-    this.baseSnapshot = JSON.parse(JSON.stringify(initialState));
-    this.maxCapacity = maxCapacity;
+    this.baseSnapshot = JSON.parse(JSON.stringify(initialState))
+    this.maxCapacity = maxCapacity
   }
 
   /**
    * Record a change
    */
   record(newState: T): void {
-    const currentState = this.getCurrentState();
-    const deltas = calculateDelta(currentState, newState);
+    const currentState = this.getCurrentState()
+    const deltas = calculateDelta(currentState, newState)
 
     if (deltas.length === 0) {
-      return; // No changes
+      return // No changes
     }
 
     // Remove any history after current index (for redo)
-    this.history = this.history.slice(0, this.currentIndex + 1);
+    this.history = this.history.slice(0, this.currentIndex + 1)
 
     // Add new snapshot
     this.history.push({
       deltas: compressDeltas(deltas),
-      timestamp: Date.now(),
-    });
+      timestamp: Date.now()
+    })
 
-    this.currentIndex++;
+    this.currentIndex++
 
     // Maintain capacity
     if (this.history.length > this.maxCapacity) {
       // Merge oldest snapshot into base
-      const oldest = this.history.shift()!;
-      this.baseSnapshot = applyDeltas(this.baseSnapshot, oldest.deltas);
-      this.currentIndex--;
+      const oldest = this.history.shift()!
+      this.baseSnapshot = applyDeltas(this.baseSnapshot, oldest.deltas)
+      this.currentIndex--
     }
   }
 
@@ -294,11 +290,11 @@ export class IncrementalHistoryManager<T> {
    */
   undo(): T | null {
     if (!this.canUndo()) {
-      return null;
+      return null
     }
 
-    this.currentIndex--;
-    return this.getCurrentState();
+    this.currentIndex--
+    return this.getCurrentState()
   }
 
   /**
@@ -306,53 +302,50 @@ export class IncrementalHistoryManager<T> {
    */
   redo(): T | null {
     if (!this.canRedo()) {
-      return null;
+      return null
     }
 
-    this.currentIndex++;
-    return this.getCurrentState();
+    this.currentIndex++
+    return this.getCurrentState()
   }
 
   /**
    * Check if undo is available
    */
   canUndo(): boolean {
-    return this.currentIndex >= 0;
+    return this.currentIndex >= 0
   }
 
   /**
    * Check if redo is available
    */
   canRedo(): boolean {
-    return this.currentIndex < this.history.length - 1;
+    return this.currentIndex < this.history.length - 1
   }
 
   /**
    * Get current state
    */
   getCurrentState(): T {
-    let state = JSON.parse(JSON.stringify(this.baseSnapshot));
+    let state = JSON.parse(JSON.stringify(this.baseSnapshot))
 
     for (let i = 0; i <= this.currentIndex; i++) {
-      state = applyDeltas(state, this.history[i].deltas);
+      state = applyDeltas(state, this.history[i].deltas)
     }
 
-    return state;
+    return state
   }
 
   /**
    * Get history statistics
    */
   getStatistics() {
-    const totalDeltas = this.history.reduce(
-      (sum, snapshot) => sum + snapshot.deltas.length,
-      0
-    );
+    const totalDeltas = this.history.reduce((sum, snapshot) => sum + snapshot.deltas.length, 0)
 
     const totalSize = this.history.reduce(
       (sum, snapshot) => sum + calculateDeltaSize(snapshot.deltas),
       0
-    );
+    )
 
     return {
       snapshotCount: this.history.length,
@@ -361,16 +354,16 @@ export class IncrementalHistoryManager<T> {
       averageDeltasPerSnapshot: totalDeltas / Math.max(1, this.history.length),
       currentIndex: this.currentIndex,
       canUndo: this.canUndo(),
-      canRedo: this.canRedo(),
-    };
+      canRedo: this.canRedo()
+    }
   }
 
   /**
    * Clear history
    */
   clear(): void {
-    this.baseSnapshot = this.getCurrentState();
-    this.history = [];
-    this.currentIndex = -1;
+    this.baseSnapshot = this.getCurrentState()
+    this.history = []
+    this.currentIndex = -1
   }
 }

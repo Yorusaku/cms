@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "@cms/ui/styles/tokens.css";
+@import 'tailwindcss';
+@import '@cms/ui/styles/tokens.css';
 /*
  * 共享物料（packages/ui/src/components/*.vue）的 Tailwind 工具类来源。
  * CMS 此前靠自动检测碰巧覆盖到，这里与 CRS 一起显式声明，

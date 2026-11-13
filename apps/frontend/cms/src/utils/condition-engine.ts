@@ -6,74 +6,71 @@
  */
 
 export interface IConditionExpression {
-  type: "simple" | "complex";
-  field?: string;
+  type: 'simple' | 'complex'
+  field?: string
   // Logical operator for complex conditions, comparison operator for simple conditions
-  operator?: "AND" | "OR" | "==" | "!=" | ">" | "<" | ">=" | "<=" | "in" | "contains";
-  conditions?: IConditionExpression[];
-  value?: any;
+  operator?: 'AND' | 'OR' | '==' | '!=' | '>' | '<' | '>=' | '<=' | 'in' | 'contains'
+  conditions?: IConditionExpression[]
+  value?: any
 }
 
 export interface IConditionalRule {
-  id: string;
-  name: string;
-  condition: IConditionExpression;
-  action: "show" | "hide" | "enable" | "disable" | "custom";
-  customAction?: (context: any) => any;
-  enabled: boolean;
+  id: string
+  name: string
+  condition: IConditionExpression
+  action: 'show' | 'hide' | 'enable' | 'disable' | 'custom'
+  customAction?: (context: any) => any
+  enabled: boolean
 }
 
 export interface EvaluationContext {
-  componentState: Record<string, any>;
-  pageState: Record<string, any>;
-  userData?: Record<string, any>;
-  timestamp?: number;
+  componentState: Record<string, any>
+  pageState: Record<string, any>
+  userData?: Record<string, any>
+  timestamp?: number
 }
 
 /**
  * ConditionEngine evaluates conditions and applies rules
  */
 export class ConditionEngine {
-  private rules = new Map<string, IConditionalRule>();
-  private evaluationCache = new Map<string, boolean>();
-  private cacheTimeout = 1000; // 1 second
-  private lastCacheTime = 0;
+  private rules = new Map<string, IConditionalRule>()
+  private evaluationCache = new Map<string, boolean>()
+  private cacheTimeout = 1000 // 1 second
+  private lastCacheTime = 0
 
   /**
    * Register a conditional rule
    */
   registerRule(rule: IConditionalRule): void {
     if (this.rules.has(rule.id)) {
-      console.warn(`Rule ${rule.id} already exists`);
-      return;
+      console.warn(`Rule ${rule.id} already exists`)
+      return
     }
-    this.rules.set(rule.id, rule);
+    this.rules.set(rule.id, rule)
   }
 
   /**
    * Unregister a rule
    */
   unregisterRule(ruleId: string): void {
-    this.rules.delete(ruleId);
-    this.evaluationCache.delete(ruleId);
+    this.rules.delete(ruleId)
+    this.evaluationCache.delete(ruleId)
   }
 
   /**
    * Evaluate a condition expression
    */
-  evaluateCondition(
-    condition: IConditionExpression,
-    context: EvaluationContext
-  ): boolean {
-    if (condition.type === "simple") {
-      return this.evaluateSimpleCondition(condition, context);
+  evaluateCondition(condition: IConditionExpression, context: EvaluationContext): boolean {
+    if (condition.type === 'simple') {
+      return this.evaluateSimpleCondition(condition, context)
     }
 
-    if (condition.type === "complex") {
-      return this.evaluateComplexCondition(condition, context);
+    if (condition.type === 'complex') {
+      return this.evaluateComplexCondition(condition, context)
     }
 
-    return true;
+    return true
   }
 
   /**
@@ -83,33 +80,33 @@ export class ConditionEngine {
     condition: IConditionExpression,
     context: EvaluationContext
   ): boolean {
-    const { field, operator, value } = condition;
+    const { field, operator, value } = condition
 
     if (!field) {
-      return true;
+      return true
     }
 
-    const fieldValue = this.getFieldValue(field, context);
+    const fieldValue = this.getFieldValue(field, context)
 
     switch (operator) {
-      case "==":
-        return fieldValue == value;
-      case "!=":
-        return fieldValue != value;
-      case ">":
-        return Number(fieldValue) > Number(value);
-      case "<":
-        return Number(fieldValue) < Number(value);
-      case ">=":
-        return Number(fieldValue) >= Number(value);
-      case "<=":
-        return Number(fieldValue) <= Number(value);
-      case "in":
-        return Array.isArray(value) && value.includes(fieldValue);
-      case "contains":
-        return String(fieldValue).includes(String(value));
+      case '==':
+        return fieldValue == value
+      case '!=':
+        return fieldValue != value
+      case '>':
+        return Number(fieldValue) > Number(value)
+      case '<':
+        return Number(fieldValue) < Number(value)
+      case '>=':
+        return Number(fieldValue) >= Number(value)
+      case '<=':
+        return Number(fieldValue) <= Number(value)
+      case 'in':
+        return Array.isArray(value) && value.includes(fieldValue)
+      case 'contains':
+        return String(fieldValue).includes(String(value))
       default:
-        return true;
+        return true
     }
   }
 
@@ -121,21 +118,19 @@ export class ConditionEngine {
     context: EvaluationContext
   ): boolean {
     if (!condition.conditions || condition.conditions.length === 0) {
-      return true;
+      return true
     }
 
-    const operator = condition.operator || "AND";
-    const results = condition.conditions.map((c) =>
-      this.evaluateCondition(c, context)
-    );
+    const operator = condition.operator || 'AND'
+    const results = condition.conditions.map(c => this.evaluateCondition(c, context))
 
-    if (operator === "AND") {
-      return results.every((r) => r);
-    } else if (operator === "OR") {
-      return results.some((r) => r);
+    if (operator === 'AND') {
+      return results.every(r => r)
+    } else if (operator === 'OR') {
+      return results.some(r => r)
     }
 
-    return true;
+    return true
   }
 
   /**
@@ -147,67 +142,67 @@ export class ConditionEngine {
    *   首个有值的命名空间生效。
    */
   private getFieldValue(field: string, context: EvaluationContext): any {
-    const parts = field.split(".");
+    const parts = field.split('.')
 
     const resolve = (root: unknown): unknown => {
-      let value: any = root;
+      let value: any = root
       for (const part of parts) {
-        if (value && typeof value === "object") {
-          value = value[part];
+        if (value && typeof value === 'object') {
+          value = value[part]
         } else {
-          return undefined;
+          return undefined
         }
       }
-      return value;
-    };
+      return value
+    }
 
-    const direct = resolve(context);
+    const direct = resolve(context)
     if (direct !== undefined) {
-      return direct;
+      return direct
     }
 
     const scopes: Array<Record<string, any> | undefined> = [
       context.componentState,
       context.pageState,
-      context.userData,
-    ];
+      context.userData
+    ]
     for (const scope of scopes) {
-      if (scope && typeof scope === "object") {
-        const scoped = resolve(scope);
+      if (scope && typeof scope === 'object') {
+        const scoped = resolve(scope)
         if (scoped !== undefined) {
-          return scoped;
+          return scoped
         }
       }
     }
 
-    return undefined;
+    return undefined
   }
 
   /**
    * Evaluate a rule
    */
   evaluateRule(ruleId: string, context: EvaluationContext): boolean {
-    const rule = this.rules.get(ruleId);
+    const rule = this.rules.get(ruleId)
     if (!rule || !rule.enabled) {
-      return false;
+      return false
     }
 
     // Check cache
-    const now = Date.now();
+    const now = Date.now()
     if (now - this.lastCacheTime < this.cacheTimeout) {
-      const cached = this.evaluationCache.get(ruleId);
+      const cached = this.evaluationCache.get(ruleId)
       if (cached !== undefined) {
-        return cached;
+        return cached
       }
     } else {
-      this.evaluationCache.clear();
-      this.lastCacheTime = now;
+      this.evaluationCache.clear()
+      this.lastCacheTime = now
     }
 
-    const result = this.evaluateCondition(rule.condition, context);
-    this.evaluationCache.set(ruleId, result);
+    const result = this.evaluateCondition(rule.condition, context)
+    this.evaluationCache.set(ruleId, result)
 
-    return result;
+    return result
   }
 
   /**
@@ -217,95 +212,89 @@ export class ConditionEngine {
     _componentId: string,
     context: EvaluationContext
   ): Map<string, boolean> {
-    const results = new Map<string, boolean>();
+    const results = new Map<string, boolean>()
 
     for (const [ruleId, _rule] of this.rules) {
-      const result = this.evaluateRule(ruleId, context);
-      results.set(ruleId, result);
+      const result = this.evaluateRule(ruleId, context)
+      results.set(ruleId, result)
     }
 
-    return results;
+    return results
   }
 
   /**
    * Get visibility for a component based on rules
    */
-  getComponentVisibility(
-    _componentId: string,
-    context: EvaluationContext
-  ): boolean {
-    let isVisible = true;
+  getComponentVisibility(_componentId: string, context: EvaluationContext): boolean {
+    let isVisible = true
 
     for (const [, rule] of this.rules) {
       if (!rule.enabled) {
-        continue;
+        continue
       }
 
-      const conditionMet = this.evaluateCondition(rule.condition, context);
+      const conditionMet = this.evaluateCondition(rule.condition, context)
 
-      if (rule.action === "show" && !conditionMet) {
-        isVisible = false;
-        break;
+      if (rule.action === 'show' && !conditionMet) {
+        isVisible = false
+        break
       }
 
-      if (rule.action === "hide" && conditionMet) {
-        isVisible = false;
-        break;
+      if (rule.action === 'hide' && conditionMet) {
+        isVisible = false
+        break
       }
     }
 
-    return isVisible;
+    return isVisible
   }
 
   /**
    * Get enabled state for a component based on rules
    */
-  getComponentEnabled(
-    _componentId: string,
-    context: EvaluationContext
-  ): boolean {
-    let isEnabled = true;
+  getComponentEnabled(_componentId: string, context: EvaluationContext): boolean {
+    let isEnabled = true
 
     for (const [, rule] of this.rules) {
       if (!rule.enabled) {
-        continue;
+        continue
       }
 
-      const conditionMet = this.evaluateCondition(rule.condition, context);
+      const conditionMet = this.evaluateCondition(rule.condition, context)
 
-      if (rule.action === "enable" && !conditionMet) {
-        isEnabled = false;
-        break;
+      if (rule.action === 'enable' && !conditionMet) {
+        isEnabled = false
+        break
       }
 
-      if (rule.action === "disable" && conditionMet) {
-        isEnabled = false;
-        break;
+      if (rule.action === 'disable' && conditionMet) {
+        isEnabled = false
+        break
       }
     }
 
-    return isEnabled;
+    return isEnabled
   }
 
   /**
    * Apply custom action for a rule
    */
   applyCustomAction(ruleId: string, context: EvaluationContext): any {
-    const rule = this.rules.get(ruleId);
+    const rule = this.rules.get(ruleId)
     if (!rule || !rule.customAction) {
-      return null;
+      return null
     }
 
-    const conditionMet = this.evaluateCondition(rule.condition, context);
+    const conditionMet = this.evaluateCondition(rule.condition, context)
     if (!conditionMet) {
-      return null;
+      return null
     }
 
     try {
-      return rule.customAction(context);
+      return rule.customAction(context)
     } catch (error) {
-      console.error(`Error in custom action for rule ${ruleId}:`, error);
-      return null;
+      console.error(`Error in custom action for rule ${ruleId}:`, error)
+      return null
     }
   }
 
@@ -313,24 +302,24 @@ export class ConditionEngine {
    * Get all rules
    */
   getAllRules(): IConditionalRule[] {
-    return Array.from(this.rules.values());
+    return Array.from(this.rules.values())
   }
 
   /**
    * Get rules by action type
    */
   getRulesByAction(action: string): IConditionalRule[] {
-    return Array.from(this.rules.values()).filter((r) => r.action === action);
+    return Array.from(this.rules.values()).filter(r => r.action === action)
   }
 
   /**
    * Enable/disable a rule
    */
   setRuleEnabled(ruleId: string, enabled: boolean): void {
-    const rule = this.rules.get(ruleId);
+    const rule = this.rules.get(ruleId)
     if (rule) {
-      rule.enabled = enabled;
-      this.evaluationCache.delete(ruleId);
+      rule.enabled = enabled
+      this.evaluationCache.delete(ruleId)
     }
   }
 
@@ -338,8 +327,8 @@ export class ConditionEngine {
    * Clear all rules
    */
   clearAllRules(): void {
-    this.rules.clear();
-    this.evaluationCache.clear();
+    this.rules.clear()
+    this.evaluationCache.clear()
   }
 
   /**
@@ -348,31 +337,30 @@ export class ConditionEngine {
   getStatistics() {
     return {
       totalRules: this.rules.size,
-      enabledRules: Array.from(this.rules.values()).filter((r) => r.enabled)
-        .length,
-      showRules: this.getRulesByAction("show").length,
-      hideRules: this.getRulesByAction("hide").length,
-      enableRules: this.getRulesByAction("enable").length,
-      disableRules: this.getRulesByAction("disable").length,
-      customRules: this.getRulesByAction("custom").length,
-    };
+      enabledRules: Array.from(this.rules.values()).filter(r => r.enabled).length,
+      showRules: this.getRulesByAction('show').length,
+      hideRules: this.getRulesByAction('hide').length,
+      enableRules: this.getRulesByAction('enable').length,
+      disableRules: this.getRulesByAction('disable').length,
+      customRules: this.getRulesByAction('custom').length
+    }
   }
 }
 
 /**
  * Create a singleton instance of ConditionEngine
  */
-let instance: ConditionEngine | null = null;
+let instance: ConditionEngine | null = null
 
 export function getConditionEngine(): ConditionEngine {
   if (!instance) {
-    instance = new ConditionEngine();
+    instance = new ConditionEngine()
   }
-  return instance;
+  return instance
 }
 
 export function createConditionEngine(): ConditionEngine {
-  return new ConditionEngine();
+  return new ConditionEngine()
 }
 
 /**
@@ -384,43 +372,39 @@ export function createSimpleCondition(
   value: any
 ): IConditionExpression {
   return {
-    type: "simple",
+    type: 'simple',
     field,
     operator: operator as any,
-    value,
-  };
+    value
+  }
 }
 
 /**
  * Helper function to create complex conditions
  */
 export function createComplexCondition(
-  operator: "AND" | "OR",
+  operator: 'AND' | 'OR',
   conditions: IConditionExpression[]
 ): IConditionExpression {
   return {
-    type: "complex",
+    type: 'complex',
     operator,
-    conditions,
-  };
+    conditions
+  }
 }
 
 /**
  * Helper function to create AND condition
  */
-export function createAndCondition(
-  conditions: IConditionExpression[]
-): IConditionExpression {
-  return createComplexCondition("AND", conditions);
+export function createAndCondition(conditions: IConditionExpression[]): IConditionExpression {
+  return createComplexCondition('AND', conditions)
 }
 
 /**
  * Helper function to create OR condition
  */
-export function createOrCondition(
-  conditions: IConditionExpression[]
-): IConditionExpression {
-  return createComplexCondition("OR", conditions);
+export function createOrCondition(conditions: IConditionExpression[]): IConditionExpression {
+  return createComplexCondition('OR', conditions)
 }
 
 /**
@@ -428,42 +412,32 @@ export function createOrCondition(
  */
 export const ConditionBuilders = {
   // Check if field equals value
-  equals: (field: string, value: any) =>
-    createSimpleCondition(field, "==", value),
+  equals: (field: string, value: any) => createSimpleCondition(field, '==', value),
 
   // Check if field not equals value
-  notEquals: (field: string, value: any) =>
-    createSimpleCondition(field, "!=", value),
+  notEquals: (field: string, value: any) => createSimpleCondition(field, '!=', value),
 
   // Check if field is greater than value
-  greaterThan: (field: string, value: any) =>
-    createSimpleCondition(field, ">", value),
+  greaterThan: (field: string, value: any) => createSimpleCondition(field, '>', value),
 
   // Check if field is less than value
-  lessThan: (field: string, value: any) =>
-    createSimpleCondition(field, "<", value),
+  lessThan: (field: string, value: any) => createSimpleCondition(field, '<', value),
 
   // Check if field is in array
-  in: (field: string, values: any[]) =>
-    createSimpleCondition(field, "in", values),
+  in: (field: string, values: any[]) => createSimpleCondition(field, 'in', values),
 
   // Check if field contains value
-  contains: (field: string, value: any) =>
-    createSimpleCondition(field, "contains", value),
+  contains: (field: string, value: any) => createSimpleCondition(field, 'contains', value),
 
   // Check if field is truthy
-  isTruthy: (field: string) =>
-    createSimpleCondition(field, "!=", false),
+  isTruthy: (field: string) => createSimpleCondition(field, '!=', false),
 
   // Check if field is falsy
-  isFalsy: (field: string) =>
-    createSimpleCondition(field, "==", false),
+  isFalsy: (field: string) => createSimpleCondition(field, '==', false),
 
   // Check if field is empty
-  isEmpty: (field: string) =>
-    createSimpleCondition(field, "==", ""),
+  isEmpty: (field: string) => createSimpleCondition(field, '==', ''),
 
   // Check if field is not empty
-  isNotEmpty: (field: string) =>
-    createSimpleCondition(field, "!=", ""),
-};
+  isNotEmpty: (field: string) => createSimpleCondition(field, '!=', '')
+}

@@ -10,11 +10,19 @@ function makeSchema(): IPageSchemaV2 {
     version: '2.0.0',
     pageConfig: { name: '鼠标排序验收', backgroundColor: '#eff6ff' },
     rootIds: [...originalOrder],
-    componentMap: Object.fromEntries(originalOrder.map((id, index) => [id, {
-      id, type: 'StatCard', parentId: null, children: [],
-      props: { title: `排序指标${index + 1}`, value: String(index), description: '原始说明' },
-      styles: {}
-    }]))
+    componentMap: Object.fromEntries(
+      originalOrder.map((id, index) => [
+        id,
+        {
+          id,
+          type: 'StatCard',
+          parentId: null,
+          children: [],
+          props: { title: `排序指标${index + 1}`, value: String(index), description: '原始说明' },
+          styles: {}
+        }
+      ])
+    )
   }
 }
 
@@ -45,7 +53,8 @@ test('鼠标排序 → 单次撤销重做 → 保存重进 → CRS 顺序一致'
   await setupApiMocks(page)
   let saved = makeSchema()
   await page.route(/\/api\/atlas-cms\/getPageJson/, route =>
-    route.fulfill({ json: successResponse({ ...mockPageDetailResponse(2), schema: saved }) }))
+    route.fulfill({ json: successResponse({ ...mockPageDetailResponse(2), schema: saved }) })
+  )
   await page.route(/\/api\/atlas-cms\/updateCmsJson$/, async route => {
     saved = route.request().postDataJSON().schema
     await route.fulfill({ json: successResponse({ id: 2 }) })
@@ -55,7 +64,11 @@ test('鼠标排序 → 单次撤销重做 → 保存重进 → CRS 顺序一致'
   const titles = page.locator('.canvas-component .stat-content p')
   await expect(titles).toHaveText(['排序指标1', '排序指标2', '排序指标3'])
   await page.locator('.canvas-component').first().click()
-  await page.locator('.page-right .field-item').filter({ hasText: '辅助说明' }).locator('input').fill('排序前人工编辑')
+  await page
+    .locator('.page-right .field-item')
+    .filter({ hasText: '辅助说明' })
+    .locator('input')
+    .fill('排序前人工编辑')
   await expect(page.locator('.canvas-component').first()).toContainText('排序前人工编辑')
   await page.evaluate(() => {
     const events: unknown[] = []
@@ -63,21 +76,29 @@ test('鼠标排序 → 单次撤销重做 → 保存重进 → CRS 顺序一致'
     for (const type of ['dragstart', 'dragover', 'drop', 'dragend', 'update', 'end']) {
       document.addEventListener(type, event => {
         const drag = event as DragEvent
-        if (events.length < 100) events.push({
-          type, target: (event.target as HTMLElement)?.className,
-          prevented: event.defaultPrevented, allowed: drag.dataTransfer?.effectAllowed,
-          effect: drag.dataTransfer?.dropEffect,
-          old: (event as unknown as { oldDraggableIndex: number }).oldDraggableIndex,
-          next: (event as unknown as { newDraggableIndex: number }).newDraggableIndex
-        })
+        if (events.length < 100)
+          events.push({
+            type,
+            target: (event.target as HTMLElement)?.className,
+            prevented: event.defaultPrevented,
+            allowed: drag.dataTransfer?.effectAllowed,
+            effect: drag.dataTransfer?.dropEffect,
+            old: (event as unknown as { oldDraggableIndex: number }).oldDraggableIndex,
+            next: (event as unknown as { newDraggableIndex: number }).newDraggableIndex
+          })
       })
     }
   })
   await dragLastToFirst(page)
   await expect(titles).toHaveText(['排序指标3', '排序指标1', '排序指标2'])
-  const events = await page.evaluate(() => (window as unknown as {
-    dragEvents: Array<{ type: string; allowed?: string; effect?: string }>
-  }).dragEvents)
+  const events = await page.evaluate(
+    () =>
+      (
+        window as unknown as {
+          dragEvents: Array<{ type: string; allowed?: string; effect?: string }>
+        }
+      ).dragEvents
+  )
   expect(events.some(event => event.type === 'dragstart' && event.allowed === 'move')).toBe(true)
   expect(events.some(event => event.type === 'dragover' && event.effect === 'copy')).toBe(false)
   await expect(page.locator('.canvas-component.active')).toContainText('排序指标1')
@@ -98,7 +119,11 @@ test('鼠标排序 → 单次撤销重做 → 保存重进 → CRS 顺序一致'
   await page.screenshot({ path: '../../../tmp/acceptance/canvas-sort-editor.png', fullPage: true })
   await page.goto('/cms-manage/preview?id=2')
   const preview = page.frameLocator('#previewIframe')
-  await expect(preview.locator('.stat-content p')).toHaveText(['排序指标3', '排序指标1', '排序指标2'])
+  await expect(preview.locator('.stat-content p')).toHaveText([
+    '排序指标3',
+    '排序指标1',
+    '排序指标2'
+  ])
   await expect(preview.locator('.stat-card-block').nth(1)).toContainText('排序前人工编辑')
   await page.screenshot({ path: '../../../tmp/acceptance/canvas-sort-preview.png', fullPage: true })
 })
@@ -110,7 +135,8 @@ test('左侧真实鼠标拖入表单 → 字段区 Ctrl 多选 → 保存重进'
   saved.rootIds = ['stat-a']
   saved.componentMap = { 'stat-a': saved.componentMap['stat-a'] }
   await page.route(/\/api\/atlas-cms\/getPageJson/, route =>
-    route.fulfill({ json: successResponse({ ...mockPageDetailResponse(2), schema: saved }) }))
+    route.fulfill({ json: successResponse({ ...mockPageDetailResponse(2), schema: saved }) })
+  )
   await page.route(/\/api\/atlas-cms\/updateCmsJson$/, async route => {
     saved = route.request().postDataJSON().schema
     await route.fulfill({ json: successResponse({ id: 2 }) })
@@ -121,16 +147,26 @@ test('左侧真实鼠标拖入表单 → 字段区 Ctrl 多选 → 保存重进'
   const material = page.locator('.component-sidebar li').filter({ hasText: '信息采集表单' })
   await material.dragTo(page.locator('.canvas-dropzone'), { targetPosition: { x: 100, y: 400 } })
   await expect(page.locator('.canvas-component')).toHaveCount(2)
-  const form = page.locator('.canvas-component').filter({ has: page.locator('.business-form-block') })
+  const form = page
+    .locator('.canvas-component')
+    .filter({ has: page.locator('.business-form-block') })
   await page.locator('.canvas-component').first().click()
-  await form.locator('label').first().click({ modifiers: ['Control'] })
+  await form
+    .locator('label')
+    .first()
+    .click({ modifiers: ['Control'] })
   await expect(page.locator('.canvas-component.selected')).toHaveCount(2)
-  await form.locator('label').first().click({ modifiers: ['Control'] })
+  await form
+    .locator('label')
+    .first()
+    .click({ modifiers: ['Control'] })
   await expect(page.locator('.canvas-component.selected')).toHaveCount(1)
   await form.locator('label').first().click()
   await expect(form).toHaveClass(/active/)
   await page.getByRole('button', { name: 'AI 更新内容' }).click()
-  await expect(page.locator('.el-dialog').filter({ hasText: 'AI 更新内容' })).toContainText('信息采集表单')
+  await expect(page.locator('.el-dialog').filter({ hasText: 'AI 更新内容' })).toContainText(
+    '信息采集表单'
+  )
   await page.getByRole('button', { name: '取消', exact: true }).click()
   await page.getByRole('button', { name: '保存草稿' }).click()
   await expect.poll(() => saved.rootIds.length).toBe(2)

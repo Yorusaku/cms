@@ -1,73 +1,67 @@
-import { Type } from "class-transformer";
-import {
-  IsArray,
-  IsOptional,
-  IsString,
-  MaxLength,
-  ValidateNested,
-} from "class-validator";
+import { Type } from 'class-transformer'
+import { IsArray, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator'
 
 export class AiProductInputDto {
   @IsString()
   @MaxLength(80)
-  name: string;
+  name: string
 
   @IsOptional()
-  price?: string | number;
+  price?: string | number
 
   @IsOptional()
-  originalPrice?: string | number;
+  originalPrice?: string | number
 
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  sellingPoint?: string;
+  sellingPoint?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  imageUrl?: string;
+  imageUrl?: string
 }
 
 export class AiGeneratePageDto {
   @IsString()
   @MaxLength(80)
-  pageName: string;
+  pageName: string
 
   @IsString()
   @MaxLength(40)
-  activityType: string;
+  activityType: string
 
   @IsString()
   @MaxLength(120)
-  audience: string;
+  audience: string
 
   @IsString()
   @MaxLength(160)
-  promotion: string;
+  promotion: string
 
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => AiProductInputDto)
-  products?: AiProductInputDto[];
+  products?: AiProductInputDto[]
 
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  leadGoal?: string;
+  leadGoal?: string
 
   @IsString()
   @MaxLength(40)
-  ctaText: string;
+  ctaText: string
 
   @IsOptional()
   @IsString()
   @MaxLength(60)
-  styleTone?: string;
+  styleTone?: string
 
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  extraPrompt?: string;
+  extraPrompt?: string
 }

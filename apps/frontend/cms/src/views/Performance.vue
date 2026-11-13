@@ -47,7 +47,8 @@
         </el-button>
       </div>
       <p class="mt-3 text-xs text-gray-500">
-        统计口径：漏斗指标按「访客事件（crs）」计算，独立访客按 sessionId 去重；后台操作不计入访客转化。
+        统计口径：漏斗指标按「访客事件（crs）」计算，独立访客按 sessionId
+        去重；后台操作不计入访客转化。
       </p>
     </el-card>
 
@@ -79,7 +80,8 @@
               />
             </div>
             <span class="trend__meta">
-              访问 {{ row.pageViews }} · 独立 {{ row.uniqueVisitors }} · CTA {{ row.ctaClicks }} · 线索
+              访问 {{ row.pageViews }} · 独立 {{ row.uniqueVisitors }} · CTA {{ row.ctaClicks }} ·
+              线索
               {{ row.leads }}
             </span>
           </div>
@@ -116,71 +118,71 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
-import { ElMessage } from "element-plus";
-import { getCmsPageList, getPagePublishLogs, type PageItem } from "@/api/activity";
+import { computed, onMounted, reactive, ref } from 'vue'
+import { ElMessage } from 'element-plus'
+import { getCmsPageList, getPagePublishLogs, type PageItem } from '@/api/activity'
 import {
   exportPageFunnelCsv,
   getPageFunnelSummary,
   type FunnelQueryParams,
-  type PageFunnelSummary,
-} from "@/api/tracking";
-import { getEffectiveRole } from "@/utils/auth";
-import { saveBlob } from "@/utils/download";
+  type PageFunnelSummary
+} from '@/api/tracking'
+import { getEffectiveRole } from '@/utils/auth'
+import { saveBlob } from '@/utils/download'
 
 interface PublishLogOption {
-  versionId: string | number;
-  displayVersion?: string;
+  versionId: string | number
+  displayVersion?: string
 }
 
-const pages = ref<PageItem[]>([]);
-const pageId = ref<number>();
-const dateRange = ref<[string, string]>();
-const publishLogs = ref<PublishLogOption[]>([]);
-const summary = ref<PageFunnelSummary>();
-const loading = ref(false);
-const exporting = ref(false);
+const pages = ref<PageItem[]>([])
+const pageId = ref<number>()
+const dateRange = ref<[string, string]>()
+const publishLogs = ref<PublishLogOption[]>([])
+const summary = ref<PageFunnelSummary>()
+const loading = ref(false)
+const exporting = ref(false)
 
 const filters = reactive({
-  channel: "",
-  publishedVersionId: "" as string | undefined,
-  source: "crs" as NonNullable<FunnelQueryParams["source"]>,
-});
+  channel: '',
+  publishedVersionId: '' as string | undefined,
+  source: 'crs' as NonNullable<FunnelQueryParams['source']>
+})
 
 /** 导出为管理员专属；观察员与编辑员可只看板 */
-const canExport = computed(() => getEffectiveRole() === "admin");
+const canExport = computed(() => getEffectiveRole() === 'admin')
 
-const formatRate = (value: number) => `${(value * 100).toFixed(2)}%`;
+const formatRate = (value: number) => `${(value * 100).toFixed(2)}%`
 
 const metricCards = computed(() => {
-  const metrics = summary.value?.metrics;
+  const metrics = summary.value?.metrics
   return [
-    { label: "页面访问", value: metrics?.pageViews ?? 0 },
-    { label: "独立访客", value: metrics?.uniqueVisitors ?? 0 },
-    { label: "CTA 点击", value: metrics?.ctaClicks ?? 0 },
-    { label: "表单提交", value: metrics?.formSubmits ?? 0 },
-    { label: "有效线索", value: metrics?.leads ?? 0 },
-    { label: "CTA 点击率", value: formatRate(metrics?.ctaClickRate ?? 0) },
-    { label: "线索转化率", value: formatRate(metrics?.leadConversionRate ?? 0) },
-  ];
-});
+    { label: '页面访问', value: metrics?.pageViews ?? 0 },
+    { label: '独立访客', value: metrics?.uniqueVisitors ?? 0 },
+    { label: 'CTA 点击', value: metrics?.ctaClicks ?? 0 },
+    { label: '表单提交', value: metrics?.formSubmits ?? 0 },
+    { label: '有效线索', value: metrics?.leads ?? 0 },
+    { label: 'CTA 点击率', value: formatRate(metrics?.ctaClickRate ?? 0) },
+    { label: '线索转化率', value: formatRate(metrics?.leadConversionRate ?? 0) }
+  ]
+})
 
 /** 趋势图用 CSS 条形表示：以当前区间最大访问量为 100% 基准 */
 const trendRows = computed(() => {
-  const trend = summary.value?.dailyTrend ?? [];
-  const maxPageViews = Math.max(...trend.map((point) => point.metrics.pageViews), 1);
-  const maxLeads = Math.max(...trend.map((point) => point.metrics.leads), 1);
+  const trend = summary.value?.dailyTrend ?? []
+  const maxPageViews = Math.max(...trend.map(point => point.metrics.pageViews), 1)
+  const maxLeads = Math.max(...trend.map(point => point.metrics.leads), 1)
 
-  return trend.map((point) => ({
+  return trend.map(point => ({
     date: point.date,
     pageViews: point.metrics.pageViews,
     uniqueVisitors: point.metrics.uniqueVisitors,
     ctaClicks: point.metrics.ctaClicks,
     leads: point.metrics.leads,
     pageViewWidth: `${Math.round((point.metrics.pageViews / maxPageViews) * 100)}%`,
-    leadWidth: `${Math.round((point.metrics.leads / maxLeads) * 100)}%`,
-  }));
-});
+    leadWidth: `${Math.round((point.metrics.leads / maxLeads) * 100)}%`
+  }))
+})
 
 const buildQuery = (): FunnelQueryParams => ({
   pageId: pageId.value as number,
@@ -188,71 +190,71 @@ const buildQuery = (): FunnelQueryParams => ({
   endTime: dateRange.value?.[1],
   channel: filters.channel.trim() || undefined,
   publishedVersionId: filters.publishedVersionId || undefined,
-  source: filters.source,
-});
+  source: filters.source
+})
 
 const loadPages = async () => {
-  const response = await getCmsPageList({ pageNum: 1, pageSize: 100 });
-  if (response.code !== 10000) throw new Error(response.message || "获取页面失败");
-  pages.value = response.data?.list ?? [];
-  if (!pageId.value && pages.value[0]) pageId.value = pages.value[0].id;
-};
+  const response = await getCmsPageList({ pageNum: 1, pageSize: 100 })
+  if (response.code !== 10000) throw new Error(response.message || '获取页面失败')
+  pages.value = response.data?.list ?? []
+  if (!pageId.value && pages.value[0]) pageId.value = pages.value[0].id
+}
 
 const loadPublishLogs = async () => {
   if (!pageId.value) {
-    publishLogs.value = [];
-    return;
+    publishLogs.value = []
+    return
   }
   try {
-    const response = await getPagePublishLogs(pageId.value);
-    publishLogs.value = Array.isArray(response.data) ? response.data : [];
+    const response = await getPagePublishLogs(pageId.value)
+    publishLogs.value = Array.isArray(response.data) ? response.data : []
   } catch {
     // 版本筛选为辅助能力，取不到不影响看板主数据
-    publishLogs.value = [];
+    publishLogs.value = []
   }
-};
+}
 
 const loadSummary = async () => {
-  if (!pageId.value) return;
-  loading.value = true;
+  if (!pageId.value) return
+  loading.value = true
   try {
-    const response = await getPageFunnelSummary(buildQuery());
-    if (response.code !== 10000) throw new Error(response.message || "获取效果数据失败");
-    summary.value = response.data;
+    const response = await getPageFunnelSummary(buildQuery())
+    if (response.code !== 10000) throw new Error(response.message || '获取效果数据失败')
+    summary.value = response.data
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : "获取效果数据失败");
+    ElMessage.error(error instanceof Error ? error.message : '获取效果数据失败')
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
+}
 
 const handlePageChange = async () => {
-  filters.publishedVersionId = undefined;
-  await Promise.all([loadPublishLogs(), loadSummary()]);
-};
+  filters.publishedVersionId = undefined
+  await Promise.all([loadPublishLogs(), loadSummary()])
+}
 
 const handleExport = async () => {
-  if (!pageId.value) return;
-  exporting.value = true;
+  if (!pageId.value) return
+  exporting.value = true
   try {
-    const { blob, filename } = await exportPageFunnelCsv(buildQuery());
-    saveBlob(blob, filename);
-    ElMessage.success("看板数据已导出");
+    const { blob, filename } = await exportPageFunnelCsv(buildQuery())
+    saveBlob(blob, filename)
+    ElMessage.success('看板数据已导出')
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : "导出看板数据失败");
+    ElMessage.error(error instanceof Error ? error.message : '导出看板数据失败')
   } finally {
-    exporting.value = false;
+    exporting.value = false
   }
-};
+}
 
 onMounted(async () => {
   try {
-    await loadPages();
-    await Promise.all([loadPublishLogs(), loadSummary()]);
+    await loadPages()
+    await Promise.all([loadPublishLogs(), loadSummary()])
   } catch (error) {
-    ElMessage.error(error instanceof Error ? error.message : "初始化看板失败");
+    ElMessage.error(error instanceof Error ? error.message : '初始化看板失败')
   }
-});
+})
 </script>
 
 <style scoped>

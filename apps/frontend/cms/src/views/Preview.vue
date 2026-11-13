@@ -77,7 +77,7 @@ import {
   migrateSchema,
   verifySecureMessage,
   validateOrigin,
-  type SecureMessagePayload,
+  type SecureMessagePayload
 } from '@cms/utils'
 import { normalizePageSchemaMaterials } from '@cms/ui'
 import { getCmsPageById } from '@/api/activity'
@@ -154,9 +154,7 @@ const sendSchemaToIframe = async () => {
     let rawSchema: unknown = pageData
     if (pageData.schema) {
       rawSchema =
-        typeof pageData.schema === 'string'
-          ? JSON.parse(pageData.schema)
-          : pageData.schema
+        typeof pageData.schema === 'string' ? JSON.parse(pageData.schema) : pageData.schema
     } else {
       rawSchema = adaptPageData(pageData)
     }

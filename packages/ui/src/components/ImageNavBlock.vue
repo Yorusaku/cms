@@ -15,10 +15,7 @@
             loading="lazy"
           />
         </div>
-        <div
-          class="mt-2 text-xs text-center wrap-break-word"
-          :style="{ color: textColor }"
-        >
+        <div class="mt-2 text-xs text-center wrap-break-word" :style="{ color: textColor }">
           {{ item.text }}
         </div>
       </div>
@@ -27,44 +24,44 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed } from 'vue'
 
 export interface IImageNavItem {
-  imageUrl?: string;
-  text: string;
-  link?: string;
+  imageUrl?: string
+  text: string
+  link?: string
 }
 
 export interface IImageNavProps {
-  list?: IImageNavItem[];
-  columnPadding?: number;
-  rowPadding?: number;
-  backgroundColor?: string;
-  textColor?: string;
-  borderRadius?: number;
-  defaultImage?: string;
+  list?: IImageNavItem[]
+  columnPadding?: number
+  rowPadding?: number
+  backgroundColor?: string
+  textColor?: string
+  borderRadius?: number
+  defaultImage?: string
 }
 
 const {
   list = [],
   columnPadding = 0,
   rowPadding = 0,
-  backgroundColor = "#ffffff",
-  textColor = "#303133",
+  backgroundColor = '#ffffff',
+  textColor = '#303133',
   borderRadius = 0,
-  defaultImage = "https://via.placeholder.com/44",
-} = defineProps<IImageNavProps>();
+  defaultImage = 'https://via.placeholder.com/44'
+} = defineProps<IImageNavProps>()
 
 const emit = defineEmits<{
-  click: [item: IImageNavItem, index: number];
-}>();
+  click: [item: IImageNavItem, index: number]
+}>()
 
 const containerStyle = computed(() => ({
   padding: `${columnPadding}px ${rowPadding}px`,
-  backgroundColor,
-}));
+  backgroundColor
+}))
 
 const handleClick = (item: IImageNavItem, index: number) => {
-  emit("click", item, index);
-};
+  emit('click', item, index)
+}
 </script>

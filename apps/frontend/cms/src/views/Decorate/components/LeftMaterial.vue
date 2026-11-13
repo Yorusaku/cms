@@ -2,12 +2,7 @@
   <div class="component-sidebar">
     <h3>组件列表</h3>
     <div class="material-search">
-      <el-input
-        v-model="keyword"
-        placeholder="搜索物料"
-        clearable
-        size="small"
-      />
+      <el-input v-model="keyword" placeholder="搜索物料" clearable size="small" />
     </div>
     <el-collapse v-model="activeNames" class="material-collapse">
       <el-collapse-item
@@ -22,9 +17,7 @@
             v-for="material in group.materials"
             :key="material.type"
             :class="
-              isDraggable(material.type, material.maxCount)
-                ? 'drag-enabled'
-                : 'drag-disabled'
+              isDraggable(material.type, material.maxCount) ? 'drag-enabled' : 'drag-disabled'
             "
             :draggable="isDraggable(material.type, material.maxCount)"
             @dragstart="onDragstart(material.type, $event)"
@@ -43,67 +36,65 @@
         </ul>
       </el-collapse-item>
     </el-collapse>
-    <div v-if="keyword && filteredGroups.length === 0" class="empty-search">
-      未找到匹配的物料
-    </div>
+    <div v-if="keyword && filteredGroups.length === 0" class="empty-search">未找到匹配的物料</div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { usePageStore } from "@/store/usePageStore";
-import { getMaterialDefaults, getMaterialGroups } from "@cms/ui";
+import { computed, ref } from 'vue'
+import { usePageStore } from '@/store/usePageStore'
+import { getMaterialDefaults, getMaterialGroups } from '@cms/ui'
 
-const pageStore = usePageStore();
+const pageStore = usePageStore()
 
-const activeNames = ref([1, 2, 3]);
-const keyword = ref("");
-const materialGroups = getMaterialGroups();
+const activeNames = ref([1, 2, 3])
+const keyword = ref('')
+const materialGroups = getMaterialGroups()
 
 const filteredGroups = computed(() => {
-  const normalizedKeyword = keyword.value.trim().toLowerCase();
+  const normalizedKeyword = keyword.value.trim().toLowerCase()
   if (!normalizedKeyword) {
-    return materialGroups;
+    return materialGroups
   }
 
   return materialGroups
-    .map((group) => ({
+    .map(group => ({
       ...group,
-      materials: group.materials.filter((material) => {
-        const aliases = material.aliases ?? [];
+      materials: group.materials.filter(material => {
+        const aliases = material.aliases ?? []
         return (
           material.label.toLowerCase().includes(normalizedKeyword) ||
           material.type.toLowerCase().includes(normalizedKeyword) ||
-          aliases.some((alias) => alias.toLowerCase().includes(normalizedKeyword))
-        );
-      }),
+          aliases.some(alias => alias.toLowerCase().includes(normalizedKeyword))
+        )
+      })
     }))
-    .filter((group) => group.materials.length > 0);
-});
+    .filter(group => group.materials.length > 0)
+})
 
 const getComponentCount = (type: string): number => {
   return Object.values(pageStore.pageSchema.componentMap).filter(
-    (component) => component.type === type,
-  ).length;
-};
+    component => component.type === type
+  ).length
+}
 
 const isDraggable = (type: string, maxCount: number): boolean => {
-  const currentCount = getComponentCount(type);
-  return currentCount < maxCount;
-};
+  const currentCount = getComponentCount(type)
+  return currentCount < maxCount
+}
 
 const onDragstart = (type: string, _event: DragEvent) => {
-  pageStore.setDragActive(true);
+  pageStore.setDragActive(true)
   pageStore.setDragComponent({
     type,
-    props: getMaterialDefaults(type),
-  });
-};
+    props: getMaterialDefaults(type)
+  })
+}
 
 const onDragend = () => {
-  pageStore.setDragActive(false);
-  pageStore.setDragComponent({});
-};
+  pageStore.setDragActive(false)
+  pageStore.setDragComponent({})
+}
 </script>
 
 <style scoped>
@@ -206,18 +197,18 @@ const onDragend = () => {
   --el-collapse-header-height: 30px;
 }
 
-.component-sidebar .material-collapse-item [class*="__header"] {
+.component-sidebar .material-collapse-item [class*='__header'] {
   border: none;
   height: 30px;
   line-height: 30px;
   padding: 0 20px;
 }
 
-.component-sidebar .material-collapse-item [class*="__wrap"] {
+.component-sidebar .material-collapse-item [class*='__wrap'] {
   border: none;
 }
 
-.component-sidebar .material-collapse-item [class*="__content"] {
+.component-sidebar .material-collapse-item [class*='__content'] {
   padding-bottom: 0;
 }
 </style>

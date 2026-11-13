@@ -74,12 +74,7 @@
           allow-create
           class="w-full"
         >
-          <el-option
-            v-for="prop in targetProperties"
-            :key="prop"
-            :label="prop"
-            :value="prop"
-          />
+          <el-option v-for="prop in targetProperties" :key="prop" :label="prop" :value="prop" />
         </el-select>
       </el-form-item>
 
@@ -153,254 +148,258 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { ElMessage } from 'element-plus';
-import type { FormInstance, FormRules } from 'element-plus';
-import type { IComponentLinkage, IComponentSchemaV2 } from '@cms/types';
-import { getMaterialRuntimeEventProperties } from '@cms/ui';
-import type { ILinkageCondition } from '@/utils/linkage-engine';
-import VisualConditionBuilder from '@/components/basic/VisualConditionBuilder.vue';
+import { ref, computed, watch } from 'vue'
+import { ElMessage } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
+import type { IComponentLinkage, IComponentSchemaV2 } from '@cms/types'
+import { getMaterialRuntimeEventProperties } from '@cms/ui'
+import type { ILinkageCondition } from '@/utils/linkage-engine'
+import VisualConditionBuilder from '@/components/basic/VisualConditionBuilder.vue'
 
 interface Props {
-  modelValue: boolean;
-  linkage: IComponentLinkage | null;
-  components: IComponentSchemaV2[];
+  modelValue: boolean
+  linkage: IComponentLinkage | null
+  components: IComponentSchemaV2[]
 }
 
-const props = defineProps<Props>();
+const props = defineProps<Props>()
 const emit = defineEmits<{
-  'update:modelValue': [value: boolean];
-  save: [linkage: IComponentLinkage];
-}>();
+  'update:modelValue': [value: boolean]
+  save: [linkage: IComponentLinkage]
+}>()
 
-const formRef = ref<FormInstance>();
+const formRef = ref<FormInstance>()
 const form = ref({
   sourceComponentId: '',
   sourceProperty: '',
   targetComponentId: '',
-  targetProperty: '',
-});
+  targetProperty: ''
+})
 
 // Transform state
-const transformType = ref<string>('none');
-const multiplier = ref(1);
-const addAmount = ref(0);
-const clampMin = ref(0);
-const clampMax = ref(100);
-const mapFromMin = ref(0);
-const mapFromMax = ref(100);
-const mapToMin = ref(0);
-const mapToMax = ref(100);
-const customTransform = ref('');
+const transformType = ref<string>('none')
+const multiplier = ref(1)
+const addAmount = ref(0)
+const clampMin = ref(0)
+const clampMax = ref(100)
+const mapFromMin = ref(0)
+const mapFromMax = ref(100)
+const mapToMin = ref(0)
+const mapToMax = ref(100)
+const customTransform = ref('')
 
 // Condition state — managed by VisualConditionBuilder
-const conditionData = ref<ILinkageCondition | null>(null);
+const conditionData = ref<ILinkageCondition | null>(null)
 
 const rules: FormRules = {
   sourceComponentId: [{ required: true, message: '请选择来源组件', trigger: 'change' }],
   sourceProperty: [{ required: true, message: '请输入来源属性', trigger: 'blur' }],
   targetComponentId: [{ required: true, message: '请选择目标组件', trigger: 'change' }],
-  targetProperty: [{ required: true, message: '请输入目标属性', trigger: 'blur' }],
-};
+  targetProperty: [{ required: true, message: '请输入目标属性', trigger: 'blur' }]
+}
 
 /**
  * 运行时事件属性：来自物料注册表的受控登记，组件交互后 emit，不存进 schema。
  * 例：BusinessList 的 filteredCount / keyword。
  */
 const runtimeSourceProperties = computed(() => {
-  if (!form.value.sourceComponentId) return [];
-  const component = props.components.find(c => c.id === form.value.sourceComponentId);
-  if (!component) return [];
-  return getMaterialRuntimeEventProperties(component.type);
-});
+  if (!form.value.sourceComponentId) return []
+  const component = props.components.find(c => c.id === form.value.sourceComponentId)
+  if (!component) return []
+  return getMaterialRuntimeEventProperties(component.type)
+})
 
 /** 配置属性：组件 schema 里的静态 props（编辑端可改、随页面保存） */
 const configSourceProperties = computed(() => {
-  if (!form.value.sourceComponentId) return [];
-  const component = props.components.find(c => c.id === form.value.sourceComponentId);
-  if (!component) return [];
-  return Object.keys(component.props || {});
-});
+  if (!form.value.sourceComponentId) return []
+  const component = props.components.find(c => c.id === form.value.sourceComponentId)
+  if (!component) return []
+  return Object.keys(component.props || {})
+})
 
 const targetProperties = computed(() => {
-  if (!form.value.targetComponentId) return [];
-  const component = props.components.find(c => c.id === form.value.targetComponentId);
-  if (!component) return [];
-  return Object.keys(component.props || {});
-});
+  if (!form.value.targetComponentId) return []
+  const component = props.components.find(c => c.id === form.value.targetComponentId)
+  if (!component) return []
+  return Object.keys(component.props || {})
+})
 
 const getComponentLabel = (comp: IComponentSchemaV2) => {
-  return `${comp.type} (${comp.id.slice(0, 8)})`;
-};
+  return `${comp.type} (${comp.id.slice(0, 8)})`
+}
 
 // ==================== Transform String Parsing ====================
 
 interface TransformMatcher {
-  type: string;
-  match: (s: string) => boolean;
-  extract: (s: string) => Record<string, any>;
+  type: string
+  match: (s: string) => boolean
+  extract: (s: string) => Record<string, any>
 }
 
 const TRANSFORM_MATCHERS: TransformMatcher[] = [
   {
     type: 'uppercase',
-    match: (s) => s.includes('.toUpperCase()'),
-    extract: () => ({}),
+    match: s => s.includes('.toUpperCase()'),
+    extract: () => ({})
   },
   {
     type: 'lowercase',
-    match: (s) => s.includes('.toLowerCase()'),
-    extract: () => ({}),
+    match: s => s.includes('.toLowerCase()'),
+    extract: () => ({})
   },
   {
     type: 'clamp',
-    match: (s) => s.includes('Math.min') && s.includes('Math.max'),
-    extract: (s) => {
+    match: s => s.includes('Math.min') && s.includes('Math.max'),
+    extract: s => {
       // (value) => Math.min(Math.max(value, 0), 100)
-      const nums = s.match(/Math\.min\(Math\.max\(value,\s*([\d.]+)\),\s*([\d.]+)\)/);
+      const nums = s.match(/Math\.min\(Math\.max\(value,\s*([\d.]+)\),\s*([\d.]+)\)/)
       return {
         clampMin: nums ? parseFloat(nums[1]) : 0,
-        clampMax: nums ? parseFloat(nums[2]) : 100,
-      };
-    },
+        clampMax: nums ? parseFloat(nums[2]) : 100
+      }
+    }
   },
   {
     type: 'map',
-    match: (s) => s.includes('const n = Number(value)') && s.includes('const r = (n'),
-    extract: (s) => {
+    match: s => s.includes('const n = Number(value)') && s.includes('const r = (n'),
+    extract: s => {
       // IIFE: (() => { const n = Number(value); const r = (n - FM) / (FX - FM); return TM + r * (TX - TM); })()
-      const nums = s.match(/[\d.]+/g);
+      const nums = s.match(/[\d.]+/g)
       if (nums && nums.length >= 4) {
         return {
           mapFromMin: parseFloat(nums[0]),
           mapFromMax: parseFloat(nums[1]),
           mapToMin: parseFloat(nums[2]),
-          mapToMax: parseFloat(nums[3]),
-        };
+          mapToMax: parseFloat(nums[3])
+        }
       }
-      return {};
-    },
+      return {}
+    }
   },
   {
     type: 'multiply',
-    match: (s) => /\*\s*[\d.]+/.test(s) && !s.includes('Math.min'),
-    extract: (s) => {
-      const match = s.match(/\*\s*([\d.]+)/);
-      return { multiplier: match ? parseFloat(match[1]) : 1 };
-    },
+    match: s => /\*\s*[\d.]+/.test(s) && !s.includes('Math.min'),
+    extract: s => {
+      const match = s.match(/\*\s*([\d.]+)/)
+      return { multiplier: match ? parseFloat(match[1]) : 1 }
+    }
   },
   {
     type: 'add',
-    match: (s) => /\+\s*[\d.]+/.test(s),
-    extract: (s) => {
-      const match = s.match(/\+\s*([\d.]+)/);
-      return { addAmount: match ? parseFloat(match[1]) : 0 };
-    },
+    match: s => /\+\s*[\d.]+/.test(s),
+    extract: s => {
+      const match = s.match(/\+\s*([\d.]+)/)
+      return { addAmount: match ? parseFloat(match[1]) : 0 }
+    }
   },
   {
     type: 'currency',
-    match: (s) => s.includes('$') && s.includes('.toFixed(2)'),
-    extract: () => ({}),
+    match: s => s.includes('$') && s.includes('.toFixed(2)'),
+    extract: () => ({})
   },
   {
     type: 'invert',
-    match: (s) => s.trim() === '!value' || s.includes('!value'),
-    extract: () => ({}),
-  },
-];
+    match: s => s.trim() === '!value' || s.includes('!value'),
+    extract: () => ({})
+  }
+]
 
 function parseTransformFn(fnStr: string | undefined): void {
   if (!fnStr) {
-    transformType.value = 'none';
-    return;
+    transformType.value = 'none'
+    return
   }
 
   // Strip the arrow function wrapper to get the body
-  let body = fnStr;
-  body = body.replace(/^\(value\)\s*=>\s*/, '');
-  body = body.replace(/^function\s*\(value\)\s*\{?\s*return\s*/, '');
-  body = body.replace(/\}?\s*$/, '');
-  body = body.trim();
+  let body = fnStr
+  body = body.replace(/^\(value\)\s*=>\s*/, '')
+  body = body.replace(/^function\s*\(value\)\s*\{?\s*return\s*/, '')
+  body = body.replace(/\}?\s*$/, '')
+  body = body.trim()
 
   // Try matchers in priority order
   for (const matcher of TRANSFORM_MATCHERS) {
     if (matcher.match(body)) {
-      const params = matcher.extract(body);
-      transformType.value = matcher.type;
-      if ('multiplier' in params) multiplier.value = params.multiplier;
-      if ('addAmount' in params) addAmount.value = params.addAmount;
-      if ('clampMin' in params) clampMin.value = params.clampMin;
-      if ('clampMax' in params) clampMax.value = params.clampMax;
-      if ('mapFromMin' in params) mapFromMin.value = params.mapFromMin;
-      if ('mapFromMax' in params) mapFromMax.value = params.mapFromMax;
-      if ('mapToMin' in params) mapToMin.value = params.mapToMin;
-      if ('mapToMax' in params) mapToMax.value = params.mapToMax;
-      return;
+      const params = matcher.extract(body)
+      transformType.value = matcher.type
+      if ('multiplier' in params) multiplier.value = params.multiplier
+      if ('addAmount' in params) addAmount.value = params.addAmount
+      if ('clampMin' in params) clampMin.value = params.clampMin
+      if ('clampMax' in params) clampMax.value = params.clampMax
+      if ('mapFromMin' in params) mapFromMin.value = params.mapFromMin
+      if ('mapFromMax' in params) mapFromMax.value = params.mapFromMax
+      if ('mapToMin' in params) mapToMin.value = params.mapToMin
+      if ('mapToMax' in params) mapToMax.value = params.mapToMax
+      return
     }
   }
 
   // Fallback to custom
-  transformType.value = 'custom';
-  customTransform.value = fnStr;
+  transformType.value = 'custom'
+  customTransform.value = fnStr
 }
 
 // ==================== Watch for Edit Mode ====================
 
-watch(() => props.linkage, (linkage) => {
-  if (linkage) {
-    form.value = {
-      sourceComponentId: linkage.sourceComponentId,
-      sourceProperty: linkage.sourceProperty,
-      targetComponentId: linkage.targetComponentId,
-      targetProperty: linkage.targetProperty,
-    };
+watch(
+  () => props.linkage,
+  linkage => {
+    if (linkage) {
+      form.value = {
+        sourceComponentId: linkage.sourceComponentId,
+        sourceProperty: linkage.sourceProperty,
+        targetComponentId: linkage.targetComponentId,
+        targetProperty: linkage.targetProperty
+      }
 
-    parseTransformFn(linkage.transformFn);
-    conditionData.value = linkage.condition ?? null;
-  } else {
-    form.value = {
-      sourceComponentId: '',
-      sourceProperty: '',
-      targetComponentId: '',
-      targetProperty: '',
-    };
-    transformType.value = 'none';
-    conditionData.value = null;
-  }
-}, { immediate: true });
+      parseTransformFn(linkage.transformFn)
+      conditionData.value = linkage.condition ?? null
+    } else {
+      form.value = {
+        sourceComponentId: '',
+        sourceProperty: '',
+        targetComponentId: '',
+        targetProperty: ''
+      }
+      transformType.value = 'none'
+      conditionData.value = null
+    }
+  },
+  { immediate: true }
+)
 
 // ==================== Save ====================
 
 const handleCancel = () => {
-  emit('update:modelValue', false);
-};
+  emit('update:modelValue', false)
+}
 
 const handleSave = async () => {
-  if (!formRef.value) return;
+  if (!formRef.value) return
 
   try {
-    await formRef.value.validate();
+    await formRef.value.validate()
 
-    let transformFn: string | undefined;
+    let transformFn: string | undefined
     if (transformType.value === 'multiply') {
-      transformFn = `(value) => value * ${multiplier.value}`;
+      transformFn = `(value) => value * ${multiplier.value}`
     } else if (transformType.value === 'add') {
-      transformFn = `(value) => value + ${addAmount.value}`;
+      transformFn = `(value) => value + ${addAmount.value}`
     } else if (transformType.value === 'uppercase') {
-      transformFn = `(value) => String(value).toUpperCase()`;
+      transformFn = `(value) => String(value).toUpperCase()`
     } else if (transformType.value === 'lowercase') {
-      transformFn = `(value) => String(value).toLowerCase()`;
+      transformFn = `(value) => String(value).toLowerCase()`
     } else if (transformType.value === 'clamp') {
-      transformFn = `(value) => Math.min(Math.max(value, ${clampMin.value}), ${clampMax.value})`;
+      transformFn = `(value) => Math.min(Math.max(value, ${clampMin.value}), ${clampMax.value})`
     } else if (transformType.value === 'map') {
       // IIFE so that new Function('value', 'return BODY') works (body must be an expression)
-      transformFn = `(value) => (() => { const n = Number(value); const r = (n - ${mapFromMin.value}) / (${mapFromMax.value} - ${mapFromMin.value}); return ${mapToMin.value} + r * (${mapToMax.value} - ${mapToMin.value}); })()`;
+      transformFn = `(value) => (() => { const n = Number(value); const r = (n - ${mapFromMin.value}) / (${mapFromMax.value} - ${mapFromMin.value}); return ${mapToMin.value} + r * (${mapToMax.value} - ${mapToMin.value}); })()`
     } else if (transformType.value === 'currency') {
-      transformFn = `(value) => \`$\${Number(value).toFixed(2)}\``;
+      transformFn = `(value) => \`$\${Number(value).toFixed(2)}\``
     } else if (transformType.value === 'invert') {
-      transformFn = `(value) => !value`;
+      transformFn = `(value) => !value`
     } else if (transformType.value === 'custom') {
-      transformFn = customTransform.value;
+      transformFn = customTransform.value
     }
 
     const linkage: IComponentLinkage = {
@@ -411,13 +410,13 @@ const handleSave = async () => {
       targetProperty: form.value.targetProperty,
       transformFn,
       condition: conditionData.value ?? undefined,
-      enabled: props.linkage?.enabled ?? true,
-    };
+      enabled: props.linkage?.enabled ?? true
+    }
 
-    emit('save', linkage);
-    ElMessage.success('联动规则保存成功');
+    emit('save', linkage)
+    ElMessage.success('联动规则保存成功')
   } catch (error) {
-    console.error('表单验证失败:', error);
+    console.error('表单验证失败:', error)
   }
-};
+}
 </script>

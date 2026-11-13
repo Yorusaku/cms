@@ -1,6 +1,6 @@
 ﻿rules:
   - id: no-eval
-    message: "Avoid eval(), it introduces code-injection risks."
+    message: 'Avoid eval(), it introduces code-injection risks.'
     severity: ERROR
     languages:
       - javascript
@@ -8,7 +8,7 @@
     pattern: eval(...)
 
   - id: no-new-function
-    message: "Avoid new Function(), it has eval-like security risks."
+    message: 'Avoid new Function(), it has eval-like security risks.'
     severity: ERROR
     languages:
       - javascript
@@ -16,7 +16,7 @@
     pattern: new Function(...)
 
   - id: no-document-write
-    message: "Avoid document.write(), it can open XSS risks and runtime instability."
+    message: 'Avoid document.write(), it can open XSS risks and runtime instability.'
     severity: ERROR
     languages:
       - javascript

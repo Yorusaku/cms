@@ -14,11 +14,11 @@
 
 覆盖范围：
 
-| spec | 内容 |
-|------|------|
-| `full-flow.spec.ts` | 登录 → seed 演示页可见 → 模板/空白建页 → 装修(填名+拖组件) → 保存草稿 → 发布 → 访客公开接口 `getPublishedPage`+`submitLead` 留资 → 后台线索(渠道/UTM) → 发布记录 → 回滚 → CRS 访客直连正向渲染 |
-| `ai-build.spec.ts` | 「AI 一句话建页」弹窗 → 填描述 → 生成草稿（后端本地 mock）→ 进入 `/decorate?id=` 且草稿已保存、画布渲染出 AI 组件 |
-| `crs-render.spec.ts` | CMS 预览流（新 tab + iframe + postMessage）正向断言 iframe 200 + `.page-preview-container`；CRS 访客直连已发布页正向断言渲染 `.page-content` |
+| spec                 | 内容                                                                                                                                                                                           |
+| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `full-flow.spec.ts`  | 登录 → seed 演示页可见 → 模板/空白建页 → 装修(填名+拖组件) → 保存草稿 → 发布 → 访客公开接口 `getPublishedPage`+`submitLead` 留资 → 后台线索(渠道/UTM) → 发布记录 → 回滚 → CRS 访客直连正向渲染 |
+| `ai-build.spec.ts`   | 「AI 一句话建页」弹窗 → 填描述 → 生成草稿（后端本地 mock）→ 进入 `/decorate?id=` 且草稿已保存、画布渲染出 AI 组件                                                                              |
+| `crs-render.spec.ts` | CMS 预览流（新 tab + iframe + postMessage）正向断言 iframe 200 + `.page-preview-container`；CRS 访客直连已发布页正向断言渲染 `.page-content`                                                   |
 
 ## 二、问题清单
 
@@ -68,14 +68,14 @@
 - **结论（重要）**：**11 条失败全部是 mock 侧与业务行为不一致，没有一条是 F1–F5 引入的业务回归。**
 - **逐条根因与修复**：
 
-| # | 用例 | 根因 | 类别 | 修复 |
-|---|------|------|------|------|
-| 1 | `smoke-core:4 发布并预览` | `api-mocks.setup.ts` 缺 `/atlas-cms/publishPage` 拦截，`TopHeader.saveAndPreview` 的显式发布被 proxy 到 3300 → ECONNREFUSED → 发布失败不打开预览 | mock 不完整（**非 F1–F5 回归**） | 补 `publishPage` handler，返回 `{versionId, versionNo}` |
-| 2 | `activity:12 renders page list` | mock `getPageList` 不按 `pageSize` 分页，返回全部 12 条；真实后端按页截断 | mock 不忠实 | handler 按 `pageNum/pageSize` 切片 |
-| 3 | `activity:25 create page navigates` | `Activity.vue`「新增页面」现先开 `TemplatePicker` 弹窗，需再点「跳过，创建空白页」 | 断言过时（Action 14 起） | page object 加 `skipTemplatePicker()` / `createBlankPageAndWait()` |
-| 4–9 | `condition-rendering×2` / `data-binding` / `linkage` / `page-builder×2` | mock detail schema 仅 1 个组件（断言要求 ≥5）；`expectCanvasHasComponentsAtLeast` 实为 `toHaveCount`（精确等于，与命名矛盾）；`.right-config` 类名已变 `.page-right` | fixture / page object 过时 | mock detail 扩为 5 个真实 registry 组件；断言改 `expect.poll(...).toBeGreaterThanOrEqual`；选择器改 `.page-right` |
-| 10 | `preview:18 device selector` | `selectDevice` 用 `getByText().click()` 命不中 el-select 选项 | page object 过时 | 先点 `.toolbar-select` 展开下拉，再点 `.el-select-dropdown__item` |
-| 11 | `publish-rollback:27 rolling back` | Action 14 回滚语义已改为「只切换线上版本、不覆盖草稿、不跳转装修页」 | 断言过时（Action 14 起） | 断言「线上页面已回滚」提示 + 停留 `/activity` |
+| #   | 用例                                                                    | 根因                                                                                                                                                                 | 类别                             | 修复                                                                                                              |
+| --- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| 1   | `smoke-core:4 发布并预览`                                               | `api-mocks.setup.ts` 缺 `/atlas-cms/publishPage` 拦截，`TopHeader.saveAndPreview` 的显式发布被 proxy 到 3300 → ECONNREFUSED → 发布失败不打开预览                     | mock 不完整（**非 F1–F5 回归**） | 补 `publishPage` handler，返回 `{versionId, versionNo}`                                                           |
+| 2   | `activity:12 renders page list`                                         | mock `getPageList` 不按 `pageSize` 分页，返回全部 12 条；真实后端按页截断                                                                                            | mock 不忠实                      | handler 按 `pageNum/pageSize` 切片                                                                                |
+| 3   | `activity:25 create page navigates`                                     | `Activity.vue`「新增页面」现先开 `TemplatePicker` 弹窗，需再点「跳过，创建空白页」                                                                                   | 断言过时（Action 14 起）         | page object 加 `skipTemplatePicker()` / `createBlankPageAndWait()`                                                |
+| 4–9 | `condition-rendering×2` / `data-binding` / `linkage` / `page-builder×2` | mock detail schema 仅 1 个组件（断言要求 ≥5）；`expectCanvasHasComponentsAtLeast` 实为 `toHaveCount`（精确等于，与命名矛盾）；`.right-config` 类名已变 `.page-right` | fixture / page object 过时       | mock detail 扩为 5 个真实 registry 组件；断言改 `expect.poll(...).toBeGreaterThanOrEqual`；选择器改 `.page-right` |
+| 10  | `preview:18 device selector`                                            | `selectDevice` 用 `getByText().click()` 命不中 el-select 选项                                                                                                        | page object 过时                 | 先点 `.toolbar-select` 展开下拉，再点 `.el-select-dropdown__item`                                                 |
+| 11  | `publish-rollback:27 rolling back`                                      | Action 14 回滚语义已改为「只切换线上版本、不覆盖草稿、不跳转装修页」                                                                                                 | 断言过时（Action 14 起）         | 断言「线上页面已回滚」提示 + 停留 `/activity`                                                                     |
 
 附带修正：`smoke-core:5 回滚恢复` 同为旧回滚语义（因 `describe.serial` 前置失败被跳过而未暴露），一并按新语义更新；mock detail schema 需可通过 `runPagePreflight`，图片字段改内联 SVG data URI、`link` 改 `{clickType:1,data:{url}}`，否则发布/预览会被发布前校验拦截。
 
@@ -108,4 +108,4 @@
 - **F6 mock 套件已在 Action 17 治理**：`tests/e2e` 由 14 passed / 11 failed / 1 skipped 恢复为 **26/26 全绿**，`smoke-core` 恢复 5/5；11 条失败全为 mock 侧（fixture / page object / 断言）与 Action 14–16 业务行为不一致，**无业务回归**、**未改业务源码**。
 - 经验教训：mock 套件不起 backend/CRS，业务每新增一个走 proxy 的接口（如 Action 14 的 `publishPage`），必须在 `fixtures/api-mocks.setup.ts` 同步补拦截，否则请求会落到 3300 报 ECONNREFUSED；发布/预览类用例的 mock schema 必须可通过 `runPagePreflight`（图片与链接字段非空）。
 
-*关联文件：`plan.md` Action 15/16/17、`apps/frontend/cms/playwright.live.config.ts`、`apps/frontend/cms/tests/e2e-live/*`、`apps/frontend/cms/tests/e2e/*`。*
+_关联文件：`plan.md` Action 15/16/17、`apps/frontend/cms/playwright.live.config.ts`、`apps/frontend/cms/tests/e2e-live/_`、`apps/frontend/cms/tests/e2e/_`。_

@@ -5,6 +5,7 @@
 **@cms/ui** 是一个基于 Vue 3 + TypeScript + Tailwind CSS 构建的移动端 CMS 业务组件库，提供了丰富的可配置组件，用于快速构建 CMS 系统的前端界面。
 
 **主要特点：**
+
 - 📱 移动端优先设计
 - 🎨 基于 Tailwind CSS 的样式系统
 - 🔧 完整的 TypeScript 类型支持
@@ -14,15 +15,15 @@
 
 ## 2. 技术栈
 
-| 技术/工具 | 版本 | 用途 | 来源 |
-|----------|------|------|------|
-| Vue | ^3.3.4 | 前端框架 | peerDependencies |
-| TypeScript | 最新 | 类型系统 | devDependencies |
-| Tailwind CSS | 最新 | 样式框架 | devDependencies |
-| Vite | 最新 | 构建工具 | devDependencies |
-| ESLint | 最新 | 代码质量 | devDependencies |
-| Vue-tsc | 最新 | Vue 类型检查 | devDependencies |
-| vite-plugin-dts | ^4.5.4 | 生成类型声明 | devDependencies |
+| 技术/工具       | 版本   | 用途         | 来源             |
+| --------------- | ------ | ------------ | ---------------- |
+| Vue             | ^3.3.4 | 前端框架     | peerDependencies |
+| TypeScript      | 最新   | 类型系统     | devDependencies  |
+| Tailwind CSS    | 最新   | 样式框架     | devDependencies  |
+| Vite            | 最新   | 构建工具     | devDependencies  |
+| ESLint          | 最新   | 代码质量     | devDependencies  |
+| Vue-tsc         | 最新   | Vue 类型检查 | devDependencies  |
+| vite-plugin-dts | ^4.5.4 | 生成类型声明 | devDependencies  |
 
 ## 3. 目录结构
 
@@ -60,27 +61,27 @@ packages/ui/
 
 ### 4.1 基础组件
 
-| 组件名 | 功能描述 | 主要特性 | 来源 |
-|--------|----------|----------|------|
+| 组件名    | 功能描述 | 主要特性           | 来源                         |
+| --------- | -------- | ------------------ | ---------------------------- |
 | CmsButton | 通用按钮 | 支持多种样式和尺寸 | src/components/CmsButton.vue |
 
 ### 4.2 业务组件
 
-| 组件名 | 功能描述 | 主要特性 | 来源 |
-|--------|----------|----------|------|
-| NoticeBlock | 公告栏 | 支持滚动公告、自定义样式 | src/components/NoticeBlock.vue |
-| DialogBlock | 弹窗 | 支持自定义内容和样式 | src/components/DialogBlock.vue |
-| CubeSelectionBlock | 魔方选择 | 支持网格布局选择 | src/components/CubeSelectionBlock.vue |
-| ProductBlock | 商品展示 | 商品卡片、价格展示 | src/components/ProductBlock.vue |
-| CouponBlock | 优惠券 | 优惠券样式展示 | src/components/CouponBlock.vue |
-| ImageNavBlock | 图片导航 | 图片链接导航 | src/components/ImageNavBlock.vue |
-| ImageBlock | 图片展示 | 单图展示组件 | src/components/ImageBlock.vue |
-| RichTextBlock | 富文本 | 富文本内容展示 | src/components/RichTextBlock.vue |
-| SliderBlock | 滑块 | 滑块交互组件 | src/components/SliderBlock.vue |
-| AssistLineBlock | 辅助线 | 页面辅助线 | src/components/AssistLineBlock.vue |
-| FloatLayerBlock | 悬浮层 | 悬浮内容展示 | src/components/FloatLayerBlock.vue |
-| OnlineServiceBlock | 在线客服 | 客服入口组件 | src/components/OnlineServiceBlock.vue |
-| CarouselBlock | 轮播图 | 多图轮播展示 | src/components/CarouselBlock.vue |
+| 组件名             | 功能描述 | 主要特性                 | 来源                                  |
+| ------------------ | -------- | ------------------------ | ------------------------------------- |
+| NoticeBlock        | 公告栏   | 支持滚动公告、自定义样式 | src/components/NoticeBlock.vue        |
+| DialogBlock        | 弹窗     | 支持自定义内容和样式     | src/components/DialogBlock.vue        |
+| CubeSelectionBlock | 魔方选择 | 支持网格布局选择         | src/components/CubeSelectionBlock.vue |
+| ProductBlock       | 商品展示 | 商品卡片、价格展示       | src/components/ProductBlock.vue       |
+| CouponBlock        | 优惠券   | 优惠券样式展示           | src/components/CouponBlock.vue        |
+| ImageNavBlock      | 图片导航 | 图片链接导航             | src/components/ImageNavBlock.vue      |
+| ImageBlock         | 图片展示 | 单图展示组件             | src/components/ImageBlock.vue         |
+| RichTextBlock      | 富文本   | 富文本内容展示           | src/components/RichTextBlock.vue      |
+| SliderBlock        | 滑块     | 滑块交互组件             | src/components/SliderBlock.vue        |
+| AssistLineBlock    | 辅助线   | 页面辅助线               | src/components/AssistLineBlock.vue    |
+| FloatLayerBlock    | 悬浮层   | 悬浮内容展示             | src/components/FloatLayerBlock.vue    |
+| OnlineServiceBlock | 在线客服 | 客服入口组件             | src/components/OnlineServiceBlock.vue |
+| CarouselBlock      | 轮播图   | 多图轮播展示             | src/components/CarouselBlock.vue      |
 
 ## 5. 核心组件分析
 
@@ -89,39 +90,42 @@ packages/ui/
 **功能**：展示滚动公告信息，支持自定义样式和图标
 
 **核心特性**：
+
 - 支持多公告滚动展示
 - 可自定义背景色、文字颜色
 - 支持自定义图标
 - 响应式设计
 
 **关键接口**：
+
 ```typescript
 export interface INoticeItem {
-  text: string;        // 公告文本
-  link?: string;       // 公告链接（可选）
+  text: string // 公告文本
+  link?: string // 公告链接（可选）
 }
 
 export interface INoticeProps {
-  noticeList?: INoticeItem[];  // 公告列表
-  iconUrl?: string;            // 图标 URL
-  backgroundColor?: string;    // 背景颜色
-  textColor?: string;          // 文字颜色
-  speed?: number;              // 滚动速度
+  noticeList?: INoticeItem[] // 公告列表
+  iconUrl?: string // 图标 URL
+  backgroundColor?: string // 背景颜色
+  textColor?: string // 文字颜色
+  speed?: number // 滚动速度
 }
 ```
 
 **默认配置**：
+
 ```typescript
 export const NoticeDefaultConfig = {
-  type: "NoticeBlock",
+  type: 'NoticeBlock',
   props: {
-    noticeList: [{ text: "默认公告内容" }],
-    iconUrl: "",
-    backgroundColor: "#fffbeb",
-    textColor: "#92400e",
-    speed: 20,
-  },
-};
+    noticeList: [{ text: '默认公告内容' }],
+    iconUrl: '',
+    backgroundColor: '#fffbeb',
+    textColor: '#92400e',
+    speed: 20
+  }
+}
 ```
 
 ### 5.2 其他组件共性
@@ -136,12 +140,14 @@ export const NoticeDefaultConfig = {
 ### 6.1 Vite 构建配置
 
 **主要配置**：
+
 - 入口文件：`src/index.ts`
 - 输出格式：ESM (`cms-ui.es.js`) 和 UMD (`cms-ui.umd.js`)
 - 类型声明：通过 `vite-plugin-dts` 生成
 - 样式处理：独立输出 `style.css`
 
 **关键配置**：
+
 ```typescript
 build: {
   lib: {
@@ -169,6 +175,7 @@ build: {
 ### 6.2 导出配置
 
 **package.json 导出配置**：
+
 ```json
 "exports": {
   ".": {
@@ -184,13 +191,13 @@ build: {
 
 ### 7.1 脚本命令
 
-| 命令 | 功能 | 说明 |
-|------|------|------|
-| `pnpm dev` | 开发模式 | 监听文件变化，自动重新构建 |
-| `pnpm build` | 生产构建 | 构建生产版本，生成类型声明 |
-| `pnpm typecheck` | 类型检查 | 运行 Vue-tsc 检查类型 |
-| `pnpm lint` | 代码检查 | 运行 ESLint 检查并自动修复 |
-| `pnpm clean` | 清理构建 | 删除 dist 目录 |
+| 命令             | 功能     | 说明                       |
+| ---------------- | -------- | -------------------------- |
+| `pnpm dev`       | 开发模式 | 监听文件变化，自动重新构建 |
+| `pnpm build`     | 生产构建 | 构建生产版本，生成类型声明 |
+| `pnpm typecheck` | 类型检查 | 运行 Vue-tsc 检查类型      |
+| `pnpm lint`      | 代码检查 | 运行 ESLint 检查并自动修复 |
+| `pnpm clean`     | 清理构建 | 删除 dist 目录             |
 
 ### 7.2 开发流程
 
@@ -234,10 +241,7 @@ app.mount('#app')
 import { NoticeBlock, ProductBlock } from '@cms/ui'
 import '@cms/ui/dist/style.css'
 
-const noticeList = [
-  { text: '欢迎使用 CMS 系统' },
-  { text: '系统已更新到最新版本' }
-]
+const noticeList = [{ text: '欢迎使用 CMS 系统' }, { text: '系统已更新到最新版本' }]
 
 const productData = {
   // 商品数据
@@ -249,49 +253,49 @@ const productData = {
 
 ### 9.1 内部依赖
 
-| 依赖包 | 版本 | 用途 | 来源 |
-|--------|------|------|------|
-| @cms/types | workspace:* | 类型定义 | workspace |
-| @cms/utils | workspace:* | 工具函数 | workspace |
+| 依赖包     | 版本         | 用途     | 来源      |
+| ---------- | ------------ | -------- | --------- |
+| @cms/types | workspace:\* | 类型定义 | workspace |
+| @cms/utils | workspace:\* | 工具函数 | workspace |
 
 ### 9.2 外部依赖
 
-| 依赖包 | 版本 | 用途 | 类型 |
-|--------|------|------|------|
-| vue | ^3.3.4 | 前端框架 | peerDependencies |
+| 依赖包 | 版本   | 用途     | 类型             |
+| ------ | ------ | -------- | ---------------- |
+| vue    | ^3.3.4 | 前端框架 | peerDependencies |
 
 ## 10. 目录结构详情
 
 ### 10.1 核心文件说明
 
-| 文件 | 路径 | 功能 |
-|------|------|------|
-| package.json | ./package.json | 包配置文件，定义依赖和脚本 |
-| vite.config.ts | ./vite.config.ts | Vite 构建配置 |
-| tsconfig.json | ./tsconfig.json | TypeScript 配置 |
-| src/index.ts | ./src/index.ts | 库导出入口 |
-| src/components/index.ts | ./src/components/index.ts | 组件导出配置 |
-| src/styles/main.css | ./src/styles/main.css | 主样式文件 |
-| src/styles/tailwind.config.css | ./src/styles/tailwind.config.css | Tailwind 配置 |
+| 文件                           | 路径                             | 功能                       |
+| ------------------------------ | -------------------------------- | -------------------------- |
+| package.json                   | ./package.json                   | 包配置文件，定义依赖和脚本 |
+| vite.config.ts                 | ./vite.config.ts                 | Vite 构建配置              |
+| tsconfig.json                  | ./tsconfig.json                  | TypeScript 配置            |
+| src/index.ts                   | ./src/index.ts                   | 库导出入口                 |
+| src/components/index.ts        | ./src/components/index.ts        | 组件导出配置               |
+| src/styles/main.css            | ./src/styles/main.css            | 主样式文件                 |
+| src/styles/tailwind.config.css | ./src/styles/tailwind.config.css | Tailwind 配置              |
 
 ### 10.2 组件文件列表
 
-| 组件文件 | 路径 | 功能描述 |
-|----------|------|----------|
-| AssistLineBlock.vue | ./src/components/AssistLineBlock.vue | 页面辅助线组件 |
-| CarouselBlock.vue | ./src/components/CarouselBlock.vue | 轮播图组件 |
-| CmsButton.vue | ./src/components/CmsButton.vue | 通用按钮组件 |
-| CouponBlock.vue | ./src/components/CouponBlock.vue | 优惠券展示组件 |
-| CubeSelectionBlock.vue | ./src/components/CubeSelectionBlock.vue | 魔方选择组件 |
-| DialogBlock.vue | ./src/components/DialogBlock.vue | 弹窗组件 |
-| FloatLayerBlock.vue | ./src/components/FloatLayerBlock.vue | 悬浮层组件 |
-| ImageBlock.vue | ./src/components/ImageBlock.vue | 图片展示组件 |
-| ImageNavBlock.vue | ./src/components/ImageNavBlock.vue | 图片导航组件 |
-| NoticeBlock.vue | ./src/components/NoticeBlock.vue | 公告栏组件 |
-| OnlineServiceBlock.vue | ./src/components/OnlineServiceBlock.vue | 在线客服组件 |
-| ProductBlock.vue | ./src/components/ProductBlock.vue | 商品展示组件 |
-| RichTextBlock.vue | ./src/components/RichTextBlock.vue | 富文本展示组件 |
-| SliderBlock.vue | ./src/components/SliderBlock.vue | 滑块交互组件 |
+| 组件文件               | 路径                                    | 功能描述       |
+| ---------------------- | --------------------------------------- | -------------- |
+| AssistLineBlock.vue    | ./src/components/AssistLineBlock.vue    | 页面辅助线组件 |
+| CarouselBlock.vue      | ./src/components/CarouselBlock.vue      | 轮播图组件     |
+| CmsButton.vue          | ./src/components/CmsButton.vue          | 通用按钮组件   |
+| CouponBlock.vue        | ./src/components/CouponBlock.vue        | 优惠券展示组件 |
+| CubeSelectionBlock.vue | ./src/components/CubeSelectionBlock.vue | 魔方选择组件   |
+| DialogBlock.vue        | ./src/components/DialogBlock.vue        | 弹窗组件       |
+| FloatLayerBlock.vue    | ./src/components/FloatLayerBlock.vue    | 悬浮层组件     |
+| ImageBlock.vue         | ./src/components/ImageBlock.vue         | 图片展示组件   |
+| ImageNavBlock.vue      | ./src/components/ImageNavBlock.vue      | 图片导航组件   |
+| NoticeBlock.vue        | ./src/components/NoticeBlock.vue        | 公告栏组件     |
+| OnlineServiceBlock.vue | ./src/components/OnlineServiceBlock.vue | 在线客服组件   |
+| ProductBlock.vue       | ./src/components/ProductBlock.vue       | 商品展示组件   |
+| RichTextBlock.vue      | ./src/components/RichTextBlock.vue      | 富文本展示组件 |
+| SliderBlock.vue        | ./src/components/SliderBlock.vue        | 滑块交互组件   |
 
 ## 11. 配置与部署
 
@@ -312,6 +316,7 @@ dist/
 ### 11.2 发布配置
 
 **注意**：当前包配置为 `private: true`，如需发布到 npm 仓库，需要：
+
 1. 将 `private` 改为 `false`
 2. 设置合适的版本号
 3. 配置 npm 发布信息
@@ -375,11 +380,11 @@ pnpm typecheck
 
 ### 13.3 核心配置文件
 
-| 配置项 | 文件 | 说明 |
-|--------|------|------|
-| 构建配置 | vite.config.ts | Vite 构建参数设置 |
-| 包配置 | package.json | 依赖和脚本定义 |
-| 组件导出 | src/components/index.ts | 组件导出配置 |
+| 配置项   | 文件                    | 说明              |
+| -------- | ----------------------- | ----------------- |
+| 构建配置 | vite.config.ts          | Vite 构建参数设置 |
+| 包配置   | package.json            | 依赖和脚本定义    |
+| 组件导出 | src/components/index.ts | 组件导出配置      |
 
 ---
 

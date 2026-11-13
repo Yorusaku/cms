@@ -1,60 +1,60 @@
-import { Type } from "class-transformer";
-import { IsInt, Min, IsOptional, IsString, IsNotEmpty, MaxLength } from "class-validator";
+import { Type } from 'class-transformer'
+import { IsInt, Min, IsOptional, IsString, IsNotEmpty, MaxLength } from 'class-validator'
 
 export class GetPublishLogsDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  pageId: number;
+  pageId: number
 }
 
 export class RollbackVersionDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  pageId: number;
+  pageId: number
 
   @IsString()
   @IsNotEmpty()
-  versionId: string;
+  versionId: string
 }
 
 export class PublishPageDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  pageId: number;
+  pageId: number
 
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  note?: string;
+  note?: string
 }
 
 export class SubmitReviewDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  pageId: number;
+  pageId: number
 
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  note?: string;
+  note?: string
 }
 
 export class ReviewPageDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  pageId: number;
+  pageId: number
 
   @IsString()
   @IsNotEmpty()
-  decision: "approved" | "rejected";
+  decision: 'approved' | 'rejected'
 
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  note?: string;
+  note?: string
 }

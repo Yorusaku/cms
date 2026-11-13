@@ -7,46 +7,46 @@ import {
   IsString,
   Matches,
   MaxLength,
-  Min,
-} from "class-validator";
+  Min
+} from 'class-validator'
 
 export class CreateLeadDto {
   @IsUUID()
-  requestId: string;
+  requestId: string
 
   @IsString()
   @MaxLength(60)
-  name: string;
+  name: string
 
   @IsString()
-  @Matches(/^1[3-9]\d{9}$/, { message: "手机号格式不正确" })
-  phoneNumber: string;
+  @Matches(/^1[3-9]\d{9}$/, { message: '手机号格式不正确' })
+  phoneNumber: string
 
   @IsOptional()
   @IsString()
   @MaxLength(500)
-  remark?: string;
+  remark?: string
 
   @IsInt()
   @Min(1)
-  pageId: number;
+  pageId: number
 
   @IsString()
   @MaxLength(60)
-  publishedVersionId: string;
+  publishedVersionId: string
 
   @IsString()
   @MaxLength(120)
-  sessionId: string;
+  sessionId: string
 
   @IsOptional()
   @IsObject()
-  utm?: Record<string, string>;
+  utm?: Record<string, string>
 
   @IsOptional()
   @IsObject()
-  channel?: Record<string, string>;
+  channel?: Record<string, string>
 
   @IsBoolean()
-  consentAccepted: boolean;
+  consentAccepted: boolean
 }

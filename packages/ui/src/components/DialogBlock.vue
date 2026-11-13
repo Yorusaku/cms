@@ -1,8 +1,5 @@
 <template>
-  <div
-    v-if="visible"
-    class="fixed inset-0 z-50 flex items-center justify-center"
-  >
+  <div v-if="visible" class="fixed inset-0 z-50 flex items-center justify-center">
     <div class="fixed inset-0 bg-black/50" @click="handleClose"></div>
     <div
       class="relative bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 overflow-hidden"
@@ -18,10 +15,7 @@
           {{ content }}
         </div>
       </div>
-      <div
-        v-if="showActions"
-        class="px-6 py-4 border-t border-gray-100 flex gap-3 justify-end"
-      >
+      <div v-if="showActions" class="px-6 py-4 border-t border-gray-100 flex gap-3 justify-end">
         <button
           v-if="showCancel"
           class="px-4 py-2 text-sm font-medium text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
@@ -42,12 +36,7 @@
         class="absolute top-4 right-4 p-1 text-gray-400 hover:text-gray-600 transition-colors"
         @click="handleClose"
       >
-        <svg
-          class="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             stroke-linecap="round"
             stroke-linejoin="round"
@@ -62,56 +51,56 @@
 
 <script setup lang="ts">
 export interface IDialogProps {
-  visible?: boolean;
-  title?: string;
-  content?: string;
-  showClose?: boolean;
-  showActions?: boolean;
-  showCancel?: boolean;
-  cancelText?: string;
-  confirmText?: string;
-  backgroundColor?: string;
-  titleColor?: string;
-  contentColor?: string;
-  confirmColor?: string;
+  visible?: boolean
+  title?: string
+  content?: string
+  showClose?: boolean
+  showActions?: boolean
+  showCancel?: boolean
+  cancelText?: string
+  confirmText?: string
+  backgroundColor?: string
+  titleColor?: string
+  contentColor?: string
+  confirmColor?: string
 }
 
 const {
   visible = false,
-  title = "",
-  content = "",
+  title = '',
+  content = '',
   showClose = true,
   showActions = true,
   showCancel = true,
-  cancelText = "取消",
-  confirmText = "确定",
-  backgroundColor = "#ffffff",
-  titleColor = "#303133",
-  contentColor = "#909399",
-  confirmColor = "#419bf9"
+  cancelText = '取消',
+  confirmText = '确定',
+  backgroundColor = '#ffffff',
+  titleColor = '#303133',
+  contentColor = '#909399',
+  confirmColor = '#419bf9'
 } = defineProps<IDialogProps>()
 
 const emit = defineEmits<{
-  "update:visible": [value: boolean];
-  close: [];
-  confirm: [];
-  cancel: [];
-}>();
+  'update:visible': [value: boolean]
+  close: []
+  confirm: []
+  cancel: []
+}>()
 
 const handleClose = () => {
-  emit("update:visible", false);
-  emit("close");
-};
+  emit('update:visible', false)
+  emit('close')
+}
 
 const handleConfirm = () => {
-  emit("confirm");
-  emit("update:visible", false);
-};
+  emit('confirm')
+  emit('update:visible', false)
+}
 
 const handleCancel = () => {
-  emit("cancel");
-  emit("update:visible", false);
-};
+  emit('cancel')
+  emit('update:visible', false)
+}
 </script>
 
 <style scoped></style>

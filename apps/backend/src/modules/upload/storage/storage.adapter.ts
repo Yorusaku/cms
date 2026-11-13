@@ -7,38 +7,38 @@
  */
 export interface StoredFile {
   /** 存储层内部键：本地为文件名，对象存储为对象 key */
-  key: string;
+  key: string
   /** 对外可访问 URL */
-  url: string;
+  url: string
 }
 
-export type StorageDriver = "local" | "s3";
+export type StorageDriver = 'local' | 's3'
 
 export interface StorageAdapter {
-  readonly driver: StorageDriver;
+  readonly driver: StorageDriver
 
   /** 写入文件并返回可访问地址 */
-  save(key: string, buffer: Buffer, contentType: string): Promise<StoredFile>;
+  save(key: string, buffer: Buffer, contentType: string): Promise<StoredFile>
 
   /** 删除文件；对象不存在时不报错 */
-  remove(key: string): Promise<void>;
+  remove(key: string): Promise<void>
 
   /** 供 /health 使用：不可用时抛错，错误信息会作为健康检查原因 */
-  healthCheck(): Promise<void>;
+  healthCheck(): Promise<void>
 }
 
 /** DI 注入令牌 */
-export const STORAGE_ADAPTER = "STORAGE_ADAPTER";
+export const STORAGE_ADAPTER = 'STORAGE_ADAPTER'
 
 /** 允许上传的图片类型与扩展名白名单（上传接口与存储层共用） */
-export const ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png"];
+export const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png']
 
 /** 扩展名 → Content-Type，用于对象存储写入时声明类型 */
 export const IMAGE_CONTENT_TYPES: Record<string, string> = {
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".png": "image/png",
-};
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.png': 'image/png'
+}
 
 export const resolveContentType = (extension: string): string =>
-  IMAGE_CONTENT_TYPES[extension.toLowerCase()] ?? "application/octet-stream";
+  IMAGE_CONTENT_TYPES[extension.toLowerCase()] ?? 'application/octet-stream'

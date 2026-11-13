@@ -1,44 +1,44 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Page } from '@playwright/test'
 
 export class PreviewPage {
   constructor(readonly page: Page) {}
 
   async goto(pageId: number) {
-    await this.page.goto(`/cms-manage/preview?id=${pageId}`);
-    await this.page.waitForLoadState("networkidle");
+    await this.page.goto(`/cms-manage/preview?id=${pageId}`)
+    await this.page.waitForLoadState('networkidle')
   }
 
   async expectIframeVisible() {
-    await expect(this.page.locator("iframe")).toBeVisible({ timeout: 5000 });
+    await expect(this.page.locator('iframe')).toBeVisible({ timeout: 5000 })
   }
 
   /**
    * 设备在 el-select 中，需先展开下拉再点选项，直接 getByText().click() 命不中。
    */
   async selectDevice(deviceLabel: string) {
-    await this.page.locator(".toolbar-select").first().click();
+    await this.page.locator('.toolbar-select').first().click()
     const option = this.page
-      .locator(".el-select-dropdown__item")
+      .locator('.el-select-dropdown__item')
       .filter({ hasText: deviceLabel })
-      .first();
-    await expect(option).toBeVisible({ timeout: 5000 });
-    await option.click();
+      .first()
+    await expect(option).toBeVisible({ timeout: 5000 })
+    await option.click()
   }
 
   async expectFrameWidth(expectedWidth: number) {
-    const wrapper = this.page.locator(".preview-page");
-    const box = await wrapper.boundingBox();
-    expect(box).not.toBeNull();
+    const wrapper = this.page.locator('.preview-page')
+    const box = await wrapper.boundingBox()
+    expect(box).not.toBeNull()
     if (box) {
-      expect(Math.round(box.width)).toBeGreaterThanOrEqual(expectedWidth - 20);
+      expect(Math.round(box.width)).toBeGreaterThanOrEqual(expectedWidth - 20)
     }
   }
 
   async clickRefresh() {
     await this.page
-      .getByRole("button")
+      .getByRole('button')
       .filter({ hasText: /刷新|重试|refresh/i })
       .first()
-      .click();
+      .click()
   }
 }

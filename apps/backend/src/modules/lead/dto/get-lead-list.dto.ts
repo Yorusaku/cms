@@ -1,32 +1,32 @@
-import { Type } from "class-transformer";
-import { IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from "class-validator";
-import type { LeadStatus } from "../entities/lead.entity";
+import { Type } from 'class-transformer'
+import { IsIn, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator'
+import type { LeadStatus } from '../entities/lead.entity'
 
 export class GetLeadListDto {
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  pageId?: number;
+  pageId?: number
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  pageNum?: number;
+  pageNum?: number
 
   @IsOptional()
   @Type(() => Number)
   @IsInt()
   @Min(1)
-  pageSize?: number;
+  pageSize?: number
 
   @IsOptional()
-  @IsIn(["new", "contacted", "converted", "invalid"])
-  status?: LeadStatus;
+  @IsIn(['new', 'contacted', 'converted', 'invalid'])
+  status?: LeadStatus
 
   @IsOptional()
   @IsString()
   @MaxLength(120)
-  channel?: string;
+  channel?: string
 }
