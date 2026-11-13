@@ -7,9 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --fix",
+    "lint": "eslint .",
     "test": "vitest",
-    "typecheck": "vue-tsc --noEmit"
+    "typecheck": "vue-tsc --noEmit",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@cms/hooks": "workspace:*",

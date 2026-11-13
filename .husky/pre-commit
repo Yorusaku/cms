@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+set -e
+
+node scripts/agent/check-skips.mjs --staged
+node scripts/agent/check-deps.mjs --staged
+pnpm exec lint-staged

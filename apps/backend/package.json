@@ -15,7 +15,8 @@
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/database/data-source.ts",
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/database/data-source.ts",
     "db:create:resume": "node scripts/create-resume-database.cjs",
-    "seed": "ts-node src/database/seed.ts"
+    "seed": "ts-node src/database/seed.ts",
+    "lint:fix": "eslint src test --fix"
   },
   "dependencies": {
     "@cms/types": "workspace:*",

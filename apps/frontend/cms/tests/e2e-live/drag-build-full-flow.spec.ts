@@ -30,9 +30,7 @@ async function dragMaterialToCanvas(page: Page, materialLabel: string) {
   await material.waitFor({ state: 'visible' })
 
   const dropzone = page.locator('.canvas-dropzone')
-  const beforeCount = await page
-    .locator('.canvas-dropzone .canvas-component')
-    .count()
+  const beforeCount = await page.locator('.canvas-dropzone .canvas-component').count()
 
   const dataTransfer = await page.evaluateHandle(() => new DataTransfer())
   await material.dispatchEvent('dragstart', { dataTransfer })
@@ -40,23 +38,22 @@ async function dragMaterialToCanvas(page: Page, materialLabel: string) {
   await dropzone.dispatchEvent('drop', { dataTransfer })
   await material.dispatchEvent('dragend', { dataTransfer })
 
-  await expect(
-    page.locator('.canvas-dropzone .canvas-component')
-  ).toHaveCount(beforeCount + 1, { timeout: 10000 })
+  await expect(page.locator('.canvas-dropzone .canvas-component')).toHaveCount(beforeCount + 1, {
+    timeout: 10000
+  })
 }
 
 /** 清理本地草稿，避免「检测到未保存草稿」弹窗干扰重新进入装修页 */
 async function clearLocalDrafts(page: Page) {
   await page.evaluate(() => {
     Object.keys(localStorage)
-      .filter((key) => key.includes(':page:'))
-      .forEach((key) => localStorage.removeItem(key))
+      .filter(key => key.includes(':page:'))
+      .forEach(key => localStorage.removeItem(key))
   })
 }
 
 test.describe.serial('拖拽搭建页面完整链路（拖拽 → 再编辑 → 发布）', () => {
   let pageId: number | null = null
-  const pageName = `E2E_拖拽搭建_${Date.now()}`
 
   test('1) 空白页拖拽搭建并保存落库', async ({ page }) => {
     await loginAsAdmin(page)
@@ -79,9 +76,7 @@ test.describe.serial('拖拽搭建页面完整链路（拖拽 → 再编辑 → 
       .locator('input')
     await expect(titleInput).toBeVisible()
     await titleInput.fill(FIRST_TITLE)
-    await expect(page.locator('.canvas-dropzone .stat-card-block')).toContainText(
-      FIRST_TITLE
-    )
+    await expect(page.locator('.canvas-dropzone .stat-card-block')).toContainText(FIRST_TITLE)
 
     // 保存草稿（新建）→ 装修器跳转到带 id 地址
     await page.getByRole('button', { name: '保存草稿' }).click()
@@ -117,9 +112,7 @@ test.describe.serial('拖拽搭建页面完整链路（拖拽 → 再编辑 → 
       .locator('input')
     await expect(titleInput).toHaveValue(FIRST_TITLE)
     await titleInput.fill(SECOND_TITLE)
-    await expect(page.locator('.canvas-dropzone .stat-card-block')).toContainText(
-      SECOND_TITLE
-    )
+    await expect(page.locator('.canvas-dropzone .stat-card-block')).toContainText(SECOND_TITLE)
 
     await page.getByRole('button', { name: '保存草稿' }).click()
     await expect(
@@ -128,10 +121,9 @@ test.describe.serial('拖拽搭建页面完整链路（拖拽 → 再编辑 → 
 
     // 服务端确认二次编辑已落库
     const token = await page.evaluate(() => localStorage.getItem('token'))
-    const detail = await page.request.get(
-      `${BACKEND}/atlas-cms/getPageJson?id=${pageId}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    )
+    const detail = await page.request.get(`${BACKEND}/atlas-cms/getPageJson?id=${pageId}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
     const body = await detail.json()
     expect(body.code).toBe(10000)
     const statProps = Object.values(body.data.schema.componentMap).find(
@@ -180,9 +172,7 @@ test.describe.serial('拖拽搭建页面完整链路（拖拽 → 再编辑 → 
     expect(pageId).not.toBeNull()
 
     // 发布快照应包含二次编辑后的值
-    const pub = await page.request.get(
-      `${BACKEND}/atlas-cms/getPublishedPage?id=${pageId}`
-    )
+    const pub = await page.request.get(`${BACKEND}/atlas-cms/getPublishedPage?id=${pageId}`)
     const pubBody = await pub.json()
     expect(pubBody.code).toBe(10000)
     const statProps = Object.values(pubBody.data.schema.componentMap).find(

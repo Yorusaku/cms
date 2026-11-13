@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "@cms/types",
   "version": "1.0.0",
   "private": true,
@@ -17,8 +17,9 @@
     "build": "tsc && tsc -p tsconfig.cjs.json && node scripts/write-cjs-package.cjs",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --fix",
-    "clean": "rimraf dist"
+    "lint": "eslint .",
+    "clean": "rimraf dist",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "zod": "catalog:"

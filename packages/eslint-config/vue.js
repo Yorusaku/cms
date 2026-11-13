@@ -1,6 +1,5 @@
 import vue from 'eslint-plugin-vue'
 import vueParser from 'vue-eslint-parser'
-import prettier from 'eslint-config-prettier'
 import baseConfig from './index.js'
 
 /** @type {import('eslint').Linter.Config} */
@@ -10,6 +9,7 @@ export default {
     vue
   },
   languageOptions: {
+    ...baseConfig.languageOptions,
     parser: vueParser,
     parserOptions: {
       ecmaVersion: 'latest',

@@ -1,0 +1,44 @@
+name: Agent 确定性检查
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+permissions:
+  contents: read
+
+jobs:
+  agent-guards:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: 检查削弱检查的新增行
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: node scripts/agent/check-skips.mjs
+      - name: 检查所有 workspace 新增依赖
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: node scripts/agent/check-deps.mjs
+  quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ci:quality
+      - run: pnpm check:ui-governance
+      - run: pnpm test:coverage
+      - run: pnpm test:rules

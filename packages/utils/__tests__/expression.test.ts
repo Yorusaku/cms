@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { evaluateExpression, isValidExpression, sanitizeExpression } from '../src/expression'
+import { describe, it, expect } from 'vitest'
+import { evaluateExpression, isValidExpression } from '../src/expression'
 
 // 模拟上下文
 const createContext = (overrides?: Record<string, unknown>) => ({
@@ -7,15 +7,18 @@ const createContext = (overrides?: Record<string, unknown>) => ({
     count: 10,
     name: '测试',
     visible: true,
-    items: [{ id: 1, name: 'item1' }, { id: 2, name: 'item2' }],
-    nested: { value: 42 },
+    items: [
+      { id: 1, name: 'item1' },
+      { id: 2, name: 'item2' }
+    ],
+    nested: { value: 42 }
   },
   $props: {
     title: 'Props标题',
-    disabled: false,
+    disabled: false
   },
   $event: { type: 'click', target: null },
-  ...overrides,
+  ...overrides
 })
 
 describe('表达式求值器', () => {
@@ -66,8 +69,8 @@ describe('表达式求值器', () => {
   describe('字符串运算', () => {
     it('应该正确比较字符串', () => {
       const context = createContext()
-      expect(evaluateExpression('$state.name === \"测试\"', context)).toBe(true)
-      expect(evaluateExpression('$state.name === \"other\"', context)).toBe(false)
+      expect(evaluateExpression('$state.name === "测试"', context)).toBe(true)
+      expect(evaluateExpression('$state.name === "other"', context)).toBe(false)
     })
   })
 
@@ -94,8 +97,8 @@ describe('表达式求值器', () => {
   describe('条件表达式', () => {
     it('应该正确解析三元表达式', () => {
       const context = createContext()
-      expect(evaluateExpression('$state.count > 5 ? \"yes\" : \"no\"', context)).toBe('yes')
-      expect(evaluateExpression('$state.count < 5 ? \"yes\" : \"no\"', context)).toBe('no')
+      expect(evaluateExpression('$state.count > 5 ? "yes" : "no"', context)).toBe('yes')
+      expect(evaluateExpression('$state.count < 5 ? "yes" : "no"', context)).toBe('no')
     })
   })
 
@@ -142,18 +145,17 @@ describe('表达式验证器', () => {
       expect(isValidExpression('$state.count')).toBe(true)
       expect(isValidExpression('$props.title')).toBe(true)
       expect(isValidExpression('$state.count > 5')).toBe(true)
-      expect(isValidExpression('\"hello\" + $state.name')).toBe(true)
+      expect(isValidExpression('"hello" + $state.name')).toBe(true)
     })
 
     it('应该拒绝非法表达式', () => {
       expect(isValidExpression('constructor')).toBe(false)
       expect(isValidExpression('__proto__')).toBe(false)
       expect(isValidExpression('alert(1)')).toBe(false)
-      expect(isValidExpression('eval(\"1+1\")')).toBe(false)
-      expect(isValidExpression('require(\"fs\")')).toBe(false)
+      expect(isValidExpression('eval("1+1")')).toBe(false)
+      expect(isValidExpression('require("fs")')).toBe(false)
     })
   })
-
 })
 
 describe('表达式执行器错误处理', () => {

@@ -4,10 +4,7 @@
 
     <div class="decorate-content">
       <LeftMaterial />
-      <CenterCanvas
-        :page-store="pageStore"
-        @open-live-preview="livePreviewVisible = true"
-      />
+      <CenterCanvas :page-store="pageStore" @open-live-preview="livePreviewVisible = true" />
       <RightConfig />
     </div>
 
@@ -17,6 +14,7 @@
       size="420px"
       direction="ltr"
       class="live-preview-drawer"
+      body-class="live-preview-body"
       :modal="false"
       :lock-scroll="false"
     >
@@ -26,142 +24,131 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
-import { useRoute } from "vue-router";
-import { ElMessage, ElMessageBox } from "element-plus";
-import { useDebounceFn } from "@vueuse/core";
-import { usePageStore } from "@/store/usePageStore";
-import { getCmsPageById } from "@/api/activity";
-import { migrateSchema } from "@cms/utils";
-import { normalizePageSchemaMaterials } from "@cms/ui";
-import { adaptPageData } from "@/utils/data-adapter";
-import { loadPageDraft, savePageDraft } from "@/utils/page-draft";
-import { markPageDraft } from "@/utils/page-publish";
-import TopHeader from "./components/TopHeader.vue";
-import LeftMaterial from "./components/LeftMaterial.vue";
-import CenterCanvas from "./components/CenterCanvas.vue";
-import RightConfig from "./components/RightConfig.vue";
-import PreviewIframe from "@/components/PreviewIframe.vue";
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { useDebounceFn } from '@vueuse/core'
+import { usePageStore } from '@/store/usePageStore'
+import { getCmsPageById } from '@/api/activity'
+import { migrateSchema } from '@cms/utils'
+import { normalizePageSchemaMaterials } from '@cms/ui'
+import { adaptPageData } from '@/utils/data-adapter'
+import { loadPageDraft, savePageDraft } from '@/utils/page-draft'
+import { markPageDraft } from '@/utils/page-publish'
+import TopHeader from './components/TopHeader.vue'
+import LeftMaterial from './components/LeftMaterial.vue'
+import CenterCanvas from './components/CenterCanvas.vue'
+import RightConfig from './components/RightConfig.vue'
+import PreviewIframe from '@/components/PreviewIframe.vue'
 
 interface PageDetailResponse {
-  code: number;
-  message?: string;
-  data?: Record<string, unknown>;
+  code: number
+  message?: string
+  data?: Record<string, unknown>
 }
 
-const pageStore = usePageStore();
-const route = useRoute();
-const draftReady = ref(false);
+const pageStore = usePageStore()
+const route = useRoute()
+const draftReady = ref(false)
 
 // 编辑器内实时预览：PreviewIframe 订阅 store，改动经 postMessage 实时同步到 CRS
-const livePreviewVisible = ref(false);
+const livePreviewVisible = ref(false)
 const livePreviewUrl = computed(() => {
-  const base =
-    import.meta.env.VITE_CRS_PREVIEW_URL ||
-    "http://127.0.0.1:3010/crs/#/pagePreview";
-  const id = Number(route.query.id);
-  return Number.isFinite(id) && id > 0 ? `${base}?id=${id}` : base;
-});
+  const base = import.meta.env.VITE_CRS_PREVIEW_URL || 'http://127.0.0.1:3010/crs/#/pagePreview'
+  const id = Number(route.query.id)
+  return Number.isFinite(id) && id > 0 ? `${base}?id=${id}` : base
+})
 
 const pageId = computed(() => {
-  const id = Number(route.query.id);
-  return Number.isFinite(id) && id > 0 ? id : null;
-});
+  const id = Number(route.query.id)
+  return Number.isFinite(id) && id > 0 ? id : null
+})
 
 const restoreDraftIfNeeded = async () => {
-  const draft = loadPageDraft(pageId.value);
+  const draft = loadPageDraft(pageId.value)
   if (!draft) {
-    return;
+    return
   }
 
   try {
-    await ElMessageBox.confirm(
-      "检测到本地未保存草稿，是否恢复到编辑器？",
-      "恢复草稿",
-      {
-        confirmButtonText: "恢复",
-        cancelButtonText: "忽略",
-        type: "warning",
-      },
-    );
-    pageStore.importPageSchema(draft.schema);
-    ElMessage.success("已恢复本地草稿");
+    await ElMessageBox.confirm('检测到本地未保存草稿，是否恢复到编辑器？', '恢复草稿', {
+      confirmButtonText: '恢复',
+      cancelButtonText: '忽略',
+      type: 'warning'
+    })
+    pageStore.importPageSchema(draft.schema)
+    ElMessage.success('已恢复本地草稿')
   } catch {
     // 用户主动忽略草稿时不提示
   }
-};
+}
 
 const debouncedSaveDraft = useDebounceFn(() => {
   if (!draftReady.value) {
-    return;
+    return
   }
-  savePageDraft(pageId.value, pageStore.exportPageSchema());
-}, 800);
+  savePageDraft(pageId.value, pageStore.exportPageSchema())
+}, 800)
 
 const initData = async () => {
-  const { id } = route.query;
+  const { id } = route.query
 
   if (id) {
     try {
-      const response = (await getCmsPageById(Number(id))) as PageDetailResponse;
+      const response = (await getCmsPageById(Number(id))) as PageDetailResponse
 
       if (response.code !== 10000) {
-        throw new Error(
-          response.message || `获取页面数据失败 (code: ${response.code})`,
-        );
+        throw new Error(response.message || `获取页面数据失败 (code: ${response.code})`)
       }
 
       if (!response.data) {
-        throw new Error("页面数据为空");
+        throw new Error('页面数据为空')
       }
 
-      const pageData = response.data;
-      let rawSchema = pageData;
+      const pageData = response.data
+      let rawSchema = pageData
 
       if (pageData?.schema) {
         rawSchema =
-          typeof pageData.schema === "string"
-            ? JSON.parse(pageData.schema)
-            : pageData.schema;
+          typeof pageData.schema === 'string' ? JSON.parse(pageData.schema) : pageData.schema
       } else {
-        rawSchema = adaptPageData(pageData);
+        rawSchema = adaptPageData(pageData)
       }
 
-      const schema = normalizePageSchemaMaterials(migrateSchema(rawSchema));
-      pageStore.importPageSchema(schema);
-      ElMessage.success("页面数据加载成功");
+      const schema = normalizePageSchemaMaterials(migrateSchema(rawSchema))
+      pageStore.importPageSchema(schema)
+      ElMessage.success('页面数据加载成功')
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error ? error.message : "页面数据加载失败";
-      ElMessage.error(errorMessage);
-      pageStore.setInitPageSchema();
+      const errorMessage = error instanceof Error ? error.message : '页面数据加载失败'
+      ElMessage.error(errorMessage)
+      pageStore.setInitPageSchema()
     }
   } else {
-    pageStore.setInitPageSchema();
+    pageStore.setInitPageSchema()
   }
 
-  await restoreDraftIfNeeded();
+  await restoreDraftIfNeeded()
 
-  const rollbackVersionId = String(route.query.rollbackVersionId || "");
+  const rollbackVersionId = String(route.query.rollbackVersionId || '')
   if (pageId.value && rollbackVersionId) {
-    markPageDraft(pageId.value);
-    ElMessage.success("已回滚到目标发布版本，当前为草稿待发布");
+    markPageDraft(pageId.value)
+    ElMessage.success('已回滚到目标发布版本，当前为草稿待发布')
   }
 
-  draftReady.value = true;
-};
+  draftReady.value = true
+}
 
 onMounted(() => {
-  initData();
-});
+  initData()
+})
 
 watch(
   () => pageStore.pageSchema,
   () => {
-    debouncedSaveDraft();
+    debouncedSaveDraft()
   },
-  { deep: true },
-);
+  { deep: true }
+)
 </script>
 
 <style scoped>
@@ -198,8 +185,8 @@ watch(
 </style>
 
 <style>
-/* el-drawer 默认 teleport 到 body 场景下 scoped 样式选不中，用全局类名限定 */
-.live-preview-drawer .el-drawer__body {
+/* 通过公开 body-class 设置内容区样式，避免依赖 Element 内部选择器。 */
+.live-preview-body {
   padding: 0;
   height: 100%;
   overflow: hidden;

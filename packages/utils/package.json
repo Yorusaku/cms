@@ -16,11 +16,12 @@
     "build": "tsc",
     "dev": "tsc --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src --fix",
+    "lint": "eslint .",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest run --coverage",
-    "clean": "rimraf dist"
+    "clean": "rimraf dist",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@cms/types": "workspace:*",

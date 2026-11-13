@@ -11,3 +11,17 @@ auto-imports.d.ts
 components.d.ts
 package-lock.json
 pnpm-lock.yaml
+
+# 生成产物、原始审计输出与本轮排除文档
+**/generated/**
+**/coverage/**
+**/playwright-report/**
+**/test-results/**
+constitution.md
+plan.md
+reports/stage0-commands.md
+reports/stage2-rules.md
+**/*.generated.*
+reports/stage3-slices.md
+.qwen/tmp/
+.workbuddy/memory/

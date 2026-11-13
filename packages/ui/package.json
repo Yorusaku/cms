@@ -25,8 +25,9 @@
     "build": "vue-tsc --noEmit && vite build",
     "dev": "vite build --watch",
     "typecheck": "vue-tsc --noEmit",
-    "lint": "eslint src --fix",
-    "clean": "rimraf dist"
+    "lint": "eslint .",
+    "clean": "rimraf dist",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@cms/types": "workspace:*",

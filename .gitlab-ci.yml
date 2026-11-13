@@ -7,7 +7,7 @@ variables:
   PNPM_STORE_PATH: .pnpm-store
 
 default:
-  image: node:20-bookworm
+  image: node:22-bookworm
   cache:
     key:
       files:
@@ -23,8 +23,14 @@ default:
 
 quality_gate:
   stage: quality
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+    - if: '$CI_COMMIT_BRANCH || $CI_COMMIT_TAG'
   script:
     - pnpm run ci:quality
+    - pnpm check:ui-governance
+    - pnpm test:coverage
+    - pnpm test:rules
 
 security_audit:
   stage: security
@@ -52,3 +58,16 @@ ai_review_baseline:
     - test -f .ai-review/frontend-review-checklist.md
     - test -f .ai-review/prompt-template.md
     - echo "AI review baseline files verified."
+
+agent_guards:
+  stage: quality
+  variables:
+    GIT_DEPTH: '0'
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+  script:
+    - git fetch origin "$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+    - export BASE_REF="origin/$CI_MERGE_REQUEST_TARGET_BRANCH_NAME"
+    - export PR_LABELS="$CI_MERGE_REQUEST_LABELS"
+    - node scripts/agent/check-skips.mjs
+    - node scripts/agent/check-deps.mjs

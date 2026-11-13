@@ -15,6 +15,8 @@ export default [
       '**/dist/**',
       '**/build/**',
       '**/coverage/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
       '**/.turbo/**',
       '**/*.d.ts',
       '**/auto-imports.d.ts',
