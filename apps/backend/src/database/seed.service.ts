@@ -177,11 +177,17 @@ export class SeedService implements OnModuleInit {
     this.logger.log(`Seeded ${DEMO_PAGES.length} demo pages`)
   }
 
+  /**
+   * 模板按名称补齐缺失项：
+   * 已有模板可能被运营改过，不覆盖；新增模板（如票据异常两套）能进入已有库。
+   */
   private async seedTemplates(): Promise<void> {
-    const count = await this.templateRepo.count()
-    if (count > 0) return
+    const existing = await this.templateRepo.find({ select: ['name'] })
+    const names = new Set(existing.map(template => template.name))
+    const missing = TEMPLATE_SEEDS.filter(template => !names.has(template.name))
+    if (missing.length === 0) return
 
-    for (const t of TEMPLATE_SEEDS) {
+    for (const t of missing) {
       await this.templateRepo.save({
         name: t.name,
         thumbnail: t.thumbnail,
@@ -193,6 +199,6 @@ export class SeedService implements OnModuleInit {
       })
     }
 
-    this.logger.log(`Seeded ${TEMPLATE_SEEDS.length} templates`)
+    this.logger.log(`Seeded ${missing.length} templates (existing: ${names.size})`)
   }
 }

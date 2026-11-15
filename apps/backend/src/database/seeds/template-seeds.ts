@@ -665,6 +665,275 @@ export const TEMPLATE_SEEDS: TemplateSeed[] = [
     })()
   },
 
+  {
+    name: '票据信息缺失登记',
+    thumbnail: null,
+    category: 'business',
+    description: '报销票据信息缺失时登记：说明问题、补充开票日期与票据类型，并跟踪处理进度',
+    schema: (() => {
+      const intro = cid('TicketIntro')
+      const notice = cid('TicketNotice')
+      const form = cid('TicketExceptionForm')
+      const stat = cid('TicketStat')
+      const list = cid('TicketBusinessList')
+      return {
+        version: '2.0.0' as const,
+        pageConfig: {
+          name: '票据信息缺失登记',
+          scene: 'form' as const,
+          layoutMode: 'business' as const,
+          shareDesc: '登记票据异常并查询处理进度',
+          shareImage: '',
+          backgroundColor: '#f8fafc',
+          backgroundImage: '',
+          backgroundPosition: 'top',
+          cover: ''
+        },
+        componentMap: {
+          [intro]: {
+            id: intro,
+            type: 'RichText',
+            parentId: null,
+            children: [],
+            props: {
+              content:
+                '<h2>票据信息缺失登记</h2><p>报销时发现票据信息不完整，请在此登记。提交后由财务核对，需要补充时会通知原提交人。</p>'
+            },
+            styles: {}
+          },
+          [notice]: {
+            id: notice,
+            type: 'Notice',
+            parentId: null,
+            children: [],
+            props: {
+              component: 'Notice',
+              validTime: [],
+              noticeList: [
+                {
+                  text: '同一票据编号的重复登记仅合并当次提交，不会覆盖已有记录；需要补充时将通过站内提醒通知原提交人',
+                  link: { clickType: 0, data: null }
+                }
+              ],
+              iconUrl: '',
+              imageUrl: '',
+              backgroundColor: '#FFF8E9',
+              textColor: '#666666',
+              speed: 20
+            },
+            styles: {}
+          },
+          [form]: {
+            id: form,
+            type: 'TicketExceptionForm',
+            parentId: null,
+            children: [],
+            props: {
+              title: '票据异常登记',
+              subtitle: '填写票据编号、异常类型与问题说明',
+              submitText: '提交登记',
+              businessCategory: '报销票据',
+              allowedExceptionTypes: '票据信息缺失\n开票日期缺失\n发票号码错误',
+              extraFields: [
+                { key: 'issuedAt', label: '开票日期', type: 'date', required: true },
+                {
+                  key: 'invoiceType',
+                  label: '票据类型',
+                  type: 'select',
+                  required: true,
+                  options: ['增值税专用发票', '增值税普通发票', '电子发票']
+                },
+                { key: 'amount', label: '票面金额', type: 'text', required: false }
+              ]
+            },
+            styles: {}
+          },
+          [stat]: {
+            id: stat,
+            type: 'StatCard',
+            parentId: null,
+            children: [],
+            props: {
+              title: '当前筛选记录',
+              value: 0,
+              description: '随列表筛选实时变化',
+              icon: '数',
+              accentColor: '#2563eb'
+            },
+            styles: {}
+          },
+          [list]: {
+            id: list,
+            type: 'BusinessList',
+            parentId: null,
+            children: [],
+            props: {
+              title: '异常记录',
+              subtitle: '仅显示当前账号可查看的记录',
+              dataSource: 'ticketExceptions',
+              columns: [
+                { key: 'ticketNo', label: '票据编号' },
+                { key: 'exceptionType', label: '异常类型' },
+                { key: 'status', label: '状态' },
+                { key: 'createdAt', label: '提交时间' }
+              ],
+              rows: [],
+              pageSize: 5,
+              exceptionTypeOptions: '票据信息缺失\n开票日期缺失\n发票号码错误',
+              enableOnlyMine: true
+            },
+            styles: {}
+          }
+        },
+        rootIds: [intro, notice, form, stat, list],
+        linkages: [
+          {
+            id: 'linkage-ticket-total',
+            sourceComponentId: list,
+            sourceProperty: 'filteredCount',
+            targetComponentId: stat,
+            targetProperty: 'value',
+            enabled: true
+          }
+        ]
+      }
+    })()
+  },
+  {
+    name: '质检信息不一致反馈',
+    thumbnail: null,
+    category: 'business',
+    description: '到货质检信息与系统记录不一致时反馈：登记批次号、质检日期与差异类型',
+    schema: (() => {
+      const intro = cid('QcIntro')
+      const notice = cid('QcNotice')
+      const form = cid('TicketExceptionForm')
+      const stat = cid('QcStat')
+      const list = cid('QcBusinessList')
+      return {
+        version: '2.0.0' as const,
+        pageConfig: {
+          name: '质检信息不一致反馈',
+          scene: 'form' as const,
+          layoutMode: 'business' as const,
+          shareDesc: '反馈质检差异并查询处理进度',
+          shareImage: '',
+          backgroundColor: '#f8fafc',
+          backgroundImage: '',
+          backgroundPosition: 'top',
+          cover: ''
+        },
+        componentMap: {
+          [intro]: {
+            id: intro,
+            type: 'RichText',
+            parentId: null,
+            children: [],
+            props: {
+              content:
+                '<h2>质检信息不一致反馈</h2><p>到货质检结果与系统记录不一致时，请登记批次与差异类型。质检组会在核对后回复处理结果。</p>'
+            },
+            styles: {}
+          },
+          [notice]: {
+            id: notice,
+            type: 'Notice',
+            parentId: null,
+            children: [],
+            props: {
+              component: 'Notice',
+              validTime: [],
+              noticeList: [
+                {
+                  text: '请先确认批次号与质检单一致，再提交反馈',
+                  link: { clickType: 0, data: null }
+                }
+              ],
+              iconUrl: '',
+              imageUrl: '',
+              backgroundColor: '#FFF8E9',
+              textColor: '#666666',
+              speed: 20
+            },
+            styles: {}
+          },
+          [form]: {
+            id: form,
+            type: 'TicketExceptionForm',
+            parentId: null,
+            children: [],
+            props: {
+              title: '质检差异反馈',
+              subtitle: '填写批次号、异常类型与差异说明',
+              submitText: '提交反馈',
+              businessCategory: '质检单据',
+              allowedExceptionTypes: '质检信息不一致\n质检结论缺失\n批次号不符',
+              extraFields: [
+                { key: 'batchNo', label: '批次号', type: 'text', required: true },
+                { key: 'inspectedAt', label: '质检日期', type: 'date', required: true },
+                {
+                  key: 'diffType',
+                  label: '差异类型',
+                  type: 'select',
+                  required: true,
+                  options: ['数量不符', '外观不符', '规格不符']
+                }
+              ]
+            },
+            styles: {}
+          },
+          [stat]: {
+            id: stat,
+            type: 'StatCard',
+            parentId: null,
+            children: [],
+            props: {
+              title: '当前筛选记录',
+              value: 0,
+              description: '随列表筛选实时变化',
+              icon: '数',
+              accentColor: '#0f766e'
+            },
+            styles: {}
+          },
+          [list]: {
+            id: list,
+            type: 'BusinessList',
+            parentId: null,
+            children: [],
+            props: {
+              title: '反馈记录',
+              subtitle: '仅显示当前账号可查看的记录',
+              dataSource: 'ticketExceptions',
+              columns: [
+                { key: 'ticketNo', label: '批次号/单号' },
+                { key: 'exceptionType', label: '异常类型' },
+                { key: 'status', label: '状态' },
+                { key: 'submitterUsername', label: '提交人' }
+              ],
+              rows: [],
+              pageSize: 5,
+              exceptionTypeOptions: '质检信息不一致\n质检结论缺失\n批次号不符',
+              enableOnlyMine: true
+            },
+            styles: {}
+          }
+        },
+        rootIds: [intro, notice, form, stat, list],
+        linkages: [
+          {
+            id: 'linkage-qc-total',
+            sourceComponentId: list,
+            sourceProperty: 'filteredCount',
+            targetComponentId: stat,
+            targetProperty: 'value',
+            enabled: true
+          }
+        ]
+      }
+    })()
+  },
+
   // ============ 通用 (2个) ============
   {
     name: '通用布局 A',

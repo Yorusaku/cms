@@ -126,14 +126,18 @@ async function seed() {
       console.log(`Seeded ${DEMO_PAGES.length} demo pages.`)
     }
 
+    // 模板按名称补齐：已有模板不覆盖，新模板可增量落库
     const templateRepo = AppDataSource.getRepository(Template)
-    if ((await templateRepo.count()) === 0) {
+    const existingTemplates = await templateRepo.find({ select: ['name'] })
+    const existingNames = new Set(existingTemplates.map(template => template.name))
+    const missingTemplates = TEMPLATE_SEEDS.filter(template => !existingNames.has(template.name))
+    if (missingTemplates.length > 0) {
       await templateRepo.save(
-        TEMPLATE_SEEDS.map(template =>
+        missingTemplates.map(template =>
           templateRepo.create({ ...template, useCount: 0, isActive: true })
         )
       )
-      console.log(`Seeded ${TEMPLATE_SEEDS.length} templates.`)
+      console.log(`Seeded ${missingTemplates.length} templates.`)
     }
     console.log('Database seed complete.')
   } finally {

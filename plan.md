@@ -6,8 +6,13 @@
 
 ## 当前进度
 
+- 场景/待办/提醒接手验收（2026-11-01）：补齐 CMS 待办视图、两端场景筛选与 CRS 分页；修复提醒接收人定位/事务错误处理、发布前场景存在性校验、发布页切换与缓存物料首次属性问题。新增真实 E2E 6/6，既有票据 E2E 9/9，mock 45/45；后端 139/139、CMS 455 passed / 2 skipped、CRS 8/8，类型检查 12 tasks、构建 7 tasks。详细证据与边界见下方接手验收记录；历史 48 项独立库脚本本轮未重跑。
 - 当前阶段：生产补全 Action 19–24 **已全部完成**；Action 0–18 详见下方历史日志。
 - 最新收口复核（2026-10-30）：鼠标排序可写回，纠正此前“不写回”的笼统结论；修复物料拖入逻辑干扰内部 move、排序历史空步骤及人工编辑合并问题；移除 CRS 强加的统一描边与留白。CMS 411 passed / 2 skipped（39 文件通过、2 文件跳过）、mock E2E 43/43、生产 CRS 样式回归 1/1，详情见下方最新记录。
+- 三项操作闭环改进（2026-10-31）：AI 逐目标处理状态 + 定向提醒、业务表单字段可视化配置（fields/fieldsJson 双写）、统一提交审核与发布检查（@cms/types 纯函数，前后端共用）；CMS 448 passed / 2 skipped、后端 103/103、mock E2E 45/45，详见下方记录。
+- 独立业务场景 + 待办池 + 站内提醒（2026-11-01 续办三，**三阶段全部完成并真实库验证**）：真实库 48/48（场景归属/汇总/互斥/绑定校验 + 工作台摘要三身份 + 提醒产生/隔离/已读幂等 + 既有回归）；E2E 9/9；后端 134/134、CMS 455 passed、mock E2E 45/45；CRS `/myTickets`、`/notifications`、业务页轻量导航、CMS 场景筛选与消息页已上线；模板「合并登记」不实描述已修正。见下方记录。
+- 票据异常桌面适配 + 私有图片材料（2026-10-31 续办二，已完成）：`layoutMode: business` 页面级布局（字号固定、内容 1120/表单 720 居中限宽，390/1280/1440 实测）；附件表 + 鉴权上传/读取 + 私有目录（公开目录同级、启动边界校验），3 张/5MB/JPG+PNG，并发上传真实库验证不超限；真实库 34/34、浏览器 E2E 9/9；后端 128/128、CMS 455 passed / 2 skipped、mock E2E 45/45。见下方记录。
+- 票据异常无附件闭环（2026-10-31 续办，已完成）：修复实体未注册/创建非事务/幂等冲突/trim 绕过/发布快照口径/孤立组件/共享配置校验等阻断；补齐 CRS 站内登录与异常详情、两套业务模板、BusinessList 远程模式；专用库 `cms_ticket_exception_e2e` 真实验证 24 项（含事务回滚与并发幂等）、浏览器 E2E 8/8。附件（阶段三）仍未开始。
 - 最新验收补修（2026-10-29）：AI 批量内容更新的四处边界问题已修复，新增 8 条回归测试；CMS 全量 408 passed / 2 skipped，内容更新 mock E2E 1/1 通过，详情见下方同日记录。
 - 真实模型抽样（2026-10-29）：使用 deepseek-flash 验证 3 个合成任务，均经实际 provider/service 返回 source=model 并通过协议校验；事实语义仍需人工审阅，见下方记录。
 - 真实模型浏览器验收（2026-10-30）：3 个独立验收草稿上跑通「多选 → 真实生成 → 勾选应用 → 撤销重做 → 保存 → 重进 → CRS 预览」，Schema 断言 25/25 与 22/22 通过；发现 3 个既有缺陷（表单字段区点击不选中、StatCard 数字值被 normalize 重置、CRS 缺 Tailwind 工具类），未改代码，详见下方记录。
@@ -20,6 +25,285 @@
 - Action 22：已完成；结束日期边界、来源/渠道/版本完整过滤、独立访客去重、每日趋势与看板 CSV 导出均已落地，并修复 CRS 子组件埋点不上报与营销上下文未透传两个真问题。
 - Action 23：已完成；统一存储接口（本地 + S3 兼容 adapter）、生产启动校验、seed 保护、`/health`、结构化错误日志与运维手册均已落地并实测。
 - Action 24：已完成；全量 lint / typecheck / 单测 / 构建 / mock+live E2E 回归通过，Action 19 文档终检与验收清单已更新。
+
+## 场景、待办与提醒接手验收（2026-11-01）
+
+### 目标与范围
+
+在既有三阶段改动上核对真实入口并补齐验收，不增加新业务域。原有大量未提交改动保留；本轮不提交 Git、不修改环境配置、不调用模型。专用库固定为 `cms_ticket_exception_e2e`，只沿用现有数据与增量迁移，不重建库。
+
+### 修复与补齐
+
+- 提醒接收人优先按登记记录的 `submitterUserId` 查找；仅历史记录没有 ID 时回退用户名。ID 对应账号不存在时跳过，不把消息转给同名账号。
+- 提醒写入只在 SQL 层忽略「事件 + 接收人」唯一冲突，其他错误传播给上层事务。真实库故障注入确认业务状态、历史和提醒一起回滚。
+- 发布时再次检查绑定场景存在，发生错误时不生成发布快照；原有提交审核检查保留。
+- 消息未读数与工作台摘要遵循选定场景。CMS 增加全部记录/待处理/待我补充/我的提交视图与摘要入口；viewer 不展示场景编辑和处理入口。
+- CRS 个人记录与消息补场景选择、分页、刷新和迟到响应保护；CMS 消息页补场景筛选并加宽操作列，历史未归属与场景筛选互斥。
+- 发布页响应 `page?id` 变化，切换时重新加载快照，防旧请求覆盖新页面；未绑定快照的查询回退传数值 pageId。
+- 缓存命中的物料会立即挂载，原先等 RenderNode mounted 才设置属性会让远程列表按默认静态模式初始化、无查询请求。改为挂载前准备属性，通过 A/B 发布页切换验证。
+- 业务页导航继承固定设计宽度，桌面字号约 13px，不再等比放大。场景加载失败给出错误反馈。
+
+### 实际验证
+
+- 后端 `pnpm --filter @cms/backend exec jest --runInBand`：139/139（13 套件）。新增提醒服务四条回归、发布场景缺失拒绝用例。
+- CMS `pnpm --filter @cms/cms exec vitest run`：455 passed / 2 skipped；CRS `pnpm --filter @cms/crs exec vitest run`：8/8。
+- 既有票据真实 E2E：9/9；新增 `scenario-workbench.spec.ts`：6/6，分别运行通过。本轮新增覆盖 CMS 创建/编辑场景与页面设置绑定、多页面按场景汇总与隔离、草稿修改不改变线上归属、要求补充/个人待办/两端已读同步/消息进入详情/解决、重绑后新旧记录归属与幂等、提醒故障真实回滚、账号改名后按 ID 接收、并发处理只产生一次提醒、个人记录超过 20 条翻页、未登录/viewer/他人消息隔离。
+- 新用例的 CHECK 约束仅作用于本次创建记录，在 try/finally 中清理。收尾 SQL 确认 `current_database()` 为专用库、`accept_notification_%` 残留约束为 0；改名测试账号也在 finally 恢复。
+- mock E2E `pnpm --filter @cms/cms test:e2e -- --reporter=line`：45/45。场景下拉请求尚有未配 mock 的代理连接日志，不影响当前断言；不能把这套结果视为场景功能验证，场景由新增真实 E2E 负责。
+- `pnpm typecheck`：12 tasks；`pnpm build`：7 tasks；本轮改动文件只读 ESLint 通过。
+- 截图在 `tmp/acceptance/scenario-review/`：CMS 场景/工作台/消息（1280 或 1440）、CRS 待办与消息（390/1280/1440 中对应页面）、正式业务页 1280。已人工查看截图，并断言整页无横向溢出；导航字号使用数值容差断言以容纳 vw 换算舍入。
+
+### 边界与交接
+
+- 历史 48 项独立验收脚本本轮未重跑，以上真实 E2E 与本轮 SQL 验证为当前证据。未单独做生产构建浏览器验收，生产构建已通过；未做压力测试或真实模型验证。
+- 场景仍是归属和筛选维度，不代表场景级数据授权；提醒依旧按登录/操作/手动刷新更新，不添加推送。
+- 新建测试账号、场景、页面和记录保留在专用库，使用 SW 前缀；不清理历史业务数据。代码仍留在工作区等待用户验收。
+
+## 票据异常处理场景改造（2026-10-31，历史阶段记录）
+
+把平台从「通用配置工具」扩到具体业务场景：票据异常登记、信息补充与处理结果查询。本轮**只完成阶段一和阶段二的核心部分**，阶段二剩余（列表业务模式、两套模板、CRS 登录与详情）与阶段三（附件）未开始。
+
+### 阶段一：异常数据与处理闭环（已完成）
+
+**数据**：新增 `ticket_exceptions` 与 `ticket_exception_events` 两张表，迁移 `1790000005000-CreateTicketException.ts` 增量建表，不改线索表与历史页面数据；down 只删这两张表。
+
+- 主记录：requestId、票据编号、业务类别、异常类型、问题说明、扩展字段（jsonb）、**字段定义快照**（jsonb）、提交人、状态、页面/组件/发布版本、时间戳。
+- 历史：动作（created / supplement_requested / supplemented / resolved）、操作者、说明、payload（本次补充的增量内容）。
+- 快照随记录保存：后续改版、下线、回滚都不影响历史记录的字段标题与展示。
+
+**接口**（`/atlas-cms`，沿用现有响应包装与 `@Roles`）：
+`createTicketException`、`getTicketExceptionList`、`getTicketExceptionDetail`、`supplementTicketException`、`processTicketException`。
+
+- 创建从**当前有效发布快照**读物料与字段定义，不信任客户端上传的定义；页面下线、版本变化、组件不存在都返回明确的「刷新后重试」提示。
+- 状态机：pending →（要求补充）needs_supplement →（原提交人补充）pending →（解决）resolved；resolved 本期不重开。
+- 要求补充、补充、解决都写说明；状态更新与历史写入在同一事务内，`pessimistic_write` 锁记录防重复处理。
+- 幂等：唯一索引 `(request_id, submitter_username)`，同一提交人重试返回原记录且不重复写历史；不同提交人用同一 requestId 会生成各自记录，拿不到他人数据。
+- 权限：admin/editor 可创建与处理，viewer 只读；补充仅原提交人。
+- 列表支持票据编号模糊、异常类型、状态、提交人筛选 + 服务端分页（默认 20，上限 100）。
+
+**CMS 界面**：新增 `/ticket-exception` 列表页（Element Plus 独立文件，不塞进 Activity.vue），右侧抽屉展示详情、字段快照、时间线与处理/补充操作；Home 增加「票据异常」入口卡片。
+
+**验证**：`apps/backend/test/ticket-exception.spec.ts` 14 条（创建快照、幂等、跨提交人隔离、下线/版本/组件缺失、类型与扩展字段校验、下拉选项、筛选分页与上限、详情时间线、状态流转、重复处理拒绝、非原提交人补充拒绝、增量合并）。后端全量 **117/117**。
+
+### 阶段二：连接页面配置与真实业务数据（部分完成）
+
+**已完成**：
+
+- 新增共享物料 `TicketExceptionForm`（`packages/ui`），不复用 BusinessForm / submitLead / remark：固定字段为票据编号、异常类型（取自配置）、问题说明，均必填；扩展字段支持文本/日期/下拉。
+- 配置项：标题、说明、按钮文案、业务类别、允许的异常类型（一行一个）、扩展字段列表。
+- 字段校验拆分：`validateBusinessFormFields(fields, { requireBaseFields })` —— BusinessForm 仍要求姓名/手机号，票据异常表单不套用；`checkPageForSubmit` 按组件类型传参。
+- 扩展字段编辑器复用 `formFields` 类型，新增 `requireBaseFields: false` 配置项。
+- 运行时组件 `TicketExceptionFormBlock` 走独立接口，不复用线索提交；预览态（缺 pageId / publishedVersionId / componentId）明确提示不支持提交。
+- 渲染层 `RenderNode` 为票据异常表单注入 `componentId`（其他表单不感知）。
+
+**未完成（下一轮）**：
+
+- BusinessList 的 `static` / `ticketExceptions` 双数据模式（服务端筛选分页、loading、错误重试、空态，事件 total 供统计卡联动）。
+- 两套模板（票据信息缺失 / 质检信息不一致）。
+- CRS 业务登录与异常详情入口（复用现有 login API 与 JWT，不走 URL/Schema/postMessage 传 token）。
+
+### 本轮续办：修复阻断 + 无附件闭环打通（2026-10-31）
+
+**修复的阻断问题**
+
+- 运行时 `entities` 清单漏了 `TicketException` / `TicketExceptionEvent`，迁移能跑但应用层查不到表；已按现有模式补进 `database.module.ts`（`forFeature` 同步补齐）。
+- 创建主记录与首条历史改为同一事务；事件写入失败时主记录一并回滚。
+- 保留 `(request_id, submitter_username)` 唯一索引；并发撞索引时只识别该约束（`23505` + 约束名），事务回滚后读回同一提交人的原记录返回 `duplicated: true`，其他数据库错误照常抛出。
+- DTO 增加 trim 转换：纯空格不再绕过 `@MinLength(1)`。
+- 发布快照判定改为「页面未删除 + `isAbled=1` + 存在 `publishedSchema` + 版本匹配」，不再要求 `status === published`（保存草稿后旧快照仍可登记）；幂等判断放在快照校验之前，改版后重试仍返回原记录。
+- 新增可达性校验：只接受从 `rootIds` 遍历得到的组件，孤立的 `componentMap` 条目被拒绝。
+- 票据配置校验抽到 `@cms/types`（`readTicketExceptionFormConfig` / `validateTicketExceptionFormConfig` / `validateTicketFormValues`），编辑器、发布检查、后端读快照共用一份；扩展字段允许为空，校验 key/名称/类型/下拉/重复/固定字段冲突，非法配置明确报错而不是静默丢弃或替换类型。
+- 提交值校验：必填、字符串类型、下拉范围、`YYYY-MM-DD` 日期、未知 key 拒绝；补充为增量合并，空字符串视为未提供，不清空已有值。
+
+**补齐的功能**
+
+- CMS 详情抽屉的补充入口改为结构化字段编辑（预填当前值，支持文本/日期/下拉），只提交改动过的字段。
+- CRS 新增站内登录（`/login`，回跳只认站内地址）与异常详情页（`/ticketException`）；未登录时页面内嵌登录弹层，不切路由、不卸载页面，已填内容保留且不自动提交；登录过期同样保留输入。
+- 表单成功后返回并使用记录 ID，提供「查看登记结果」入口（由页面端路由跳转，组件不碰 hash）。
+- 预览隔离：`previewMode` 从编辑画布 / 独立预览 / iframe 预览显式下发，表单在预览态一律拒绝写入；不再只靠 `publishedVersionId` 是否为空判断。
+- 两套业务模板「票据信息缺失登记」「质检信息不一致反馈」：业务说明 + 公告 + 票据表单 + 统计卡 + 远程列表，异常类型与扩展字段各不相同；模板 seed 改为按名称补齐缺失项（不覆盖已改模板）。
+- BusinessList 增加 `ticketExceptions` 远程模式：运行端通过 `provide` 注入受控数据适配器，物料只依赖接口不 import 端内模块；支持票据编号关键词、异常类型、状态、服务端分页与「仅看我提交的」（身份由后端解析），带 loading / 错误重试 / 空态，筛选回到第一页且迟到响应不覆盖最新结果；total 通过 `filteredCount` 联动统计卡，远程结果不做本地二次筛选或分页。
+- CRS 未登录不发列表请求，避免 401 把整页踢到登录；`Request` 的登录兜底改为站内地址（原先硬编码跳 CMS 的 `/cms-manage/#/login`，在 CRS 端口上只会 404）。
+
+**实际验证**
+
+- 专用库 `cms_ticket_exception_e2e`（不存在才创建，不 drop）：迁移执行成功，真实启动 NestJS 读写正常。
+- 真实库脚本 24/24：建页→审核→发布→登记→重试→详情→要求补充→补充→解决→时间线；草稿状态下旧快照可登记；改版后旧版本新请求被拒、原请求重试仍返回原记录；**用 events 表 CHECK 约束制造写入失败，确认主记录真实回滚**；并发同请求只落一条记录与一条历史，另一个请求返回 `duplicated`。
+- 浏览器 E2E `tests/e2e-ticket/ticket-business-flow.spec.ts` 8/8：模板发布与非法配置拒绝、预览无写请求、未登录提示并保留填写→登录→提交、结果入口进详情、列表筛选/翻页/total 联动、另一账号要求补充、原提交人补充字段、viewer 只读与非原提交人越权被拒、解决后历史 4 条且字段快照不随改版变化。
+- 回归：后端 124/124、`@cms/ui` 73/73、CMS 450 passed / 2 skipped、mock E2E 45/45、typecheck 12 tasks、build 7 tasks；lint 仅剩既有欠账（`tests/e2e-live/drag-build-full-flow.spec.ts` 未使用变量，HEAD 即存在）。
+
+**剩余事项**
+
+- 阶段三附件（上传、私有目录、鉴权读取、Blob 预览、失败清理）未开始。
+- CRS 桌面宽度（1280 及以上）沿用 375 vw 基准，字号被等比放大；这是既有移动端适配策略，本轮未改（尝试 `landscape` 回退会让布局塌陷，已回退）。
+- 未对接外部票据系统，票据编号只是业务引用。
+
+### 续办二：桌面适配 + 私有图片材料（2026-10-31）
+
+**基线复核**：上一轮 24 项真实库断言重跑全过；验收脚本中的 CHECK 故障注入改为 try/finally + `DROP IF EXISTS`，中途失败也会清理约束；数据库身份逐次确认是 `cms_ticket_exception_e2e`。
+
+**桌面适配（layoutMode: business）**
+
+- 现象：375 vw 基准下桌面 1280 正文 44px、标题 75px（实测计算样式记录在案）。
+- 方案：postcss 追加 `capped-design-vw` 插件，把 px-to-viewport 产出的纯 vw 改写为 `calc(N * var(--design-vw, 1vw))`，默认与改造前等价；`.layout-business` 把基准限定为 `calc(min(100vw, 375px) / 100)`，字号恒定；布局宽度用 `max-width: 1120px`（内容）/ `720px`（表单）+ 居中，窄屏表格区域横向滚动。`selectorBlackList: [/layout-business/]` 让业务规则保留原始 px，避免二次换算。
+- 保留插件与旧 mobile 行为：营销页 1280 下 label 44px（放大）实测不变；不整体关闭 px-to-vw、不批量改字体。
+- 实测（计算样式断言 + 截图 `tmp/shots/layout-*.png`、`login-1280.png`）：
+  - 390：label 14px / 标题 22px / 内容全宽 / 溢出 0；
+  - 1280、1440：label 14px / 标题 22px / 内容 1120 / 表单 720 / 溢出 0；
+  - 登录页与详情页同策略（详情页桌面 14px 正文、20px 标题、1120 限宽）；页面内登录弹窗单独声明基准变量。
+- 页面配置新增可选 `pageConfig.layoutMode`（`@cms/types` 类型 + CMS 页面设置单选），缺省 mobile；两套票据模板显式 business，不升级 Schema 版本。生产构建走同一 postcss，样式一致。
+
+**私有图片材料**
+
+- 新表 `ticket_exception_attachments`（增量迁移，已连库执行），存服务端文件名 / 原名 / MIME / 大小 / 上传人；detail 返回附件摘要，不含磁盘路径与公开 URL。
+- 私有目录 `ticket-exception-private`（公开上传目录同级），启动校验绝不位于公开目录内，不注册静态路由；随机文件名落盘，读取仅凭附件 ID，响应使用服务端确认的 MIME + `Cache-Control: private, no-store`。
+- 上传仅限原提交人 admin/editor 且记录未解决；multipart 层挡大小与扩展名，服务端再按文件头确认类型（不信任客户端声明），multer 的 latin1 文件名转回 UTF-8；3 张 / 5MB 上限。
+- 文件写入后在事务内锁记录重查状态 / 提交人 / 数量，元数据与 `material_added` 事件一起写入；失败清理本次文件（清理失败记内部日志），上传不改变异常状态。
+- 前端：CRS 详情与 CMS 抽屉的材料列表 + 缩略图（鉴权 Blob 读取，对象 URL 统一 revoke）、数量提示、失败反馈与重试；预览模式不上传。
+
+**实际验证**
+
+- 真实库脚本 34/34（新增 10 项附件断言）：并发 4 路上传仅 2 路成功（3 张上限）、元数据与 `material_added` 事件 3=3 原子一致、未登录读取拒（code=-2）、viewer 上传拒、解决后上传拒、`Content-Type: image/png`、`Cache-Control: private, no-store`。
+- 浏览器 E2E 9/9（新增材料用例）：原提交人上传 → 缩略图 Blob 显示 → 处理人经鉴权接口读取 → 解决后上传入口消失且材料保留、历史 3 条。
+- 单测：后端 128/128（新增附件权限 / 限额 / 空文件 / 非法类型 / 失败清理 4 条）；CMS 455 passed / 2 skipped；mock E2E 45/45；typecheck 12 tasks、build 7 tasks、lint 0 新增错误。
+
+### 续办三（续）：阶段一验证 + 阶段二核心（2026-11-01）
+
+**环境恢复后完成**
+
+- 迁移 `CreateBusinessScenario1790000007000` 在专用库执行成功（先核对 `current_database()`）；`ticket_exceptions.business_scenario_id` 列与索引就位。
+- 真实库脚本扩到 **44/44**：场景创建 → 页面绑定 → 提交审核 → 发布 → 登记记录自动归属（DB 断言 count=5 全部带场景 UUID）→ 场景筛选汇总（total=5 且全部属于本场景）→ `scenarioId` 与 `unassignedOnly` 互斥报错 → 未绑定页面草稿可存但提交审核被拒 → 伪造场景被后端查库拒绝；既有 34 项（幂等/事务/并发/附件）全部回归通过。
+- E2E **9/9**：建页流程改为「建场景 → 绑定 → 提交审核 → 发布」，全部用例在场景绑定下通过。
+
+**阶段二核心（已上线）**
+
+- 工作台摘要 `GET getTicketExceptionSummary`：`pendingCount`（admin/editor 按场景筛选；viewer 返回 null，前端不展示处理池入口）、`mineNeedsSupplementCount`、`mineSubmittedCount`；计数全部来自数据库查询，`unreadCount` 阶段三前为 0。真实库验证三条身份路径（admin/viewer/editor）。
+- CMS 票据列表：场景下拉筛选 + 「历史未归属」开关（与场景筛选互斥由后端保证）。
+- CRS 新增 `/myTickets`：待我补充 / 我的提交两个视图，「我的」身份由后端解析，未登录给出明确反馈，行点击进入现有详情页；样式接入 business 字号基准。
+- 未做：业务页「我的记录/消息」导航（下一轮接入，避免本轮堆叠）、待办视图的组件级单测、`unreadCount` 的真实数据。
+
+**阶段三（站内提醒）：已完成**
+
+- `notifications` 表（迁移已执行）：接收用户、来源事件 ID、记录 ID、类型、场景、创建/已读时间；唯一索引（事件+接收人）防重复。
+- 触发：`process` 的 request_supplement / resolve 分支在同一事务里（状态 + 事件 + 提醒）写入；接收人按记录 username 解析现存账号，账号不存在跳过并记内部日志；唯一冲突忽略。
+- 接口：`getNotificationList`（全部/未读、可选场景筛选）、`markNotificationRead/:id`（幂等，重复调用成功）、`getNotificationUnreadCount`；只返回/修改当前用户自己的提醒。
+- 摘要 `unreadCount` 已接真实数据（真实库验证 editor unreadCount ≥1）。
+- 两端消息页：CMS `/notifications`（表格 + 仅未读开关 + 点击标已读并跳转记录详情抽屉，支持 `recordId` 直开）；CRS `/notifications`（全部/未读 tabs + 未读高亮 + 点击进详情）；CRS 业务页顶部轻量导航「我的记录 / 消息」。
+- 实测：提醒产生（原提交人收到）、接口隔离（admin 看不到 editor 的提醒）、标记已读幂等且未读数 9→8。
+
+**已知的坑（本轮修掉）**：TypeORM `update` 条件带 `readAt: null` 不保证生成 `IS NULL`，标记已读静默不生效——改为先读后存（重复调用天然幂等）。
+
+### 续办三：独立业务场景（2026-11-01，阶段一后端代码完成）
+
+**已实现（单测已证）**
+
+- 场景实体 `business_scenarios`（UUID 主键、名称 trim 非空 ≤80、说明 ≤300）+ CRUD 接口（admin/editor 写、全角色读）+ CMS `/business-scenario` 轻量管理页与导航入口。
+- 共享协议：`BusinessScenarioItem` / `CreateBusinessScenarioPayload` / `UpdateBusinessScenarioPayload`（`@cms/types/business-scenario`）；`pageConfig.businessScenarioId` 可选字段（不升级 Schema 版本）。
+- 共享纯函数：`readPageScenarioBinding` / `pageNeedsScenarioBinding` / `isScenarioUuid`；`checkPageForSubmit` 新增 `SCENARIO_REQUIRED`——含票据表单或票据远程列表的页面必须绑定 UUID 格式场景（纯格式检查，不依赖数据库）。
+- 后端查询检查：`submitForReview` 对绑定的场景调 `scenarioService.ensureExists`，伪造/已移除场景被拒。
+- 记录归属：`ticket_exceptions.business_scenario_id`（可空 + 索引，FK ON DELETE SET NULL）；登记时场景 ID 从发布快照读取并验证存在后写入，创建请求不接受客户端指定；旧快照未绑定仍可登记、记录保持未归属；幂等重试优先于场景校验不受影响。
+- 列表查询：`scenarioId` / `pageId` / `unassignedOnly` 三个条件，`scenarioId` 与 `unassignedOnly` 同时提供报错；列表与详情返回 `businessScenarioId`。
+- CRS 适配器强制注入：正式页列表按发布快照的场景绑定查询，旧快照未绑定回退 `pageId` 维度，不信任用户可编辑的查询输入。
+- CMS 页面设置：场景下拉选择器（不手填 UUID），绑定变更提示「重新发布后生效、只影响后续新登记、不迁移历史」。
+- 单测：新增 4 条场景归属用例（绑定写入 / 伪造拒绝 / 旧快照未归属 / 互斥校验），后端 132/132 全过；CMS 455 passed / 2 skipped；typecheck 全部通过。
+
+**环境阻断（未完成）**
+
+- Docker Desktop 在当前会话反复启动即退出（引擎进程无存活、无错误日志输出），`business_scenarios` 迁移与登记写入的连库执行、以及任务书第六节的 12 项真实业务场景验证、E2E 均未执行。
+- 待环境恢复后的动作：确认库身份 → `migration:run`（增量 1790000007000）→ 重跑票据真实库脚本 + 场景链路验证。
+- 阶段二（共享待处理池视图 / 工作台摘要 / CRS `/myTickets`）、阶段三（站内提醒）**未开始**。
+
+### 阶段三：图片补充与完整验收（未开始）
+
+附件元数据表、私有目录上传与鉴权读取、前端 Blob 预览、上传失败保留记录与清理策略、完整 E2E 与回归，均未开始。
+
+### 本轮验证
+
+- 后端：`jest --runInBand` → **117/117**（12 套件）。
+- `@cms/ui` → **68/68**（新增 6 条物料测试）；CMS → **450 passed / 2 skipped**（新增 2 条校验拆分 + 更新 1 条注册表断言）。
+- `pnpm typecheck` 12 tasks、`pnpm build` 7 tasks、改动文件 ESLint 0 error。
+- mock E2E → **45/45**。
+
+### 未验证与限制
+
+- **迁移未在真实数据库执行**：只写了 migration 文件，没有连库跑 `migration:run`，也没有做回退验证。表结构与实体的一致性只经过类型检查。
+- 列表页与详情抽屉只经过类型检查和构建，没有浏览器实跑（缺后端数据）。
+- 阶段二剩余与阶段三全部未做，CRS 端目前仍无法登录并提交票据异常。
+- 票据编号只是业务引用，没有对接任何外部票据系统。
+
+---
+
+## 三项操作闭环改进（2026-10-31）
+
+三项按「AI 提醒 → 表单编辑 → 提交发布检查」顺序实施，每项单独验证。未提交 Git，未调用真实模型，未运行清库式 live E2E，未对真实页面发布。
+
+### 一、AI 更新的处理状态与定向提醒
+
+**问题**：未返回变更的区块没有处理说明，空结果显示「无需修改」，容易被理解成模型已确认内容正确。
+
+**实现**：
+- 弹窗逐目标展示四种状态：有修改建议 / 未返回修改建议 / 不参与更新 / 需人工确认（有区块级提醒）。
+- 未返回建议的区块可展开查看原内容；BusinessForm 改为字段级对比（标题 / 说明 / 提交文案），未修改字段显示「未修改」。
+- 空结果文案改为「未生成修改建议，请核对原内容与提示」，并明确「不代表模型已确认内容正确」。
+- 协议新增可选 `targetWarnings: { componentId, message }[]`；后端校验 componentId 必须属于本次请求、同一目标只保留一条、消息非空，非法条目丢弃并计入整体 warnings 说明；旧响应无该字段按空数组处理。
+- 提示词补充跨期/跨对象约束：不得把旧对象的日期、地点、费用、截止时间、名额、承诺与报名状态沿用到新对象，缺依据时置「待定」并写入 targetWarnings。
+- 保留部分勾选、警告不阻断、一次应用一次撤销、冲突检查与迟到响应丢弃；取消勾选的区块标注「本次不应用」。
+
+**验证**：后端 `ai-content-suggest` 15/15（新增 4 条：非目标/重复/空消息丢弃、旧响应兼容、非数组容错、mock 空提醒）；弹窗 16/16（新增 5 条：部分返回三态、定向提醒、旧响应兼容、表单字段级对比、取消勾选标注）；`ai-content-update.spec.ts` E2E 通过。
+
+### 二、业务表单字段可视化配置
+
+**问题**：字段主要靠 `fieldsJson` 文本编辑，且该属性优先于 `fields`，两者不同步会造成保存后配置回退。
+
+**实现**：
+- 新增专用字段编辑类型 `formFields`（不扩展成通用嵌套表单设计器），接入现有 `MaterialConfigRenderer`。
+- 姓名、手机号固定为文本且必填，可改显示名称与占位，禁止删除与改 key；兼容历史 `phoneNumber`，不强制改名。
+- 扩展字段支持添加、删除、上下移动、改 key；下拉选项逐行编辑。
+- 校验（`@cms/types` 的 `validateBusinessFormFields`）：key 非空唯一、名称非空、扩展字段名称不重复、下拉至少一个非空且不重复选项、必须含姓名与手机号。
+- 校验不通过时不写回，面板明确列出「修改尚未写入页面」及原因；通过后原子写入 `fields` 与 `fieldsJson`。
+- 表单字段编辑跳过 200ms 防抖直接提交：避免切换组件/保存时丢掉防抖窗口内的合法编辑。
+- `normalizeProps` 修正：`fieldsJson` 非法时保留原文（交给编辑器提示），不再静默替换成默认字段；历史只有 `fields` 继续可读；缺基础字段提供「补齐基础字段」入口；JSON 降为只读查看。
+
+**验证**：ui 归一化 5/5（fieldsJson 优先、非法保留原文、只有 fields、回落默认、options 数组）；`business-rules` 9/9；字段编辑器 7/7（基础字段不可删、未填完不写入、增删改序、下拉选项、缺基础字段补齐、非法 JSON 提示）；双写 3/3（同步写 fields+fieldsJson、镜像原文透传、其他字段仍防抖）。
+
+### 三、统一提交审核与发布检查
+
+**问题**：编辑器预检按控件类型推断必填，会误拦说明类内容；列表入口与后端流程没有同等检查。
+
+**实现**：
+- 业务检查做成 `@cms/types` 的纯函数 `checkPageForSubmit`，通过公开导出供 CMS 与 NestJS 共用；后端只依赖共享协议，不依赖 Vue 物料包。
+- 统一返回 `{ ok, issues }`，每项含规则码、严重级别、组件 ID、字段路径、中文提示。
+- 阻断规则：页面标题为空、没有组件、结构引用了不存在的组件（rootIds 与 children）、BusinessForm 字段配置非法、启用的联动指向不存在的组件。
+- 提醒规则：富文本正文为空、公告全部为空（warning，不阻断）。不再按控件类型推断必填。
+- 检查范围为根节点可达组件。
+- 编辑器：结构化问题面板 `PageCheckDialog`（Vue 渲染，替换 HTML 字符串拼装），点问题可选中并滚动到画布组件；保存草稿不拦截、预览提醒后可继续、提交审核遇 error 才阻断。
+- 列表入口：提交审核与发布前读取 `getPageJson` 跑同一检查，有 error 时展示问题面板并提供「进入编辑器」入口。
+- 后端：`submitForReview` 与 `publishPage` 对数据库中的实际 Schema 再校验；发布校验放在事务内、写发布记录之前，失败时状态与快照都不写入。
+
+**验证**：共享检查 10/10；预检适配 6/6（含「不再按控件类型推断必填」）；后端 `page-submit-check` 4/4（提交被拒不改状态、合法提交通过、发布被拒不写日志、合法发布写日志）；新增 E2E `page-check-gate.spec.ts` 2/2（不合法页面：保存草稿通过 + 提交被拦并展示问题；预览只提醒可继续）。
+
+### 本轮回归
+
+- CMS：`vitest run` → **448 passed / 2 skipped**（43 文件通过 / 2 跳过），较上轮 411 增加 37 条。
+- 后端：`jest --runInBand` → **103/103**（11 套件），较上轮 95 增加 8 条。
+- `@cms/ui` → **62/62**（新增 5 条归一化）；`@cms/crs` → 8/8。
+- mock E2E：**45/45**（原 43 + 新增 2），`--workers=2`。
+- `pnpm typecheck` 12 tasks、`pnpm build` 7 tasks、改动文件 ESLint 0 error。
+- UI 治理仍只剩 `Decorate/index.vue` 的既有欠账，本轮无新增。
+
+### 行为变更（有意的）
+
+- 页面检查不再按属性面板控件类型推断必填：说明、辅助文案、可选链接不再被当成错误拦提交。`tests/page-preflight.test.ts` 中「轮播图片为空应报错」的断言随之改为「不阻断」，属规则变更而非降低断言。
+- `PageService` 两条发布日志快照用例的测试数据换成最小合法 Schema（发布前新增校验），日志字段断言未改动。
+
+### 未验证
+
+- 真实模型对新提示词（跨期不继承、targetWarnings）的实际效果：本轮未调用收费模型，仍属人工验收项。
+- 列表入口的提交/发布检查只在 API mock 下验证，未在真实数据上跑；后端校验的事务回滚在单测中由 mock 事务覆盖，未连真实数据库验证。
+- 表单字段编辑器在 1280 / 1440 宽度下的布局与键盘操作未做截图核对。
+- 画布虚拟滚动场景下，问题面板「定位」只能选中组件，滚动到可视区依赖 DOM 是否存在（虚拟列表可能未渲染目标项）。
+
+---
 
 ## 鼠标排序、测试基线与运行时样式收口复核（2026-10-30）
 
