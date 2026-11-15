@@ -25,7 +25,7 @@
     "prepare": "husky install",
     "ci:lint": "pnpm lint",
     "ci:typecheck": "pnpm typecheck",
-    "ci:test": "turbo run test --filter=!@cms/backend -- --run && pnpm --filter @cms/backend exec jest --runInBand",
+    "ci:test": "turbo run test --filter=!@cms/backend && pnpm --filter @cms/backend exec jest --runInBand",
     "ci:build": "pnpm build",
     "ci:quality": "pnpm format:check && pnpm run ci:lint && pnpm run ci:typecheck && pnpm run ci:test && pnpm run ci:build",
     "security:audit": "pnpm audit --audit-level high",

@@ -1,10 +1,12 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local"],
+  "globalDependencies": ["**/.env.*local", "pnpm-lock.yaml"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.{md,png,jpg,jpeg,gif,svg,webp,ico}", "!**/coverage/**"],
+      "env": ["NODE_ENV", "VITE_*"],
       "cache": true
     },
     "dev": {
@@ -13,11 +15,13 @@
     },
     "lint": {
       "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.{md,png,jpg,jpeg,gif,svg,webp,ico}", "!**/coverage/**"],
       "cache": true
     },
     "typecheck": {
       "dependsOn": ["^build"],
       "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.{md,png,jpg,jpeg,gif,svg,webp,ico}", "!**/coverage/**"],
       "cache": true
     },
     "clean": {
@@ -26,14 +30,17 @@
     "test": {
       "dependsOn": ["build"],
       "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!**/coverage/**"],
       "cache": true
     },
     "test:coverage": {
       "dependsOn": ["build"],
       "outputs": ["coverage/**"],
+      "inputs": ["$TURBO_DEFAULT$", "!**/*.md", "!**/coverage/**"],
       "cache": true
     },
     "lint:fix": {
+      "outputs": [],
       "cache": false
     }
   }

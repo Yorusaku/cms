@@ -20,7 +20,8 @@
     "**/*.less"
   ],
   "scripts": {
-    "test": "vitest",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "build": "vue-tsc --noEmit && vite build",
     "dev": "vite build --watch",
