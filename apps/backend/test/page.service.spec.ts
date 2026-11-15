@@ -187,6 +187,26 @@ const createTransactionContext = (options: {
   return { dataSource, savedLogs, savedPages, logRepo, userRepo }
 }
 
+/**
+ * 发布前会跑业务检查（页面标题、组件、表单字段等），
+ * 角色快照用例只关心日志字段，这里给一份最小合法 Schema。
+ */
+const publishableSchema = () => ({
+  version: '2.0.0',
+  pageConfig: { name: '测试页' },
+  componentMap: {
+    'rich-1': {
+      id: 'rich-1',
+      type: 'RichText',
+      parentId: null,
+      children: [],
+      props: { content: '<p>正文</p>' },
+      styles: {}
+    }
+  },
+  rootIds: ['rich-1']
+})
+
 const createTransactionalService = (context: ReturnType<typeof createTransactionContext>) =>
   new PageService(
     { findOne: jest.fn().mockResolvedValue(context.savedPages[0]) } as never,
@@ -200,7 +220,7 @@ describe('PageService 发布日志角色快照', () => {
     const page = makePage({
       id: 12,
       status: 'approved',
-      schema: { pageConfig: {} } as never,
+      schema: publishableSchema() as never,
       reviewedBy: 'u-reviewer'
     })
     const context = createTransactionContext({
@@ -230,7 +250,7 @@ describe('PageService 发布日志角色快照', () => {
     const page = makePage({
       id: 13,
       status: 'approved',
-      schema: { pageConfig: {} } as never,
+      schema: publishableSchema() as never,
       reviewedBy: 'u-missing'
     })
     const context = createTransactionContext({ page, reviewer: null })

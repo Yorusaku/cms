@@ -1,10 +1,18 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException
+} from '@nestjs/common'
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm'
 import { DataSource, EntityManager, ILike, Repository } from 'typeorm'
 import { v4 as uuid } from 'uuid'
 import { Page } from './entities/page.entity'
 import { PublishLog } from './entities/publish-log.entity'
 import { User } from '../auth/entities/user.entity'
+import { readPageScenarioBinding } from '@cms/types'
+import { ScenarioService } from '../scenario/scenario.service'
+import { checkPageForSubmit, type BusinessCheckSchemaLike } from '@cms/types'
 import type { IPageSchemaV2, IComponentSchemaV1 } from '@cms/types'
 
 export interface PublishActor {
@@ -58,7 +66,8 @@ export class PageService {
     @InjectDataSource()
     private readonly dataSource: DataSource,
     @InjectRepository(User)
-    private readonly userRepo: Repository<User>
+    private readonly userRepo: Repository<User>,
+    private readonly scenarioService: ScenarioService
   ) {}
 
   async getPageList(query: PageListQuery): Promise<{
@@ -167,10 +176,33 @@ export class PageService {
     await this.pageRepo.save(page)
   }
 
+  /**
+   * 提交审核 / 发布前的业务检查。
+   *
+   * 与 CMS 编辑器共用 @cms/types 的 checkPageForSubmit：前端拦下的问题这里同样拦，
+   * 绕过前端直接调用接口也会被拒绝。只检查 Schema 本身，不读写其他表。
+   */
+  private assertDeliverable(schema: unknown, action: string): void {
+    const result = checkPageForSubmit((schema ?? {}) as BusinessCheckSchemaLike)
+    if (result.ok) {
+      return
+    }
+    const errors = result.issues.filter(issue => issue.severity === 'error')
+    const detail = errors.map(issue => issue.message).join('；')
+    throw new BadRequestException(`${action}前检查未通过：${detail}`)
+  }
+
   async submitForReview(pageId: number, actor: PublishActor, note?: string): Promise<PageItem> {
     const page = await this.getEditablePage(pageId)
     if (!['draft', 'rejected'].includes(page.status))
       throw new ConflictException('当前页面不能提交审核')
+    // 数据库中的实际 Schema 再校验一次：绕过前端直接调用接口同样会被拒绝
+    this.assertDeliverable(page.schema, '提交审核')
+    // 场景是否存在由后端查询检查（共享包只做格式检查，不依赖数据库）
+    const binding = readPageScenarioBinding((page.schema ?? {}) as BusinessCheckSchemaLike)
+    if (binding) {
+      await this.scenarioService.ensureExists(binding)
+    }
     page.status = 'pending_review'
     page.reviewNote = note?.trim() || null
     page.submittedBy = actor.id
@@ -209,6 +241,12 @@ export class PageService {
       if (!page.schema) throw new ConflictException('页面草稿为空，无法发布')
       if (page.status !== 'approved') {
         throw new ConflictException('页面必须审核通过后才能发布')
+      }
+      // 放在事务内、写快照之前：失败时状态与发布记录都不变
+      this.assertDeliverable(page.schema, '发布')
+      const binding = readPageScenarioBinding(page.schema as BusinessCheckSchemaLike)
+      if (binding) {
+        await this.scenarioService.ensureExists(binding)
       }
       const versionNo = await this.getNextVersionNo(manager, pageId)
       const versionId = `${page.id}-${Date.now()}-${uuid().slice(0, 8)}`
