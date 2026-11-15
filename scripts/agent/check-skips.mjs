@@ -18,11 +18,28 @@ const globs = [
   '*.ps1',
   '.husky/*'
 ]
+/**
+ * 聚焦/跳过只对测试文件生效。
+ * TypeORM 的 `.skip(n)`、`.take(n)` 是合法的分页 API，全量匹配会误伤业务代码。
+ */
+const isTestFile = file => /(__tests__\/|\.(test|spec)\.)/.test(file)
+
 const patterns = [
-  [/\.(only|skip)(?:\s*\.\s*each)?\s*(?:\(|`)/, '移除测试聚焦或跳过'],
-  [/\b(xit|xdescribe|fit|fdescribe)\s*\(/, '移除测试聚焦或跳过别名'],
-  [/\|\|\s*true\b/, '不要吞掉命令失败'],
-  [/eslint-disable(?:-next-line|-line)?\s*(?:\*\/|-->)?\s*$/, 'eslint-disable 必须指定规则名']
+  {
+    re: /\.(only|skip)(?:\s*\.\s*each)?\s*(?:\(|`)/,
+    hint: '移除测试聚焦或跳过',
+    testsOnly: true
+  },
+  {
+    re: /\b(xit|xdescribe|fit|fdescribe)\s*\(/,
+    hint: '移除测试聚焦或跳过别名',
+    testsOnly: true
+  },
+  { re: /\|\|\s*true\b/, hint: '不要吞掉命令失败' },
+  {
+    re: /eslint-disable(?:-next-line|-line)?\s*(?:\*\/|-->)?\s*$/,
+    hint: 'eslint-disable 必须指定规则名'
+  }
 ]
 
 try {
@@ -46,8 +63,9 @@ try {
     if (hunk) lineNumber = Number(hunk[1])
     if (line.startsWith('+') && !line.startsWith('+++')) {
       const content = line.slice(1).trimEnd()
-      for (const [pattern, hint] of patterns) {
-        if (pattern.test(content)) hits.push(`${file}:${lineNumber} ${hint}`)
+      for (const { re, hint, testsOnly } of patterns) {
+        if (testsOnly && !isTestFile(file)) continue
+        if (re.test(content)) hits.push(`${file}:${lineNumber} ${hint}`)
       }
       lineNumber += 1
     } else if (line.startsWith(' ')) lineNumber += 1

@@ -55,3 +55,10 @@ docs/
 
 # Claude workspace
 .claude/
+
+# Agent 本地状态
+.workbuddy/
+.playwright-mcp/
+
+# 工单附件：由 PrivateStorageService 在运行时写入，不进版本库
+apps/backend/ticket-exception-private/
