@@ -23,11 +23,27 @@ default:
 
 quality_gate:
   stage: quality
+  variables:
+    # 守卫脚本要读 base...HEAD 的 diff，浅克隆下基线分支不存在
+    GIT_DEPTH: '0'
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
     - if: '$CI_COMMIT_BRANCH || $CI_COMMIT_TAG'
   script:
     - pnpm run ci:quality
+    - pnpm run check:ui-governance
+    - pnpm run test:coverage
+    - pnpm run test:rules
+    # 以下两项与 GitHub 的 agent-guards job 对齐，只在 MR 场景执行；
+    # 用 set -e 是因为多行块里单条命令失败不会自动中止。
+    - |
+      set -e
+      if [ -n "$CI_MERGE_REQUEST_IID" ]; then
+        export BASE_REF="origin/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}"
+        git fetch --no-tags origin "+refs/heads/${CI_MERGE_REQUEST_TARGET_BRANCH_NAME}:${BASE_REF}"
+        node scripts/agent/check-skips.mjs
+        node scripts/agent/check-deps.mjs
+      fi
     - pnpm check:ui-governance
     - pnpm test:coverage
     - pnpm test:rules
