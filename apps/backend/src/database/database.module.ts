@@ -8,6 +8,11 @@ import { Template } from '../modules/template/entities/template.entity'
 import { Lead } from '../modules/lead/entities/lead.entity'
 import { TrackingEvent } from '../modules/tracking/entities/tracking-event.entity'
 import { AuditLog } from '../modules/lead/entities/audit-log.entity'
+import { TicketException } from '../modules/ticket-exception/entities/ticket-exception.entity'
+import { TicketExceptionAttachment } from '../modules/ticket-exception/entities/ticket-exception-attachment.entity'
+import { BusinessScenario } from '../modules/scenario/entities/business-scenario.entity'
+import { Notification } from '../modules/notification/entities/notification.entity'
+import { TicketExceptionEvent } from '../modules/ticket-exception/entities/ticket-exception-event.entity'
 import { SeedService } from './seed.service'
 
 @Module({
@@ -40,13 +45,39 @@ import { SeedService } from './seed.service'
           username: requireInProduction('DB_USERNAME', 'postgres'),
           password: requireInProduction('DB_PASSWORD', 'postgres'),
           database: requireInProduction('DB_DATABASE', 'cms_platform_resume'),
-          entities: [User, Page, PublishLog, Template, Lead, TrackingEvent, AuditLog],
+          entities: [
+            User,
+            Page,
+            PublishLog,
+            Template,
+            Lead,
+            TrackingEvent,
+            AuditLog,
+            TicketException,
+            TicketExceptionEvent,
+            TicketExceptionAttachment,
+            BusinessScenario,
+            Notification
+          ],
           synchronize: false,
           logging: !isProduction && config.get<string>('NODE_ENV') === 'development'
         }
       }
     }),
-    TypeOrmModule.forFeature([User, Page, PublishLog, Template, Lead, TrackingEvent, AuditLog])
+    TypeOrmModule.forFeature([
+      User,
+      Page,
+      PublishLog,
+      Template,
+      Lead,
+      TrackingEvent,
+      AuditLog,
+      TicketException,
+      TicketExceptionEvent,
+      TicketExceptionAttachment,
+      BusinessScenario,
+      Notification
+    ])
   ],
   providers: [SeedService]
 })

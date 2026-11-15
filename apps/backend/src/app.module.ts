@@ -5,6 +5,9 @@ import { DatabaseModule } from './database/database.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { PageModule } from './modules/page/page.module'
 import { UploadModule } from './modules/upload/upload.module'
+import { TicketExceptionModule } from './modules/ticket-exception/ticket-exception.module'
+import { ScenarioModule } from './modules/scenario/scenario.module'
+import { NotificationModule } from './modules/notification/notification.module'
 import { UserModule } from './modules/user/user.module'
 import { TemplateModule } from './modules/template/template.module'
 import { LeadModule } from './modules/lead/lead.module'
@@ -30,6 +33,9 @@ import { resolve } from 'path'
     TrackingModule,
     AiModule,
     UploadModule,
+    TicketExceptionModule,
+    ScenarioModule,
+    NotificationModule,
     HealthModule
   ],
   providers: [
