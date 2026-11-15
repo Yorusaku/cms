@@ -298,4 +298,77 @@ describe('AI 内容更新建议', () => {
       )
     ).rejects.toBeInstanceOf(BadRequestException)
   })
+
+  it('区块级提醒仅保留本次请求的目标，重复与非目标条目被丢弃并说明', async () => {
+    suggestContentChanges.mockResolvedValue({
+      changes: [
+        {
+          componentId: 'rich-1',
+          type: 'RichText',
+          blocks: [{ type: 'paragraph', text: '设备培训第二期' }]
+        }
+      ],
+      warnings: [],
+      targetWarnings: [
+        { componentId: 'rich-1', message: '第二期日期未提供，请人工确认' },
+        { componentId: 'rich-1', message: '重复条目应被丢弃' },
+        { componentId: 'ghost-1', message: '不属于本次请求' },
+        { componentId: 'notice-1', message: '   ' },
+        'not-an-object'
+      ]
+    })
+
+    const result = await createService().suggestContentChanges(dtoOf(request))
+
+    expect(result.targetWarnings).toEqual([
+      { componentId: 'rich-1', message: '第二期日期未提供，请人工确认' }
+    ])
+    expect(result.warnings.some(item => item.includes('4 条区块提醒'))).toBe(true)
+  })
+
+  it('旧响应没有 targetWarnings 时按空数组处理，不报错', async () => {
+    suggestContentChanges.mockResolvedValue({
+      changes: [
+        {
+          componentId: 'notice-1',
+          type: 'Notice',
+          noticeTexts: ['新公告一', '新公告二']
+        }
+      ],
+      warnings: ['整体说明']
+    })
+
+    const result = await createService().suggestContentChanges(dtoOf(request))
+
+    expect(result.targetWarnings).toEqual([])
+    expect(result.warnings).toEqual(['整体说明'])
+  })
+
+  it('targetWarnings 不是数组时整体忽略并提示', async () => {
+    suggestContentChanges.mockResolvedValue({
+      changes: [
+        {
+          componentId: 'notice-1',
+          type: 'Notice',
+          noticeTexts: ['新公告一', '新公告二']
+        }
+      ],
+      warnings: [],
+      targetWarnings: '格式错误'
+    })
+
+    const result = await createService().suggestContentChanges(dtoOf(request))
+
+    expect(result.targetWarnings).toEqual([])
+    expect(result.warnings.length).toBe(1)
+  })
+
+  it('mock 模式返回空的区块级提醒', async () => {
+    isMockMode.mockReturnValue(true)
+
+    const result = await createService().suggestContentChanges(dtoOf(request))
+
+    expect(result.source).toBe('mock')
+    expect(result.targetWarnings).toEqual([])
+  })
 })

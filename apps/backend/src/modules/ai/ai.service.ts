@@ -1,10 +1,12 @@
 import { BadRequestException, Injectable, ServiceUnavailableException } from '@nestjs/common'
 import {
   AiContentChangeSchema,
+  AiContentTargetWarningSchema,
   AiGeneratePageRequestSchema,
   AiSuggestContentChangesRequestSchema,
   PageSchemaV2Schema,
   type AiContentChange,
+  type AiContentTargetWarning,
   type AiDiagnosePageResponse,
   type AiPageAdvice,
   type AiGeneratePageRequest,
@@ -127,14 +129,25 @@ export class AiService {
     if (draft) {
       const validated = this.validateContentChanges(draft.changes, request)
       const changes = this.dropUnchangedChanges(validated, request)
-      return { source: 'model', changes, warnings: draft.warnings }
+      const { targetWarnings, droppedCount } = this.validateTargetWarnings(
+        draft.targetWarnings,
+        request
+      )
+      const warnings = [...draft.warnings]
+      if (droppedCount > 0) {
+        warnings.push(`有 ${droppedCount} 条区块提醒无法对应到本次处理的对象，已忽略。`)
+      }
+      return { source: 'model', changes, warnings, targetWarnings }
     }
 
     if (this.aiProviderService.isMockMode()) {
       return {
         source: 'mock',
         changes: this.createMockContentChanges(request),
-        warnings: ['当前为示例结果（AI_MOCK_ENABLED=true），未调用真实模型，请勿直接作为正式内容。']
+        warnings: [
+          '当前为示例结果（AI_MOCK_ENABLED=true），未调用真实模型，请勿直接作为正式内容。'
+        ],
+        targetWarnings: []
       }
     }
 
@@ -194,6 +207,47 @@ export class AiService {
     }
 
     return result
+  }
+
+  /**
+   * 校验区块级提醒：componentId 必须来自本次请求，同一目标只保留一条，消息非空。
+   *
+   * 与 changes 不同，提醒属于附加信息：非法条目丢弃而不让整次结果失败，
+   * 但会统计丢弃数量，让调用方在整体 warnings 里说明，避免提醒被静默吞掉。
+   */
+  private validateTargetWarnings(
+    raw: unknown,
+    request: AiSuggestContentChangesRequest
+  ): { targetWarnings: AiContentTargetWarning[]; droppedCount: number } {
+    if (raw === undefined || raw === null) {
+      return { targetWarnings: [], droppedCount: 0 }
+    }
+    if (!Array.isArray(raw)) {
+      return { targetWarnings: [], droppedCount: 1 }
+    }
+
+    const allowed = new Set(request.targets.map(target => target.componentId))
+    const seen = new Set<string>()
+    const targetWarnings: AiContentTargetWarning[] = []
+    let droppedCount = 0
+
+    for (const item of raw) {
+      const parsed = AiContentTargetWarningSchema.safeParse(item)
+      if (!parsed.success) {
+        droppedCount += 1
+        continue
+      }
+      const componentId = parsed.data.componentId
+      const message = parsed.data.message.trim()
+      if (!allowed.has(componentId) || seen.has(componentId) || !message) {
+        droppedCount += 1
+        continue
+      }
+      seen.add(componentId)
+      targetWarnings.push({ componentId, message })
+    }
+
+    return { targetWarnings, droppedCount }
   }
 
   /** 富文本：转义文本后按固定标签生成 HTML，不接受模型提供的标签、属性或 URL */

@@ -14,21 +14,31 @@
       </div>
     </template>
 
-    <!-- 处理对象 -->
+    <!-- 处理对象：生成后同时展示每个目标的处理结果 -->
     <section class="ai-section">
       <p class="ai-section-title">处理对象（{{ supportedCount }} 个可更新）</p>
-      <div v-if="targets.length" class="ai-target-list">
+      <div v-if="targetRows.length" class="ai-target-list">
         <div
-          v-for="target in targets"
-          :key="target.componentId"
+          v-for="row in targetRows"
+          :key="row.componentId"
           class="ai-target-item"
-          :class="{ 'is-disabled': !target.supported }"
+          :class="{ 'is-disabled': !row.supported }"
         >
-          <span class="ai-target-label">{{ target.materialLabel }}</span>
-          <el-tag v-if="!target.supported" size="small" type="info"> 不参与更新 </el-tag>
+          <span class="ai-target-label">{{ row.materialLabel }}</span>
+          <el-tag v-if="!row.supported" size="small" type="info"> 不参与更新 </el-tag>
+          <template v-else-if="generated">
+            <el-tag v-if="row.kind === 'changed'" size="small" type="success"> 有修改建议 </el-tag>
+            <el-tag v-else-if="row.kind === 'unchanged'" size="small" type="info">
+              未返回修改建议
+            </el-tag>
+          </template>
+          <el-tag v-if="row.warnings.length" size="small" type="warning"> 需人工确认 </el-tag>
         </div>
       </div>
       <p v-else class="ai-empty-tip">当前没有选中的区块，请先在画布中选择内容区块。</p>
+      <p v-if="generated && unsupportedCount > 0" class="ai-input-hint">
+        「不参与更新」的区块不在本次处理范围内，内容保持不变。
+      </p>
     </section>
 
     <!-- 资料输入 -->
@@ -58,7 +68,7 @@
       class="ai-alert"
     />
 
-    <!-- 警告 -->
+    <!-- 整体警告 -->
     <el-alert
       v-for="(warning, index) in warnings"
       :key="`warn-${index}`"
@@ -81,31 +91,95 @@
           class="ai-suggestion"
           :class="{ 'is-unchecked': !accepted.has(item.change.componentId) }"
         >
-          <el-checkbox
-            :model-value="accepted.has(item.change.componentId)"
-            @change="toggleAccepted(item.change.componentId)"
+          <div class="ai-suggestion-head">
+            <el-checkbox
+              :model-value="accepted.has(item.change.componentId)"
+              @change="toggleAccepted(item.change.componentId)"
+            >
+              <span class="ai-suggestion-label">{{ item.status.materialLabel }}</span>
+            </el-checkbox>
+            <el-tag v-if="!accepted.has(item.change.componentId)" size="small" type="info">
+              本次不应用
+            </el-tag>
+            <el-tag v-if="item.status.warnings.length" size="small" type="warning">
+              需人工确认
+            </el-tag>
+          </div>
+
+          <p
+            v-for="warning in item.status.warnings"
+            :key="`tw-${warning}`"
+            class="ai-target-warning"
           >
-            <span class="ai-suggestion-label">{{ item.label }}</span>
-          </el-checkbox>
-          <div class="ai-diff">
+            {{ warning }}
+          </p>
+
+          <!-- 表单：逐字段对比，未修改的字段也列出并标记 -->
+          <div v-if="item.status.fields" class="ai-field-diff">
+            <div v-for="field in item.status.fields" :key="field.key" class="ai-field-row">
+              <span class="ai-field-name">{{ field.label }}</span>
+              <span class="ai-field-before">{{ field.before || '（空）' }}</span>
+              <span class="ai-field-arrow">→</span>
+              <span class="ai-field-after" :class="{ 'is-unchanged': !field.changed }">
+                {{ field.changed ? field.after : '未修改' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- 其他物料：原/建议对比 -->
+          <div v-else class="ai-diff">
             <div class="ai-diff-col">
               <p class="ai-diff-title">原内容</p>
-              <pre class="ai-diff-text">{{ item.before }}</pre>
+              <pre class="ai-diff-text">{{ item.status.before || '（空）' }}</pre>
             </div>
             <div class="ai-diff-col">
               <p class="ai-diff-title">建议内容</p>
-              <pre class="ai-diff-text is-after">{{ item.after }}</pre>
+              <pre class="ai-diff-text is-after">{{ item.status.after }}</pre>
             </div>
           </div>
         </div>
       </div>
     </section>
 
+    <!-- 未返回建议：可展开核对原内容 -->
+    <section v-if="unchangedStatuses.length" class="ai-section">
+      <p class="ai-section-title">
+        未返回修改建议（{{ unchangedStatuses.length }} 个，可展开核对原内容）
+      </p>
+      <el-collapse class="ai-unchanged">
+        <el-collapse-item
+          v-for="status in unchangedStatuses"
+          :key="status.componentId"
+          :name="status.componentId"
+        >
+          <template #title>
+            <span class="ai-unchanged-title">
+              {{ status.materialLabel }}
+              <el-tag v-if="status.warnings.length" size="small" type="warning">
+                需人工确认
+              </el-tag>
+            </span>
+          </template>
+          <p v-for="warning in status.warnings" :key="`uw-${warning}`" class="ai-target-warning">
+            {{ warning }}
+          </p>
+          <p class="ai-diff-title">原内容</p>
+          <pre class="ai-diff-text">{{ status.before || '（空）' }}</pre>
+        </el-collapse-item>
+      </el-collapse>
+    </section>
+
+    <!-- 空结果：不能表述为「无需修改」或已验证正确 -->
     <el-empty
-      v-else-if="generated && !loading"
-      description="无需修改：AI 未给出与当前内容不同的建议"
+      v-if="generated && !loading && !suggestions.length"
+      class="ai-empty-result"
       :image-size="72"
-    />
+    >
+      <template #description>
+        <p class="ai-empty-title">未生成修改建议，请核对原内容与提示</p>
+        <p class="ai-empty-note">这不代表模型已确认内容正确，只说明本次没有返回可应用的修改。</p>
+      </template>
+    </el-empty>
 
     <template #footer>
       <div class="ai-dialog-footer">
@@ -129,11 +203,11 @@ import { aiSuggestContentChanges } from '@/api/ai'
 import { usePageStore } from '@/store/usePageStore'
 import {
   buildContentTargetSnapshot,
-  formatChangePreview,
-  formatSnapshotPreview,
+  buildTargetStatuses,
   isTargetUnchanged,
   snapshotToRequestTarget,
-  type AiContentTargetSnapshot
+  type AiContentTargetSnapshot,
+  type AiTargetStatus
 } from '@/utils/ai-content'
 
 const props = defineProps<{
@@ -155,17 +229,12 @@ const visible = computed({
   set: (value: boolean) => emit('update:modelValue', value)
 })
 
-interface SuggestionItem {
-  change: AiContentChange
-  label: string
-  before: string
-  after: string
-}
-
 const loading = ref(false)
 const instruction = ref('')
 const snapshots = ref<AiContentTargetSnapshot[]>([])
-const suggestions = ref<SuggestionItem[]>([])
+/** 每个目标的处理结果（有建议 / 未返回建议 / 不参与更新） */
+const targetStatuses = ref<AiTargetStatus[]>([])
+const changeById = ref<Map<string, AiContentChange>>(new Map())
 const accepted = ref<Set<string>>(new Set())
 const generated = ref(false)
 const source = ref<'model' | 'mock' | null>(null)
@@ -176,12 +245,37 @@ let requestToken = 0
 let openedPageId: number | null = null
 let openedTargetIds: string[] = []
 
-const targets = computed(() =>
-  snapshots.value.map(snapshot => ({
-    componentId: snapshot.componentId,
-    materialLabel: snapshot.materialLabel,
-    supported: snapshot.supported
-  }))
+/** 处理对象列表：生成前只有名称，生成后附带处理结果 */
+const targetRows = computed(() =>
+  snapshots.value.map(snapshot => {
+    const status = targetStatuses.value.find(item => item.componentId === snapshot.componentId)
+    return {
+      componentId: snapshot.componentId,
+      materialLabel: snapshot.materialLabel,
+      supported: snapshot.supported,
+      kind: status?.kind,
+      warnings: status?.warnings ?? []
+    }
+  })
+)
+
+/** 有建议的区块（勾选与应用的唯一来源） */
+const suggestions = computed(() =>
+  targetStatuses.value
+    .filter(status => status.kind === 'changed')
+    .flatMap(status => {
+      const change = changeById.value.get(status.componentId)
+      return change ? [{ status, change }] : []
+    })
+)
+
+/** 未返回建议的区块：可展开核对原内容 */
+const unchangedStatuses = computed(() =>
+  targetStatuses.value.filter(status => status.kind === 'unchanged')
+)
+
+const unsupportedCount = computed(
+  () => targetStatuses.value.filter(status => status.kind === 'unsupported').length
 )
 
 const supportedCount = computed(() => snapshots.value.filter(item => item.supported).length)
@@ -199,7 +293,8 @@ const rebuildTargets = () => {
 }
 
 const resetSuggestions = () => {
-  suggestions.value = []
+  targetStatuses.value = []
+  changeById.value = new Map()
   accepted.value = new Set()
   generated.value = false
   source.value = null
@@ -286,27 +381,22 @@ const generate = async () => {
     source.value = data.source
     warnings.value = data.warnings ?? []
 
-    const snapshotById = new Map(snapshots.value.map(snapshot => [snapshot.componentId, snapshot]))
-    const items: SuggestionItem[] = []
-    for (const change of data.changes ?? []) {
-      const snapshot = snapshotById.get(change.componentId)
-      if (!snapshot) {
-        continue
-      }
-      items.push({
-        change,
-        label: snapshot.materialLabel,
-        before: formatSnapshotPreview(snapshot),
-        after: formatChangePreview(change)
-      })
-    }
-
-    suggestions.value = items
-    accepted.value = new Set(items.map(item => item.change.componentId))
+    // 只采纳属于本次目标的变更；后端已校验，这里再兜一层防止旧响应/异常数据
+    const knownIds = new Set(
+      snapshots.value.filter(snapshot => snapshot.supported).map(snapshot => snapshot.componentId)
+    )
+    const changes = (data.changes ?? []).filter(change => knownIds.has(change.componentId))
+    changeById.value = new Map(changes.map(change => [change.componentId, change]))
+    targetStatuses.value = buildTargetStatuses(snapshots.value, changes, data.targetWarnings ?? [])
+    accepted.value = new Set(
+      targetStatuses.value
+        .filter(status => status.kind === 'changed')
+        .map(status => status.componentId)
+    )
     generated.value = true
 
-    if (items.length === 0) {
-      ElMessage.info('AI 未给出与当前内容不同的建议（无需修改）')
+    if (changes.length === 0) {
+      ElMessage.info('未生成修改建议，请核对原内容与提示')
     }
   } catch (error: unknown) {
     if (token !== requestToken) {
@@ -497,5 +587,99 @@ const applySelected = () => {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+}
+
+/* 建议卡片头部：勾选 + 状态标签 */
+.ai-suggestion-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 区块级提醒：纯文本展示，不使用 v-html */
+.ai-target-warning {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-left: 3px solid var(--color-warning, #e6a23c);
+  border-radius: 4px;
+  background: var(--color-warning-light, #fdf6ec);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-regular, #606266);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* 表单字段级对比 */
+.ai-field-diff {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-field-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) 14px minmax(0, 1fr);
+  align-items: start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: var(--color-bg-page, #f5f7fa);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.ai-field-name {
+  color: var(--color-text-secondary, #4b5563);
+  font-weight: 600;
+}
+
+.ai-field-before {
+  color: var(--color-text-secondary, #4b5563);
+  word-break: break-word;
+}
+
+.ai-field-arrow {
+  color: var(--color-text-tertiary, #9ca3af);
+  text-align: center;
+}
+
+.ai-field-after {
+  color: var(--color-text-primary, #1f2937);
+  word-break: break-word;
+}
+
+.ai-field-after.is-unchanged {
+  color: var(--color-text-tertiary, #9ca3af);
+}
+
+/* 未返回建议的区块 */
+.ai-unchanged {
+  border-top: none;
+}
+
+.ai-unchanged-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--color-text-primary, #1f2937);
+}
+
+/* 空结果说明 */
+.ai-empty-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text-primary, #1f2937);
+}
+
+.ai-empty-note {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--color-text-tertiary, #9ca3af);
 }
 </style>

@@ -63,6 +63,18 @@ const makeSchema = (): IPageSchemaV2 => ({
         ]
       },
       styles: {}
+    },
+    'form-1': {
+      id: 'form-1',
+      type: 'BusinessForm',
+      parentId: null,
+      children: [],
+      props: {
+        title: '设备异常登记',
+        subtitle: '联系人和联系电话必填',
+        submitText: '提交登记'
+      },
+      styles: {}
     }
   },
   rootIds: ['rich-1', 'notice-1', 'product-1']
@@ -85,7 +97,7 @@ const stubs = {
   },
   'el-empty': {
     props: ['description'],
-    template: `<div class="stub-empty">{{ description }}</div>`
+    template: `<div class="stub-empty">{{ description }}<slot name="description" /><slot /></div>`
   },
   'el-checkbox': {
     props: ['modelValue'],
@@ -96,6 +108,11 @@ const stubs = {
     props: ['modelValue'],
     emits: ['update:modelValue'],
     template: `<textarea class="stub-input" :value="modelValue" @input="$emit('update:modelValue', $event.target.value)" />`
+  },
+  'el-collapse': { template: `<div class="stub-collapse"><slot /></div>` },
+  'el-collapse-item': {
+    props: ['name'],
+    template: `<div class="stub-collapse-item"><slot name="title" /><slot /></div>`
   },
   'el-icon': { template: `<i><slot /></i>` }
 }
@@ -191,7 +208,7 @@ describe('AiContentUpdateDialog', () => {
     expect(changes[0].componentId).toBe('notice-1')
   })
 
-  it('建议与当前一致时提示无需修改，不触发应用', async () => {
+  it('全部目标无建议时不宣称无需修改，只提示核对原内容且不触发应用', async () => {
     const store = usePageStore()
     store.importPageSchema(makeSchema())
     const applySpy = vi.spyOn(store, 'applyContentChanges')
@@ -207,7 +224,11 @@ describe('AiContentUpdateDialog', () => {
     await findButtonByText(wrapper, '生成建议')!.trigger('click')
     await flushPromises()
 
-    expect(wrapper.text()).toContain('无需修改')
+    // 不能表述为「无需修改」或已验证正确
+    expect(wrapper.text()).toContain('未生成修改建议，请核对原内容与提示')
+    expect(wrapper.text()).not.toContain('无需修改')
+    // 但仍要标明该区块是「未返回修改建议」，让用户看到处理结果
+    expect(wrapper.text()).toContain('未返回修改建议')
     const applyButton = findButtonByText(wrapper, '应用选中修改')
     expect(applyButton?.attributes('disabled')).toBeDefined()
     expect(applySpy).not.toHaveBeenCalled()
@@ -456,5 +477,189 @@ describe('AiContentUpdateDialog', () => {
 
     const emitted = wrapper.emitted('update:modelValue')
     expect(emitted?.[0]).toEqual([false])
+  })
+
+  it('部分返回时逐项标注处理结果：有建议 / 未返回 / 不参与', async () => {
+    const store = usePageStore()
+    store.importPageSchema(makeSchema())
+
+    suggestMock.mockResolvedValue({
+      code: 10000,
+      data: {
+        source: 'model',
+        changes: [
+          {
+            componentId: 'notice-1',
+            type: 'Notice',
+            noticeTexts: ['新公告'],
+            html: undefined
+          }
+        ],
+        warnings: []
+      }
+    })
+
+    const wrapper = mountDialog(['rich-1', 'notice-1', 'product-1'])
+    await wrapper.find('.stub-input').setValue('只更新公告')
+    await findButtonByText(wrapper, '生成建议')!.trigger('click')
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('有修改建议')
+    expect(text).toContain('未返回修改建议')
+    expect(text).toContain('不参与更新')
+    // 未返回建议的区块要能展开看到原内容，而不是一句「无需修改」带过
+    expect(text).toContain('可展开核对原内容')
+    expect(text).toContain('旧正文')
+  })
+
+  it('展示区块级提醒并标注需人工确认', async () => {
+    const store = usePageStore()
+    store.importPageSchema(makeSchema())
+
+    suggestMock.mockResolvedValue({
+      code: 10000,
+      data: {
+        source: 'model',
+        changes: [
+          {
+            componentId: 'rich-1',
+            type: 'RichText',
+            blocks: [{ type: 'paragraph', text: '设备培训第二期' }],
+            html: '<p>设备培训第二期</p>'
+          }
+        ],
+        warnings: ['整体说明'],
+        targetWarnings: [
+          {
+            componentId: 'rich-1',
+            message: '第二期的日期与费用尚未提供，请人工确认后再使用'
+          }
+        ]
+      }
+    })
+
+    const wrapper = mountDialog(['rich-1', 'notice-1'])
+    await wrapper.find('.stub-input').setValue('改成第二期')
+    await findButtonByText(wrapper, '生成建议')!.trigger('click')
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('需人工确认')
+    expect(text).toContain('第二期的日期与费用尚未提供，请人工确认后再使用')
+    // 提醒是纯文本，不应作为 HTML 渲染
+    expect(wrapper.html()).not.toContain('<script')
+  })
+
+  it('旧响应没有 targetWarnings 时按无定向提醒处理', async () => {
+    const store = usePageStore()
+    store.importPageSchema(makeSchema())
+
+    suggestMock.mockResolvedValue({
+      code: 10000,
+      data: {
+        source: 'model',
+        changes: [
+          {
+            componentId: 'rich-1',
+            type: 'RichText',
+            blocks: [{ type: 'paragraph', text: '兼容旧响应' }],
+            html: '<p>兼容旧响应</p>'
+          }
+        ],
+        warnings: []
+        // 没有 targetWarnings 字段
+      }
+    })
+
+    const wrapper = mountDialog(['rich-1'])
+    await wrapper.find('.stub-input').setValue('更新')
+    await findButtonByText(wrapper, '生成建议')!.trigger('click')
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('有修改建议')
+    expect(text).not.toContain('需人工确认')
+    expect(text).toContain('兼容旧响应')
+  })
+
+  it('表单建议逐字段对比，未修改字段明确标注', async () => {
+    const store = usePageStore()
+    store.importPageSchema(makeSchema())
+
+    suggestMock.mockResolvedValue({
+      code: 10000,
+      data: {
+        source: 'model',
+        changes: [
+          {
+            componentId: 'form-1',
+            type: 'BusinessForm',
+            title: '设备报修登记'
+          }
+        ],
+        warnings: []
+      }
+    })
+
+    const wrapper = mountDialog(['form-1'])
+    await wrapper.find('.stub-input').setValue('统一叫设备报修登记')
+    await findButtonByText(wrapper, '生成建议')!.trigger('click')
+    await flushPromises()
+
+    const fields = wrapper.findAll('.ai-field-row')
+    expect(fields).toHaveLength(3)
+    const text = fields.map(field => field.text().replace(/\s+/g, ' '))
+    expect(text[0]).toContain('标题')
+    expect(text[0]).toContain('设备异常登记')
+    expect(text[0]).toContain('设备报修登记')
+    expect(text[1]).toContain('说明')
+    expect(text[1]).toContain('未修改')
+    expect(text[2]).toContain('提交文案')
+    expect(text[2]).toContain('未修改')
+  })
+
+  it('取消勾选后标注本次不应用，且该区块不写入', async () => {
+    const store = usePageStore()
+    store.importPageSchema(makeSchema())
+    const applySpy = vi.spyOn(store, 'applyContentChanges')
+
+    suggestMock.mockResolvedValue({
+      code: 10000,
+      data: {
+        source: 'model',
+        changes: [
+          {
+            componentId: 'rich-1',
+            type: 'RichText',
+            blocks: [{ type: 'paragraph', text: '新正文' }],
+            html: '<p>新正文</p>'
+          },
+          {
+            componentId: 'notice-1',
+            type: 'Notice',
+            noticeTexts: ['新公告']
+          }
+        ],
+        warnings: []
+      }
+    })
+
+    const wrapper = mountDialog(['rich-1', 'notice-1'])
+    await wrapper.find('.stub-input').setValue('两个都改')
+    await findButtonByText(wrapper, '生成建议')!.trigger('click')
+    await flushPromises()
+
+    // 取消第一个建议
+    await wrapper.findAll('.stub-checkbox')[0].trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('本次不应用')
+
+    await findButtonByText(wrapper, '应用选中修改')!.trigger('click')
+    await flushPromises()
+
+    expect(applySpy).toHaveBeenCalledTimes(1)
+    const applied = applySpy.mock.calls[0][0] as Array<{ componentId: string }>
+    expect(applied.map(item => item.componentId)).toEqual(['notice-1'])
   })
 })

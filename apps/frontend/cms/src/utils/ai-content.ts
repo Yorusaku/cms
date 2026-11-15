@@ -2,6 +2,7 @@ import type {
   AiContentChange,
   AiContentTarget,
   AiContentTargetType,
+  AiContentTargetWarning,
   IComponentSchemaV2
 } from '@cms/types'
 import { resolveMaterialDefinition } from '@cms/ui'
@@ -236,4 +237,105 @@ export function formatChangePreview(change: AiContentChange): string {
   ]
     .filter(Boolean)
     .join('\n')
+}
+
+/* ------------------------------------------------------------------ */
+/* 目标处理状态：区分「有建议 / 未返回建议 / 不参与更新」                 */
+/* ------------------------------------------------------------------ */
+
+export type AiTargetStatusKind = 'changed' | 'unchanged' | 'unsupported'
+
+/** BusinessForm 的字段级对比：未修改的字段也要列出来并明确标记 */
+export interface AiTargetFieldDiff {
+  key: 'title' | 'subtitle' | 'submitText'
+  label: string
+  before: string
+  /** 模型给出的新值；null 表示本次未建议修改该字段 */
+  after: string | null
+  changed: boolean
+}
+
+export interface AiTargetStatus {
+  componentId: string
+  materialLabel: string
+  kind: AiTargetStatusKind
+  /** 原内容纯文本预览（未返回建议时供用户核对） */
+  before: string
+  /** 建议内容纯文本预览（仅 kind=changed） */
+  after?: string
+  /** BusinessForm 字段级对比（仅 kind=changed） */
+  fields?: AiTargetFieldDiff[]
+  /** 该目标需要人工确认的提醒 */
+  warnings: string[]
+}
+
+const BUSINESS_FORM_FIELDS = [
+  { key: 'title', label: '标题' },
+  { key: 'subtitle', label: '说明' },
+  { key: 'submitText', label: '提交文案' }
+] as const
+
+/** 表单三个文字属性的逐项对比；未出现在建议里的字段保留原值并标记未修改 */
+export function buildBusinessFormFieldDiffs(
+  snapshot: AiContentTargetSnapshot,
+  change: AiContentChange | undefined
+): AiTargetFieldDiff[] {
+  return BUSINESS_FORM_FIELDS.map(({ key, label }) => {
+    const before = snapshot[key] ?? ''
+    const raw = change?.[key]
+    const after = typeof raw === 'string' ? raw : null
+    return {
+      key,
+      label,
+      before,
+      after,
+      changed: after !== null && after !== before
+    }
+  })
+}
+
+/**
+ * 汇总每个目标的处理结果，供弹窗逐项展示。
+ *
+ * 注意：kind=unchanged 只说明「模型没有返回该区块的修改建议」，
+ * 不代表模型确认内容正确 —— 展示文案必须区分这两件事。
+ */
+export function buildTargetStatuses(
+  snapshots: AiContentTargetSnapshot[],
+  changes: AiContentChange[],
+  targetWarnings: AiContentTargetWarning[] = []
+): AiTargetStatus[] {
+  const changeById = new Map(changes.map(change => [change.componentId, change]))
+  const warningById = new Map<string, string[]>()
+  for (const warning of targetWarnings) {
+    const list = warningById.get(warning.componentId) ?? []
+    list.push(warning.message)
+    warningById.set(warning.componentId, list)
+  }
+
+  return snapshots.map(snapshot => {
+    const base = {
+      componentId: snapshot.componentId,
+      materialLabel: snapshot.materialLabel,
+      before: formatSnapshotPreview(snapshot),
+      warnings: warningById.get(snapshot.componentId) ?? []
+    }
+
+    if (!snapshot.supported) {
+      return { ...base, kind: 'unsupported' as const }
+    }
+
+    const change = changeById.get(snapshot.componentId)
+    if (!change) {
+      return { ...base, kind: 'unchanged' as const }
+    }
+
+    return {
+      ...base,
+      kind: 'changed' as const,
+      after: formatChangePreview(change),
+      fields:
+        snapshot.type === 'BusinessForm' ? buildBusinessFormFieldDiffs(snapshot, change) : undefined
+    }
+  })
 }

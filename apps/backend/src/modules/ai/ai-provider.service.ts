@@ -12,6 +12,8 @@ export interface AiContentSuggestionDraft {
   /** 模型返回的原始 changes（未校验，交由 AiService 做协议与业务校验） */
   changes: unknown
   warnings: string[]
+  /** 模型返回的区块级提醒（未校验，交由 AiService 校验 componentId 归属） */
+  targetWarnings?: unknown
 }
 
 interface OpenAiChatResponse {
@@ -103,7 +105,8 @@ export class AiProviderService {
         changes: record.changes,
         warnings: Array.isArray(record.warnings)
           ? record.warnings.filter((item): item is string => typeof item === 'string')
-          : []
+          : [],
+        targetWarnings: record.targetWarnings
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'unknown error'
@@ -192,7 +195,7 @@ export class AiProviderService {
     return [
       '你是内部运营平台的内容编辑助手，只负责按用户提供的新资料修改已有页面区块的文字内容，不生成页面结构。',
       '只能输出 JSON，不要输出 Markdown。输出结构：',
-      '{"changes": [{"componentId": "组件ID", "type": "RichText|Notice|BusinessForm", "...": "该类型允许的字段"}], "warnings": ["可选说明"]}',
+      '{"changes": [{"componentId": "组件ID", "type": "RichText|Notice|BusinessForm", "...": "该类型允许的字段"}], "warnings": ["可选说明"], "targetWarnings": [{"componentId": "组件ID", "message": "该区块需要人工确认的原因"}]}',
       '规则：',
       '1. 只处理输入 targets 中列出的组件；componentId 必须原样来自输入，不得新增、不得重复；',
       '2. RichText 只返回 blocks 数组（元素为 {"type":"heading"|"paragraph","text":"..."} 或 {"type":"list","ordered":true|false,"items":["..."]}），不要输出 HTML、标签、属性或链接；',
@@ -201,7 +204,10 @@ export class AiProviderService {
       '5. 严格依据用户提供的资料修改；资料中未要求修改的事实保持不变；',
       '6. 不得自行补充日期、费用、办理时限、联系方式或其他承诺，资料未提供就保持原文或不修改；',
       '7. 无法满足的要求写入 warnings 说明原因，不要编造；',
-      '8. 某个目标不需要修改时不要返回该项。'
+      '8. 某个目标不需要修改时不要返回该项；',
+      '9. 跨期或跨对象更新（例如把第一期资料改成第二期）时，不得把原对象的日期、地点、费用、报名截止时间、办理时限、名额或承诺默认沿用到新对象；原内容里属于旧对象的事实若资料未给出新值，必须删除或改写为「待定/以正式通知为准」，并在 targetWarnings 中提示运营人员确认；',
+      '10. 报名、开放、可预约等状态同样不得沿用；资料只说名称已确定、其他未定时，不得写成「报名中」「即将开放」「免费」等未提供的新说法；',
+      '11. targetWarnings 只能指向本次请求中的 componentId，每条说明一句原因；整体性问题放在 warnings。'
     ].join('\n')
   }
 
