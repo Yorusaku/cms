@@ -52,6 +52,10 @@ export interface IPageSchemaV2 {
   version: '2.0.0'
   pageConfig: Record<string, unknown> & {
     scene?: BusinessPageScene
+    /** 布局模式：mobile 沿用 375 vw 基准；business 使用固定字号与桌面自适应 */
+    layoutMode?: PageLayoutMode
+    /** 业务场景绑定（UUID）：含票据表单 / 票据远程列表的页面必须绑定 */
+    businessScenarioId?: string
   }
   state?: Record<string, unknown>
   componentMap: Record<string, IComponentSchemaV2>
@@ -64,6 +68,18 @@ export interface IPageSchemaV2 {
 }
 
 export type BusinessPageScene = 'content' | 'form' | 'list'
+
+/**
+ * 页面布局模式。
+ * - mobile：默认，沿用 375 设计稿等比缩放（营销 H5 旧行为）；
+ * - business：字号不随视口放大，内容居中限宽，适合内部业务页在桌面使用。
+ */
+export type PageLayoutMode = 'mobile' | 'business'
+
+export const PAGE_LAYOUT_MODES: PageLayoutMode[] = ['mobile', 'business']
+
+export const isPageLayoutMode = (value: unknown): value is PageLayoutMode =>
+  value === 'mobile' || value === 'business'
 
 export type IComponentSchema = IComponentSchemaV2
 export type IPageSchema = IPageSchemaV2

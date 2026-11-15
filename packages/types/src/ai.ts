@@ -291,10 +291,26 @@ export const AiContentChangeSchema = z
   })
 export type AiContentChange = z.infer<typeof AiContentChangeSchema>
 
+/**
+ * 区块级提醒：指向某个目标组件的说明（如「本次未提供第二期日期，请人工确认」）。
+ * componentId 由服务端校验必须属于本次请求，避免模型把提醒挂到无关组件上。
+ */
+export const AiContentTargetWarningSchema = z.object({
+  componentId: z.string().min(1).max(120),
+  message: z.string().min(1).max(300)
+})
+export type AiContentTargetWarning = z.infer<typeof AiContentTargetWarningSchema>
+
 export const AiSuggestContentChangesResponseSchema = z.object({
   /** model = 真实模型结果；mock = AI_MOCK_ENABLED=true 的示例结果 */
   source: z.enum(['model', 'mock']),
   changes: z.array(AiContentChangeSchema),
-  warnings: z.array(z.string())
+  /** 无法明确归属到单个目标的整体说明 */
+  warnings: z.array(z.string()),
+  /**
+   * 区块级提醒。可选：旧响应没有该字段时按「无定向提醒」处理。
+   * 未在这里出现的目标不代表已验证正确，只表示模型没有给出针对性说明。
+   */
+  targetWarnings: z.array(AiContentTargetWarningSchema).optional()
 })
 export type AiSuggestContentChangesResponse = z.infer<typeof AiSuggestContentChangesResponseSchema>

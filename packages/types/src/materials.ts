@@ -84,6 +84,29 @@ export interface MaterialArrayFieldSchema extends MaterialSchemaBase {
   showText?: boolean
 }
 
+/**
+ * 业务表单字段编辑器。
+ *
+ * 只服务 BusinessForm 的字段列表，不扩展成通用嵌套表单设计器：
+ * - 结构化编辑字段数组（名称 / 占位 / 必填 / 类型 / 下拉选项）；
+ * - 通过 mirrorPath 原子同步 JSON 镜像属性（BusinessForm 的 fieldsJson 优先于
+ *   fields，只写一个会出现「保存后配置回退」）；
+ * - 历史页面可能只有 fields 而没有可用 fieldsJson，两者都要能读。
+ */
+export interface MaterialFormFieldsFieldSchema extends MaterialInputFieldSchema {
+  type: 'formFields'
+  /** 字段数组属性路径（如 fields） */
+  path: string
+  /** JSON 镜像属性路径（如 fieldsJson）；写入时与字段数组保持同步 */
+  mirrorPath?: string
+  /** 是否要求姓名/手机号基础字段（BusinessForm 需要，票据异常表单不需要） */
+  requireBaseFields?: boolean
+  /** 是否允许空列表（票据异常表单的扩展字段可以一个都没有） */
+  allowEmpty?: boolean
+  /** 保留 key：扩展字段不得占用（如票据异常的固定字段） */
+  reservedKeys?: string[]
+}
+
 export type MaterialFieldSchema =
   | MaterialSectionSchema
   | MaterialTextFieldSchema
@@ -94,6 +117,7 @@ export type MaterialFieldSchema =
   | MaterialImageFieldSchema
   | MaterialLinkFieldSchema
   | MaterialArrayFieldSchema
+  | MaterialFormFieldsFieldSchema
 
 export interface MaterialEditorSchema {
   sections: MaterialSectionSchema[]
