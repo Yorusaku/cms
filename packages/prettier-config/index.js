@@ -8,5 +8,7 @@ export default {
   useTabs: false,
   bracketSpacing: true,
   arrowParens: 'avoid',
-  vueIndentScriptAndStyle: false
+  vueIndentScriptAndStyle: false,
+  // Windows 检出是 CRLF、CI 是 LF；固定 lf 会让本地 format:check 全是假阳性
+  endOfLine: 'auto'
 }
