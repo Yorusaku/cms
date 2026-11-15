@@ -7,9 +7,17 @@ interface Props {
   pageSchema: IPageSchemaV2
   pageId?: number
   publishedVersionId?: string
+  /** 预览模式：预览页禁用表单写入，正式发布页不传 */
+  previewMode?: boolean
 }
 
 const props = defineProps<Props>()
+
+/**
+ * 业务布局：字号按 375 设计稿固定，内容居中限宽。
+ * 缺省仍是 mobile（旧营销页），不改变现有表现。
+ */
+const isBusinessLayout = computed(() => props.pageSchema.pageConfig?.layoutMode === 'business')
 
 // V2架构下不再需要组件映射，由RenderNode处理
 
@@ -42,7 +50,11 @@ const pageBackgroundStyle = computed(() => {
 </script>
 
 <template>
-  <div class="schema-renderer min-h-screen w-full" :style="pageBackgroundStyle">
+  <div
+    class="schema-renderer min-h-screen w-full"
+    :class="{ 'layout-business': isBusinessLayout }"
+    :style="pageBackgroundStyle"
+  >
     <!-- 渲染页面组件 -->
     <div class="page-components">
       <template v-for="nodeId in pageSchema.rootIds" :key="nodeId">
@@ -51,6 +63,7 @@ const pageBackgroundStyle = computed(() => {
           :component-map="pageSchema.componentMap"
           :page-id="pageId"
           :published-version-id="publishedVersionId"
+          :preview-mode="previewMode"
         />
       </template>
     </div>
@@ -79,6 +92,46 @@ const pageBackgroundStyle = computed(() => {
 
 .page-components {
   width: 100%;
+}
+
+/*
+ * business 布局：
+ * --design-vw 把设计稿换算基准限制在 375，字号不随浏览器宽度放大；
+ * 宽度靠 max-width + 居中控制，列表占满内容宽度，表单单独限宽。
+ */
+.layout-business {
+  --design-vw: calc(min(100vw, 375px) / 100);
+  background-color: var(--color-bg-page, #f5f7fa);
+}
+
+.layout-business .page-components {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 24px 16px 32px;
+  box-sizing: border-box;
+}
+
+.layout-business :deep(.ticket-exception-form),
+.layout-business :deep(.business-form-block) {
+  width: 100%;
+  max-width: 720px;
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.layout-business :deep(.ticket-exception-form h3),
+.layout-business :deep(.business-list-block h3) {
+  font-size: 22px;
+}
+
+/* 正文与说明统一 14px：业务页在小屏与桌面下字号一致 */
+.layout-business :deep(.ticket-exception-form .field-label),
+.layout-business :deep(.business-list-block .list-header p),
+.layout-business :deep(.business-list-block .list-header h3 + p) {
+  font-size: 14px;
 }
 
 .empty-state {

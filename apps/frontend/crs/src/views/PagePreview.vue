@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="page-preview-container">
-    <SchemaRenderer :page-schema="pageStore.pageSchema" :page-id="pageId" />
+    <SchemaRenderer :page-schema="pageStore.pageSchema" :page-id="pageId" preview-mode />
   </div>
 </template>
 

@@ -32,6 +32,30 @@ const inlineUiDistCss = () => ({
   }
 })
 
+/**
+ * 把 px-to-viewport 产出的 `Nvw` 改成 `calc(N * var(--design-vw, 1vw))`。
+ *
+ * 默认 `--design-vw: 1vw`，与改造前等价（旧营销页行为不变）。
+ * business 布局把该变量限制成 `calc(min(100vw, 375px) / 100)`，
+ * 于是设计稿 16px 在任何视口下都等于 16px，字号不再随浏览器宽度放大；
+ * 布局宽度由容器百分比与 max-width 单独控制，不靠放大字体撑满。
+ *
+ * 只改写「纯 vw 数值」，并跳过 100vw（页面级整宽不能被压缩到 375）。
+ */
+const cappedDesignVw = () => ({
+  postcssPlugin: 'capped-design-vw',
+  // 用 Once 一次性遍历，不要用 Declaration visitor：
+  // 在 visitor 里改 decl.value 会让 postcss 重新访问该节点，形成无限循环（构建卡死）。
+  Once(root) {
+    root.walkDecls(decl => {
+      if (!decl.value || !decl.value.includes('vw')) return
+      decl.value = decl.value.replace(/(-?\d*\.?\d+)vw\b/g, (matched, number) =>
+        number === '100' ? matched : `calc(${number} * var(--design-vw, 1vw))`
+      )
+    })
+  }
+})
+
 export default {
   plugins: [
     inlineUiDistCss(),
@@ -44,11 +68,14 @@ export default {
       viewportWidth: 375,
       unitPrecision: 3,
       viewportUnit: 'vw',
-      selectorBlackList: [],
+      // business 布局的规则保留原始 px：它们定义的是「不随视口缩放」的
+      // 基准变量、内容宽度与字号，被换成 vw 后又会乘一次 design-vw，直接翻倍。
+      selectorBlackList: [/layout-business/],
       minPixelValue: 1,
       mediaQuery: false,
       exclude: []
     }),
+    cappedDesignVw(),
     autoprefixer()
   ]
 }

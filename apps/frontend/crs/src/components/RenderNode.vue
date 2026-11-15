@@ -24,6 +24,8 @@ interface Props {
   componentMap: Record<string, IComponentSchemaV2>
   pageId?: number
   publishedVersionId?: string
+  /** 预览模式：预览页把表单切成只读（禁止真实写入） */
+  previewMode?: boolean
   /** 祖先组件链（自顶向下，格式 `type:id`），供埋点携带上下文 */
   ancestorPath?: string[]
 }
@@ -53,7 +55,7 @@ const resolveComponent = (type: string) => {
  * 需要页面上下文才能完成提交的物料：线索表单与业务表单。
  * 发布页/预览页都必须拿到真实 pageId 与 publishedVersionId。
  */
-const FORM_MATERIAL_TYPES = ['LeadForm', 'BusinessForm']
+const FORM_MATERIAL_TYPES = ['LeadForm', 'BusinessForm', 'TicketExceptionForm']
 
 const shouldRender = computed(() => {
   if (!currentNode.value) return false
@@ -77,8 +79,13 @@ const updateMergedProps = () => {
     ...(FORM_MATERIAL_TYPES.includes(currentNode.value.type)
       ? {
           pageId: props.pageId,
-          publishedVersionId: props.publishedVersionId
+          publishedVersionId: props.publishedVersionId,
+          previewMode: props.previewMode === true
         }
+      : {}),
+    // 票据异常需要组件 ID 定位表单（其他表单不感知，避免多余 attr）
+    ...(currentNode.value.type === 'TicketExceptionForm'
+      ? { componentId: currentNode.value.id }
       : {})
   }
 }
@@ -116,6 +123,27 @@ const handleClick = async () => {
  * 再由页面 schema 里的 linkages 决定流向哪个目标组件。
  * 只桥接物料定义中登记的受控事件（runtimeEventProperties），不设计通用事件编排。
  */
+/**
+ * 表单未登录：带当前站内路径去登录页，登录后回到原页面继续填写。
+ * 不自动提交，表单内容由组件自己留在 sessionStorage 草稿里。
+ */
+const requireLoginHandler = inject<(() => void) | null>('businessRequireLogin', null)
+
+/**
+ * 表单未登录：交给页面端打开内嵌登录（提供方决定是弹层还是跳转）。
+ * 页面组件不卸载，已填内容自然保留；登录不会自动提交。
+ */
+const handleRequireLogin = () => {
+  requireLoginHandler?.()
+}
+
+const openRecordHandler = inject<((id: number) => void) | null>('businessOpenRecord', null)
+
+/** 查看登记结果：交给页面端路由跳转，组件不直接改 hash */
+const handleViewResult = (id: number) => {
+  openRecordHandler?.(id)
+}
+
 const handleFilterChange = (payload: { filteredCount: number }) => {
   if (!currentNode.value) return
   pageStore.linkageEngine.triggerLinkage(
@@ -127,8 +155,10 @@ const handleFilterChange = (payload: { filteredCount: number }) => {
 
 let unsubscribe: (() => void) | null = null
 
+// 缓存命中的异步物料可能立即挂载，首屏属性不能等父节点 mounted 才赋值。
+updateMergedProps()
+
 onMounted(() => {
-  updateMergedProps()
   unsubscribe = pageStore.linkageEngine.subscribe(props.nodeId, () => {
     updateMergedProps()
   })
@@ -155,33 +185,33 @@ watch(
 </script>
 
 <template>
-  <Suspense v-if="shouldRender && currentNode">
-    <component
-      :is="resolveComponent(currentNode.type)"
-      :key="currentNode.id"
-      v-bind="mergedProps"
-      :styles="currentNode.styles"
-      @click.stop="handleClick"
-      @filter-change="handleFilterChange"
-    >
-      <template v-for="childId in currentNode.children" :key="childId">
-        <RenderNode
-          :node-id="childId"
-          :component-map="componentMap"
-          :page-id="pageId"
-          :published-version-id="publishedVersionId"
-          :ancestor-path="childAncestorPath"
-        />
-      </template>
-    </component>
-
-    <template #fallback>
-      <div class="component-loading">
-        <div class="loading-spinner"></div>
-        <span>组件加载中...</span>
-      </div>
+  <!--
+    不用 Suspense：物料是异步组件，Suspense 在本页卸载（如跳详情页）时
+    会触发 Vue 的 vnode 断言错误，导致路由已切换但视图不更新。
+    物料 chunk 很小，异步组件自身解析即可。
+  -->
+  <component
+    :is="resolveComponent(currentNode.type)"
+    v-if="shouldRender && currentNode"
+    :key="currentNode.id"
+    v-bind="mergedProps"
+    :styles="currentNode.styles"
+    @click.stop="handleClick"
+    @filter-change="handleFilterChange"
+    @require-login="handleRequireLogin"
+    @view-result="handleViewResult"
+  >
+    <template v-for="childId in currentNode.children" :key="childId">
+      <RenderNode
+        :node-id="childId"
+        :component-map="componentMap"
+        :page-id="pageId"
+        :published-version-id="publishedVersionId"
+        :preview-mode="previewMode"
+        :ancestor-path="childAncestorPath"
+      />
     </template>
-  </Suspense>
+  </component>
 </template>
 
 <style scoped>

@@ -24,6 +24,38 @@ const routes: Array<RouteRecordRaw> = [
     meta: {
       title: '业务页面'
     }
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/Login.vue'),
+    meta: {
+      title: '业务登录'
+    }
+  },
+  {
+    path: '/notifications',
+    name: 'Notifications',
+    component: () => import('../views/Notifications.vue'),
+    meta: {
+      title: '消息'
+    }
+  },
+  {
+    path: '/myTickets',
+    name: 'MyTickets',
+    component: () => import('../views/MyTickets.vue'),
+    meta: {
+      title: '我的记录'
+    }
+  },
+  {
+    path: '/ticketException',
+    name: 'TicketExceptionDetail',
+    component: () => import('../views/TicketExceptionDetail.vue'),
+    meta: {
+      title: '异常详情'
+    }
   }
 ]
 
