@@ -39,6 +39,21 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/Activity.vue')
   },
   {
+    path: '/business-scenario',
+    name: 'BusinessScenario',
+    component: () => import('@/views/ScenarioManage.vue')
+  },
+  {
+    path: '/notifications',
+    name: 'Notifications',
+    component: () => import('@/views/NotificationList.vue')
+  },
+  {
+    path: '/ticket-exception',
+    name: 'TicketException',
+    component: () => import('@/views/TicketExceptionList.vue')
+  },
+  {
     path: '/performance',
     name: 'Performance',
     component: () => import('@/views/Performance.vue')
