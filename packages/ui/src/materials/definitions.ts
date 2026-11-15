@@ -1603,11 +1603,12 @@ export const materialRegistry: MaterialRegistryItem[] = [
               { type: 'text', path: 'successText', label: '成功提示' },
               { type: 'text', path: 'errorText', label: '失败提示' },
               {
-                type: 'textarea',
-                path: 'fieldsJson',
-                label: '字段配置(JSON)',
-                rows: 8,
-                placeholder: '[{"key":"name","label":"姓名","type":"text","required":true}]'
+                type: 'formFields',
+                path: 'fields',
+                mirrorPath: 'fieldsJson',
+                label: '表单字段',
+                description:
+                  '姓名与手机号为固定基础字段，可改显示名称但不可删除或改 key；其余字段可增删、排序与配置下拉选项'
               }
             ]
           }
@@ -1616,13 +1617,31 @@ export const materialRegistry: MaterialRegistryItem[] = [
     },
     normalizeProps: props => {
       const normalizedProps = toRecord(props)
-      const fields = parseJsonArray<Record<string, unknown>>(
-        normalizedProps.fieldsJson ?? normalizedProps.fields,
-        [
-          { key: 'name', label: '姓名', type: 'text', required: true },
-          { key: 'phone', label: '联系电话', type: 'text', required: true }
-        ]
-      ).map(field => ({
+      /*
+       * fieldsJson 优先于 fields（历史约定）。若 fieldsJson 不是合法 JSON，
+       * 不能把它静默替换成默认字段后再写回去 —— 那样原始配置就永久丢失了。
+       * 这里保留原文交给编辑器提示，字段回落到 fields（或默认基础字段）。
+       */
+      const rawFieldsJson =
+        typeof normalizedProps.fieldsJson === 'string' ? normalizedProps.fieldsJson : ''
+      let fieldsFromJson: unknown
+      let fieldsJsonInvalid = false
+      if (rawFieldsJson.trim()) {
+        try {
+          fieldsFromJson = JSON.parse(rawFieldsJson)
+        } catch {
+          fieldsJsonInvalid = true
+        }
+      }
+
+      const fieldSource = fieldsJsonInvalid
+        ? normalizedProps.fields
+        : (fieldsFromJson ?? normalizedProps.fields)
+
+      const fields = parseJsonArray<Record<string, unknown>>(fieldSource, [
+        { key: 'name', label: '姓名', type: 'text', required: true },
+        { key: 'phone', label: '联系电话', type: 'text', required: true }
+      ]).map(field => ({
         key: toStringValue(field.key),
         label: toStringValue(field.label),
         type: ['text', 'date', 'select'].includes(toStringValue(field.type))
@@ -1640,7 +1659,128 @@ export const materialRegistry: MaterialRegistryItem[] = [
         successText: toStringValue(normalizedProps.successText, '提交成功，我们会尽快处理'),
         errorText: toStringValue(normalizedProps.errorText, '提交失败，请稍后重试'),
         fields,
-        fieldsJson: JSON.stringify(fields, null, 2)
+        // 解析失败时保留原文；成功时与结构化字段保持同步（双写）
+        fieldsJson: fieldsJsonInvalid ? rawFieldsJson : JSON.stringify(fields, null, 2)
+      }
+    }
+  },
+  {
+    type: 'TicketExceptionForm',
+    aliases: ['ticket-exception-form'],
+    group: 'business',
+    label: '票据异常登记',
+    icon: '票',
+    maxCount: 5,
+    defaultProps: {
+      title: '票据异常登记',
+      subtitle: '请填写票据信息与异常情况',
+      submitText: '提交登记',
+      submittingText: '提交中...',
+      successText: '已登记，工作人员会尽快处理',
+      errorText: '提交失败，请稍后重试',
+      businessCategory: '报销票据',
+      allowedExceptionTypes: '票据信息缺失\n质检信息不一致',
+      extraFields: []
+    },
+    runtimeComponent: () => import('../components/TicketExceptionFormBlock.vue'),
+    editorConfig: {
+      mode: 'schema',
+      schema: {
+        sections: [
+          {
+            type: 'section',
+            label: '表单内容',
+            fields: [
+              { type: 'text', path: 'title', label: '标题' },
+              { type: 'text', path: 'subtitle', label: '说明' },
+              { type: 'text', path: 'submitText', label: '提交按钮文字' },
+              { type: 'text', path: 'submittingText', label: '提交中文字' },
+              { type: 'text', path: 'successText', label: '成功提示' },
+              { type: 'text', path: 'errorText', label: '失败提示' }
+            ]
+          },
+          {
+            type: 'section',
+            label: '业务配置',
+            fields: [
+              {
+                type: 'text',
+                path: 'businessCategory',
+                label: '业务类别',
+                description: '展示在表单头部，并写入异常记录'
+              },
+              {
+                type: 'textarea',
+                path: 'allowedExceptionTypes',
+                label: '允许的异常类型',
+                rows: 4,
+                description: '一行一个，也可用逗号分隔',
+                placeholder: '票据信息缺失\n质检信息不一致'
+              }
+            ]
+          },
+          {
+            type: 'section',
+            label: '扩展字段',
+            fields: [
+              {
+                type: 'formFields',
+                path: 'extraFields',
+                label: '扩展字段',
+                description:
+                  '按稳定 key 存储，显示名可修改；票据编号、异常类型、问题说明为固定字段，可一个都不配',
+                requireBaseFields: false,
+                allowEmpty: true,
+                reservedKeys: ['ticketNo', 'exceptionType', 'description']
+              }
+            ]
+          }
+        ]
+      }
+    },
+    normalizeProps: props => {
+      const normalizedProps = toRecord(props)
+
+      const rawTypes = normalizedProps.allowedExceptionTypes
+      const typeText = Array.isArray(rawTypes)
+        ? rawTypes
+            .map(item => toStringValue(item))
+            .filter(Boolean)
+            .join('\n')
+        : toStringValue(rawTypes)
+
+      const extraSource = normalizedProps.extraFields
+      let extraParsed: unknown = extraSource
+      if (typeof extraSource === 'string') {
+        try {
+          extraParsed = JSON.parse(extraSource)
+        } catch {
+          extraParsed = []
+        }
+      }
+      const extraFields = parseJsonArray<Record<string, unknown>>(extraParsed, [])
+        .map(field => ({
+          key: toStringValue(field.key),
+          label: toStringValue(field.label),
+          type: ['text', 'date', 'select'].includes(toStringValue(field.type))
+            ? toStringValue(field.type)
+            : 'text',
+          required: toFlexibleBoolean(field.required, false),
+          placeholder: toStringValue(field.placeholder),
+          options: parseJsonArray<string>(field.options, [])
+        }))
+        .filter(field => field.key && field.label)
+
+      return {
+        title: toStringValue(normalizedProps.title, '票据异常登记'),
+        subtitle: toStringValue(normalizedProps.subtitle, '请填写票据信息与异常情况'),
+        submitText: toStringValue(normalizedProps.submitText, '提交登记'),
+        submittingText: toStringValue(normalizedProps.submittingText, '提交中...'),
+        successText: toStringValue(normalizedProps.successText, '已登记，工作人员会尽快处理'),
+        errorText: toStringValue(normalizedProps.errorText, '提交失败，请稍后重试'),
+        businessCategory: toStringValue(normalizedProps.businessCategory, '报销票据'),
+        allowedExceptionTypes: typeText,
+        extraFields
       }
     }
   },
@@ -1680,13 +1820,45 @@ export const materialRegistry: MaterialRegistryItem[] = [
         null,
         2
       ),
-      pageSize: 5
+      pageSize: 5,
+      dataSource: 'static',
+      exceptionTypeOptions: '票据信息缺失\n质检信息不一致',
+      enableOnlyMine: true
     },
     runtimeComponent: () => import('../components/BusinessListBlock.vue'),
     editorConfig: {
       mode: 'schema',
       schema: {
         sections: [
+          {
+            type: 'section',
+            label: '数据来源',
+            fields: [
+              {
+                type: 'select',
+                path: 'dataSource',
+                label: '数据模式',
+                description: '静态数据用下面的示例数据；票据异常走业务接口，按登录身份查询',
+                options: [
+                  { label: '静态数据', value: 'static' },
+                  { label: '票据异常记录', value: 'ticketExceptions' }
+                ]
+              },
+              {
+                type: 'textarea',
+                path: 'exceptionTypeOptions',
+                label: '异常类型筛选项',
+                rows: 3,
+                description: '一行一个，仅票据异常模式生效；留空则不显示该筛选项'
+              },
+              {
+                type: 'switch',
+                path: 'enableOnlyMine',
+                label: '显示「仅看我提交的」',
+                description: '身份由后端按登录态解析，页面不传用户名'
+              }
+            ]
+          },
           {
             type: 'section',
             label: '列表内容',
@@ -1714,6 +1886,14 @@ export const materialRegistry: MaterialRegistryItem[] = [
         normalizedProps.rowsJson ?? normalizedProps.rows,
         [{ id: 1, name: '示例记录', status: '待处理' }]
       )
+      const rawTypes = normalizedProps.exceptionTypeOptions
+      const typeText = Array.isArray(rawTypes)
+        ? rawTypes
+            .map(item => toStringValue(item))
+            .filter(Boolean)
+            .join('\n')
+        : toStringValue(rawTypes)
+
       return {
         title: toStringValue(normalizedProps.title, '业务数据'),
         subtitle: toStringValue(normalizedProps.subtitle, '支持关键词筛选和分页展示'),
@@ -1721,7 +1901,13 @@ export const materialRegistry: MaterialRegistryItem[] = [
         rows,
         columnsJson: JSON.stringify(columns, null, 2),
         rowsJson: JSON.stringify(rows, null, 2),
-        pageSize: toFiniteNumber(normalizedProps.pageSize, 5)
+        pageSize: toFiniteNumber(normalizedProps.pageSize, 5),
+        dataSource:
+          toStringValue(normalizedProps.dataSource) === 'ticketExceptions'
+            ? 'ticketExceptions'
+            : 'static',
+        exceptionTypeOptions: typeText,
+        enableOnlyMine: toFlexibleBoolean(normalizedProps.enableOnlyMine, true)
       }
     }
   },

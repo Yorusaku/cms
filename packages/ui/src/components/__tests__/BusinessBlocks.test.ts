@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import BusinessFormBlock, { type BusinessFormField } from '../BusinessFormBlock.vue'
 import BusinessListBlock from '../BusinessListBlock.vue'
+import { BUSINESS_DATA_ADAPTER_KEY } from '../../utils/business-data'
 import StatCardBlock from '../StatCardBlock.vue'
 
 const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0))
@@ -366,5 +367,72 @@ describe('BusinessFormBlock 真实提交链路', () => {
     const body = JSON.parse(fetchMock.mock.calls[0][1].body as string)
     expect(body.consentAccepted).toBe(true)
     expect(wrapper.text()).toContain('提交成功')
+  })
+})
+
+describe('BusinessListBlock 远程模式', () => {
+  const remoteProps = {
+    dataSource: 'ticketExceptions' as const,
+    columns: [
+      { key: 'ticketNo', label: '票据编号' },
+      { key: 'status', label: '状态' }
+    ],
+    rows: [],
+    pageSize: 5,
+    exceptionTypeOptions: '票据信息缺失\n质检信息不一致'
+  }
+
+  it('没有适配器时展示示例数据且不发请求', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+
+    const wrapper = mount(BusinessListBlock, { props: remoteProps })
+    await flushPromises()
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('示例数据')
+    expect(wrapper.findAll('tbody tr')).toHaveLength(3)
+    // 状态用中文标签展示
+    expect(wrapper.text()).toContain('待处理')
+  })
+
+  it('注入适配器后按筛选请求并广播 total', async () => {
+    const adapter = vi.fn(async (_query: Record<string, unknown>) => ({
+      items: [
+        {
+          id: 1,
+          ticketNo: 'FP-1',
+          exceptionType: '票据信息缺失',
+          status: 'pending',
+          createdAt: '2026-10-01T09:00:00.000Z'
+        }
+      ],
+      total: 1,
+      pageNum: 1,
+      pageSize: 5
+    }))
+
+    const wrapper = mount(BusinessListBlock, {
+      props: remoteProps,
+      global: {
+        provide: {
+          [BUSINESS_DATA_ADAPTER_KEY]: adapter
+        }
+      }
+    })
+    await flushPromises()
+
+    expect(adapter).toHaveBeenCalledTimes(1)
+    expect(wrapper.findAll('tbody tr')).toHaveLength(1)
+    expect(wrapper.emitted('filter-change')?.at(-1)).toEqual([{ filteredCount: 1 }])
+
+    await wrapper.find('[data-testid="list-keyword"]').setValue('FP-9')
+    await flushPromises()
+
+    expect(adapter).toHaveBeenCalledTimes(2)
+    expect(adapter.mock.calls[1][0]).toMatchObject({
+      ticketNo: 'FP-9',
+      pageNum: 1
+    })
   })
 })

@@ -93,7 +93,27 @@ export const buildApiUrl = (path: string): string => {
   return `${base}${normalizedPath}`
 }
 
-const requestJson = async (url: string, payload: unknown) => {
+/** 提交失败：带上 HTTP 状态与业务码，调用方据此区分「未登录」与普通失败 */
+export interface FormSubmitError extends Error {
+  status?: number
+  code?: number
+}
+
+const createSubmitError = (
+  message: string,
+  extra: { status?: number; code?: number } = {}
+): FormSubmitError => Object.assign(new Error(message), extra)
+
+/** 未登录（HTTP 401 / 业务码 -2）：调用方需要提示登录而不是报「提交失败」 */
+export const isUnauthorizedError = (error: unknown): boolean => {
+  if (!(error instanceof Error)) {
+    return false
+  }
+  const typed = error as FormSubmitError
+  return typed.status === 401 || typed.code === -2
+}
+
+const requestJson = async (url: string, payload: unknown): Promise<unknown> => {
   const token = localStorage.getItem('token')
   const headers: Record<string, string> = {
     'Content-Type': 'application/json'
@@ -108,17 +128,53 @@ const requestJson = async (url: string, payload: unknown) => {
     body: JSON.stringify(payload)
   })
 
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`)
-  }
-
-  const body = (await response.json()) as {
+  interface ApiBody {
     code?: number
     message?: string
+    data?: unknown
+  }
+  let body: ApiBody | null = null
+  try {
+    body = (await response.json()) as ApiBody
+  } catch {
+    body = null
   }
 
-  if (typeof body.code === 'number' && body.code !== API_SUCCESS_CODE) {
-    throw new Error(body.message || 'request_failed')
+  if (!response.ok) {
+    throw createSubmitError(body?.message || `HTTP ${response.status}`, {
+      status: response.status,
+      code: body?.code
+    })
+  }
+
+  if (typeof body?.code === 'number' && body.code !== API_SUCCESS_CODE) {
+    throw createSubmitError(body.message || 'request_failed', {
+      status: response.status,
+      code: body.code
+    })
+  }
+
+  return body?.data
+}
+
+/**
+ * 票据异常登记：走独立业务接口，不复用 submitLead / remark。
+ * 请求头带当前登录 JWT（内部团队使用，CRS 需先登录）。
+ */
+export interface TicketExceptionCreateResult {
+  id: number
+  duplicated: boolean
+}
+
+export const submitTicketExceptionRequest = async (
+  payload: Record<string, unknown>,
+  endpoint: string
+): Promise<TicketExceptionCreateResult> => {
+  const data = await requestJson(buildApiUrl(endpoint), payload)
+  const record = (data ?? {}) as Partial<TicketExceptionCreateResult>
+  return {
+    id: typeof record.id === 'number' ? record.id : 0,
+    duplicated: record.duplicated === true
   }
 }
 
