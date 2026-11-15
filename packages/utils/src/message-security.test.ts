@@ -9,7 +9,7 @@ import {
   validateOrigin,
   createSecureMessage,
   verifySecureMessage
-} from '@cms/utils'
+} from './message-security'
 
 describe('Message Security Utilities', () => {
   describe('signMessage and verifySignature', () => {

@@ -13,6 +13,42 @@ const dotSkip = '.' + 'skip'
 const orTrue = '|' + '| true'
 const bareDisable = 'eslint' + '-disable'
 
+/**
+ * 找到一个可执行的 POSIX shell。
+ *
+ * Windows 上 git 可能装在 portable 目录（例如 PortableGit/mingw64/bin/git.exe），
+ * 直接拼 `../bin/sh.exe` 会指向不存在的路径；spawnSync 找不到 EXE 不抛错，
+ * 只返回 status=null，用例会以“退出码为空”的形式挂掉。
+ * 这里沿 git 所在目录往上逐级探测 bin/ 与 usr/bin/，并用 `sh -c "echo ok"` 验证。
+ */
+function findPosixShell() {
+  if (process.platform !== 'win32') return 'sh'
+
+  const candidates = []
+  try {
+    const lines = execFileSync('where.exe', ['git'], { encoding: 'utf8' }).trim().split(/\r?\n/)
+    for (const line of lines) {
+      let dir = dirname(line.trim())
+      for (let i = 0; i < 4; i += 1) {
+        candidates.push(join(dir, 'bin', 'sh.exe'), join(dir, 'usr', 'bin', 'sh.exe'))
+        dir = dirname(dir)
+      }
+    }
+  } catch {
+    // 没装 git 时也能继续尝试 PATH 里的 sh
+  }
+  candidates.push('sh.exe', 'sh')
+
+  for (const candidate of new Set(candidates)) {
+    const probe = spawnSync(candidate, ['-c', 'echo ok'], { encoding: 'utf8' })
+    if (probe.status === 0 && String(probe.stdout).includes('ok')) return candidate
+  }
+
+  throw new Error(
+    '找不到可执行的 POSIX shell，pre-commit 用例无法运行；请确认已安装 Git Bash 并加入 PATH'
+  )
+}
+
 function fixture() {
   const cwd = mkdtempSync(join(tmpdir(), 'cms-agent-guards-'))
   const git = (...args) =>
@@ -127,15 +163,7 @@ test('pre-commit：真实 hook 拦违规，干净文件经现有 lint-staged 放
     f.write('lint-staged.config.mjs', 'export default { "*.txt": "node --version" };\n')
     const file = 'apps/frontend/cms/example.test.vue'
     // Windows 的 Git cmd 在 PATH 上，不代表 Git Bash 的 sh 也在 PATH 上。
-    const shell =
-      process.platform === 'win32'
-        ? resolve(
-            dirname(
-              execFileSync('where.exe', ['git'], { encoding: 'utf8' }).trim().split(/\r?\n/)[0]
-            ),
-            '../bin/sh.exe'
-          )
-        : 'sh'
+    const shell = findPosixShell()
     const hookEnv = { ...process.env, PR_LABELS: '' }
     const pathKey = Object.keys(hookEnv).find(key => key.toLowerCase() === 'path') || 'PATH'
     hookEnv[pathKey] = join(root, 'node_modules/.bin') + delimiter + (hookEnv[pathKey] || '')
