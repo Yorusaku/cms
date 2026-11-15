@@ -61,6 +61,21 @@
           </div>
         </div>
 
+        <div
+          class="entry-card"
+          role="button"
+          tabindex="0"
+          @click="router.push('/business-scenario')"
+        >
+          <div class="entry-icon icon-danger">
+            <el-icon :size="22"><Tickets /></el-icon>
+          </div>
+          <div class="entry-body">
+            <p class="entry-name">站内提醒</p>
+            <p class="entry-desc">登记票据异常与跟进处理进度</p>
+          </div>
+        </div>
+
         <div class="entry-card" role="button" tabindex="0" @click="router.push('/performance')">
           <div class="entry-icon icon-warning">
             <el-icon :size="22"><TrendCharts /></el-icon>
@@ -445,6 +460,11 @@ onMounted(() => {
 .icon-info {
   background: var(--color-info-light, #f4f4f5);
   color: var(--color-info);
+}
+
+.icon-danger {
+  background: var(--color-danger-light, #fef0f0);
+  color: var(--color-danger, #f56c6c);
 }
 
 .entry-name {

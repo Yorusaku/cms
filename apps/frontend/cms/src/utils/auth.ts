@@ -41,3 +41,12 @@ export const hasAnyRole = (roles: UserRole[]): boolean => {
  * 注意：前端门禁只负责隐藏入口，最终鉴权仍以后端 @Roles 为准。
  */
 export const getEffectiveRole = (): UserRole => getCurrentRole() ?? 'viewer'
+
+/** 当前登录用户名：登录时写入 localStorage，缺失时回落到 JWT 载荷 */
+export const getUsername = (): string => {
+  const stored = localStorage.getItem('username')
+  if (stored) return stored
+  const payload = decodePayload(localStorage.getItem('token'))
+  const name = payload?.username ?? payload?.sub
+  return typeof name === 'string' ? name : ''
+}

@@ -26,7 +26,8 @@
           <MaterialFieldRenderer
             :field="field"
             :model-value="getValue(field.path)"
-            @update="handleFieldUpdate(field.path, $event)"
+            :mirror-raw="getMirrorRaw(field)"
+            @update="handleFieldUpdate(field, $event)"
           />
         </div>
       </div>
@@ -161,8 +162,35 @@ const setValue = (path: string, value: unknown) => {
   })
 }
 
-const handleFieldUpdate = (path: string, value: unknown) => {
-  setValue(path, value)
+/** 表单字段编辑器的 JSON 镜像原文（fieldsJson），用于非法检测与只读展示 */
+const getMirrorRaw = (field: MaterialRenderableField): unknown => {
+  if (field.type !== 'formFields' || !field.mirrorPath) {
+    return undefined
+  }
+  return getValue(field.mirrorPath)
+}
+
+/**
+ * 字段更新入口。
+ *
+ * 表单字段编辑（formFields）是结构化操作，采用「校验通过即写回」：
+ * - 立即同步到 draftProps 并跳过防抖直接 emit，避免切换组件/保存时
+ *   把防抖窗口内的合法编辑丢掉；
+ * - 同时原子写入 JSON 镜像属性（fieldsJson），否则下次加载会以旧 JSON 为准，
+ *   出现「保存后配置回退」。
+ */
+const handleFieldUpdate = (field: MaterialRenderableField, value: unknown): void => {
+  if (field.type === 'formFields') {
+    const fields = Array.isArray(value) ? value : []
+    draftProps.value[field.path] = fields
+    if (field.mirrorPath) {
+      draftProps.value[field.mirrorPath] = JSON.stringify(fields, null, 2)
+    }
+    emit('update', deepClone(draftProps.value))
+    return
+  }
+
+  setValue(field.path, value)
   if (props.batchMode) {
     throttledEmitForBatch()
     return

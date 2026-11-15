@@ -112,6 +112,7 @@
                 active: pageStore.activeComponentId === component.id,
                 selected: pageStore.selectedComponentIds.includes(component.id)
               }"
+              :data-component-id="component.id"
               @click="handleSelectComponent(component.id, $event)"
             >
               <div class="component-drag-handle">拖</div>
@@ -206,8 +207,12 @@ const resolveCachedComponent = (type: string) => {
   return resolved
 }
 
+/** 画布内的表单只做展示：显式标记预览，禁止任何真实写入 */
+const PREVIEW_FORM_TYPES = ['LeadForm', 'BusinessForm', 'TicketExceptionForm']
+
 const resolveRuntimeProps = (type: string, componentProps: Record<string, unknown>) => {
-  return resolveMaterialRuntimeProps(type, componentProps)
+  const resolved = resolveMaterialRuntimeProps(type, componentProps)
+  return PREVIEW_FORM_TYPES.includes(type) ? { ...resolved, previewMode: true } : resolved
 }
 
 const resolveCachedRuntimeProps = (type: string, componentProps: Record<string, unknown>) => {

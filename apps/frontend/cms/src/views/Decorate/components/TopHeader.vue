@@ -47,16 +47,28 @@
       <el-button size="default" :loading="previewLoading" @click="saveAndPreview">预览</el-button>
       <el-button size="default" @click="openPublishLogs">发布记录</el-button>
     </div>
+
+    <!-- 结构化问题面板：替代此前的 HTML 字符串拼装 -->
+    <PageCheckDialog
+      v-model="checkDialogVisible"
+      :mode="checkMode"
+      :issues="checkIssues"
+      :error-count="checkErrorCount"
+      :warning-count="checkWarningCount"
+      @locate="locateIssue"
+      @continue="handleCheckContinue"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { RefreshLeft, RefreshRight } from '@element-plus/icons-vue'
 import { useEventListener } from '@vueuse/core'
 import { usePageStore } from '@/store/usePageStore'
+import PageCheckDialog from '@/components/PageCheckDialog.vue'
 import { saveCmsPage, submitPageReview, type SavePageParams } from '@/api/activity'
 import { migrateSchemaToV1 } from '@cms/utils'
 import { runPagePreflight, type PreflightIssue } from '@/utils/page-preflight'
@@ -76,36 +88,68 @@ const saveLoading = ref(false)
 const previewLoading = ref(false)
 const publishLoading = ref(false)
 
-const buildPreflightHtml = (issues: PreflightIssue[]) =>
-  issues
-    .slice(0, 20)
-    .map(issue => `<li>${issue.message}</li>`)
-    .join('')
+/**
+ * 页面检查的三种模式（规则来自 @cms/types，与后端一致）：
+ * - draft：保存草稿不拦截（不调用本函数）；
+ * - preview：有问题只提醒，用户确认后仍可预览；
+ * - submit：有阻断级问题即停止提交（warning 不阻断）。
+ */
+const checkDialogVisible = ref(false)
+const checkMode = ref<'preview' | 'submit'>('submit')
+const checkIssues = ref<PreflightIssue[]>([])
+const checkErrorCount = ref(0)
+const checkWarningCount = ref(0)
+let checkResolver: ((value: boolean) => void) | null = null
 
-const runPreflight = async () => {
-  const pageSchema = pageStore.exportPageSchema()
-  const result = runPagePreflight(pageSchema)
-  if (result.ok) {
-    return true
+const runPreflight = (mode: 'preview' | 'submit'): Promise<boolean> => {
+  const result = runPagePreflight(pageStore.exportPageSchema())
+
+  // 完全干净：直接通过
+  if (result.issues.length === 0) {
+    return Promise.resolve(true)
+  }
+  // 提交审核只在有 error 时阻断；warning 属建议，不拦提交流程
+  if (mode === 'submit' && result.ok) {
+    return Promise.resolve(true)
   }
 
-  const extraText =
-    result.issues.length > 20
-      ? `<p style="margin-top: 8px;">还有 ${result.issues.length - 20} 条问题未展示，请先修复后再试。</p>`
-      : ''
+  checkMode.value = mode
+  checkIssues.value = result.issues
+  checkErrorCount.value = result.errorCount
+  checkWarningCount.value = result.warningCount
+  checkDialogVisible.value = true
 
-  await ElMessageBox.alert(
-    `<p>当前页面未通过发布前校验，请先修复以下问题：</p><ul style="margin: 8px 0 0 16px; padding: 0;">${buildPreflightHtml(result.issues)}</ul>${extraText}`,
-    '保存/发布已拦截',
-    {
-      dangerouslyUseHTMLString: true,
-      confirmButtonText: '我知道了',
-      type: 'warning'
+  return new Promise<boolean>(resolve => {
+    checkResolver = value => {
+      // 提交模式：面板只能关闭，视为未通过；预览模式：用户选择「仍然预览」才继续
+      resolve(mode === 'submit' ? false : value)
     }
-  )
-
-  return false
+  })
 }
+
+/** 定位到问题组件：选中并滚动到画布对应位置 */
+const locateIssue = async (componentId: string) => {
+  pageStore.setActiveId(componentId)
+  await nextTick()
+  const target = document.querySelector(`[data-component-id="${CSS.escape(componentId)}"]`)
+  target?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+const handleCheckContinue = () => {
+  const resolve = checkResolver
+  checkResolver = null
+  resolve?.(true)
+}
+
+// 面板被关闭（右上角 / 取消按钮 / 遮罩外）：按未通过处理
+watch(checkDialogVisible, visible => {
+  if (visible || !checkResolver) {
+    return
+  }
+  const resolve = checkResolver
+  checkResolver = null
+  resolve(false)
+})
 
 const handleUndo = () => {
   if (pageStore.canUndo) {
@@ -145,7 +189,7 @@ const getCurrentPageId = (response?: SavePageResponse) => {
 const saveAndPreview = async () => {
   previewLoading.value = true
   try {
-    const preflightPassed = await runPreflight()
+    const preflightPassed = await runPreflight('preview')
     if (!preflightPassed) {
       return
     }
@@ -167,7 +211,7 @@ const saveAndPreview = async () => {
 const submitReview = async () => {
   publishLoading.value = true
   try {
-    const preflightPassed = await runPreflight()
+    const preflightPassed = await runPreflight('submit')
     if (!preflightPassed) {
       return
     }

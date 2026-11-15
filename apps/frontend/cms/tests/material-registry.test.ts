@@ -101,11 +101,13 @@ describe('material registry', () => {
     expect(resolveMaterialDefinition('business-form')?.type).toBe('BusinessForm')
     expect(resolveMaterialDefinition('data-list')?.type).toBe('BusinessList')
     expect(resolveMaterialDefinition('stat-card')?.type).toBe('StatCard')
+    // 票据异常登记：与 BusinessForm 并列的业务物料（别名可解析）
+    expect(resolveMaterialDefinition('ticket-exception-form')?.type).toBe('TicketExceptionForm')
     expect(
       materialRegistry
         .filter(material => material.group === 'business')
         .map(material => material.type)
-    ).toEqual(['BusinessForm', 'BusinessList', 'StatCard'])
+    ).toEqual(['BusinessForm', 'TicketExceptionForm', 'BusinessList', 'StatCard'])
   })
 
   it('should normalize legacy schema data for notice, dialog and product', () => {

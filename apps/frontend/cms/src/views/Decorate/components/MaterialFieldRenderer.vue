@@ -140,12 +140,23 @@
     </el-button>
   </div>
 
+  <BusinessFormFieldsEditor
+    v-else-if="field.type === 'formFields'"
+    :model-value="formFieldsValue"
+    :raw-json="mirrorRawValue"
+    :require-base-fields="field.requireBaseFields !== false"
+    :allow-empty="field.allowEmpty === true"
+    :reserved-keys="field.reservedKeys ?? []"
+    @update="emitUpdate"
+  />
+
   <div v-else class="field-unsupported">暂不支持 {{ field.type }} 字段</div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import type {
+  BusinessFormFieldInput,
   MaterialArrayFieldSchema,
   MaterialArrayItemSchema,
   MaterialFieldSchema,
@@ -154,12 +165,15 @@ import type {
 import ConfigLink from '@/components/basic/ConfigLink.vue'
 import PicList from '@/components/basic/PicList.vue'
 import UpLoadBox from '@/components/basic/UpLoadBox.vue'
+import BusinessFormFieldsEditor from './BusinessFormFieldsEditor.vue'
 
 type MaterialRenderableField = Exclude<MaterialFieldSchema, MaterialSectionSchema>
 
 const props = defineProps<{
   field: MaterialRenderableField
   modelValue: unknown
+  /** 表单字段编辑器的 JSON 镜像原文（用于检测非法 JSON 并只读展示） */
+  mirrorRaw?: unknown
 }>()
 
 const emit = defineEmits<{
@@ -190,6 +204,16 @@ const arrayObjectValue = computed(() =>
 const linkValue = computed(() => {
   return toLinkValue(props.modelValue)
 })
+
+/** 表单字段编辑器的当前字段数组 */
+const formFieldsValue = computed<BusinessFormFieldInput[]>(() =>
+  Array.isArray(props.modelValue) ? (props.modelValue as BusinessFormFieldInput[]) : []
+)
+
+/** JSON 镜像原文（fieldsJson），仅用于非法检测与只读展示 */
+const mirrorRawValue = computed(() =>
+  typeof props.mirrorRaw === 'string' ? props.mirrorRaw : undefined
+)
 
 const emitUpdate = (value: unknown) => {
   emit('update', value)

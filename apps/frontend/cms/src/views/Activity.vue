@@ -529,6 +529,17 @@
         </el-button>
       </template>
     </el-dialog>
+
+    <!-- 提交审核 / 发布前检查：与编辑器、后端同一份规则 -->
+    <PageCheckDialog
+      v-model="pageCheckVisible"
+      mode="submit"
+      :issues="pageCheckIssues"
+      :error-count="pageCheckErrorCount"
+      :warning-count="pageCheckWarningCount"
+      @locate="openEditorFromCheck"
+      @continue="openEditorFromCheck"
+    />
   </div>
 </template>
 
@@ -538,12 +549,16 @@ import TemplatePicker from '@/components/TemplatePicker.vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { ArrowDown, Plus, Refresh, Search } from '@element-plus/icons-vue'
-import type {
-  AiAdviceCategory,
-  AiAdviceSeverity,
-  AiDiagnosePageResponse,
-  AiGeneratePageRequest
+import {
+  checkPageForSubmit,
+  type AiAdviceCategory,
+  type AiAdviceSeverity,
+  type AiDiagnosePageResponse,
+  type AiGeneratePageRequest,
+  type BusinessCheckIssue,
+  type BusinessCheckSchemaLike
 } from '@cms/types'
+import PageCheckDialog from '@/components/PageCheckDialog.vue'
 import { aiDiagnosePage, aiGeneratePage } from '@/api/ai'
 import {
   deletePage,
@@ -753,8 +768,78 @@ const getPrimaryAction = (row: ActivityRow): RowPrimaryAction => {
   return null
 }
 
+/* ── 列表入口的提交/发布前检查 ───────────────────────────── */
+
+const pageCheckVisible = ref(false)
+const pageCheckIssues = ref<BusinessCheckIssue[]>([])
+const pageCheckErrorCount = ref(0)
+const pageCheckWarningCount = ref(0)
+const pageCheckPageId = ref<number | null>(null)
+
+/** 页面详情里的 Schema 可能是 JSON 字符串 */
+const parseSchemaForCheck = (raw: unknown): BusinessCheckSchemaLike | null => {
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw) as BusinessCheckSchemaLike
+    } catch {
+      return null
+    }
+  }
+  if (raw && typeof raw === 'object') {
+    return raw as BusinessCheckSchemaLike
+  }
+  return null
+}
+
+/**
+ * 列表里的提交审核 / 发布前检查。
+ * 读取现有页面接口拿到真实 Schema，跑与编辑器、后端同一份规则。
+ * 返回 false 表示已展示问题、应中止操作。
+ */
+const runListPageCheck = async (row: ActivityRow): Promise<boolean> => {
+  let schema: BusinessCheckSchemaLike | null = null
+  try {
+    const response = await getCmsPageById(row.id)
+    if (response.code === 10000 && response.data) {
+      schema = parseSchemaForCheck(response.data.schema ?? response.data)
+    }
+  } catch {
+    // 拉取失败不阻断：后端提交/发布时还会再校验一次
+    return true
+  }
+  if (!schema) {
+    return true
+  }
+
+  const result = checkPageForSubmit(schema)
+  // 列表入口只在有阻断级问题时打断；warning 交给编辑器里查看
+  if (result.ok) {
+    return true
+  }
+
+  pageCheckIssues.value = result.issues
+  pageCheckErrorCount.value = result.issues.filter(issue => issue.severity === 'error').length
+  pageCheckWarningCount.value = result.issues.filter(issue => issue.severity === 'warning').length
+  pageCheckPageId.value = row.id
+  pageCheckVisible.value = true
+  return false
+}
+
+/** 从问题面板跳去编辑器修复 */
+const openEditorFromCheck = () => {
+  const pageId = pageCheckPageId.value
+  pageCheckVisible.value = false
+  if (pageId) {
+    handleEdit(pageId)
+  }
+}
+
 const handleSubmitReview = async (row: ActivityRow) => {
   try {
+    const passed = await runListPageCheck(row)
+    if (!passed) {
+      return
+    }
     const { value } = await ElMessageBox.prompt('可填写给审核人的说明', '提交审核', {
       inputType: 'textarea',
       confirmButtonText: '提交',
@@ -793,6 +878,10 @@ const handleReview = async (row: ActivityRow, decision: 'approved' | 'rejected')
 
 const handlePublishApproved = async (row: ActivityRow) => {
   try {
+    const passed = await runListPageCheck(row)
+    if (!passed) {
+      return
+    }
     // 显式指定中文按钮文案，避免 Element Plus 默认 locale 渲染成 OK / Cancel
     await ElMessageBox.confirm(`确定发布页面【${row.name}】吗？`, '发布确认', {
       confirmButtonText: '确定',
